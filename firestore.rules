@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow public read access for services
+    match /services/{serviceId} {
+      allow read: if true;
+      // Only the signed-in owner can create a service with their own providerId
+      allow create: if request.auth != null
+                    && request.resource.data.providerId == request.auth.uid;
+      // Only the owner can update or delete, and providerId cannot be changed
+      allow update: if request.auth != null
+                    && resource.data.providerId == request.auth.uid
+                    && request.resource.data.providerId == resource.data.providerId;
+      allow delete: if request.auth != null
+                    && resource.data.providerId == request.auth.uid;
+    }
+
+    // Users can create their own profile, and can only read/write their own data afterwards.
+    match /users/{userId} {
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
