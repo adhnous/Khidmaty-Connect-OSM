@@ -32,6 +32,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { createService, uploadServiceImages, type ServiceImage } from '@/lib/services';
 import AddressSearch from '@/components/address-search';
+import { reverseGeocodeNominatim, getLangFromDocument } from '@/lib/geocode';
+import { getClientLocale, tr } from '@/lib/i18n';
 
 const mockCategories = [
   'Plumbing',
@@ -149,6 +151,7 @@ async function apiAutoCategorizeService(args: { description: string }) {
 }
 
 export function ServiceForm() {
+  const locale = getClientLocale();
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
@@ -200,28 +203,18 @@ export function ServiceForm() {
     setMapMounted(true);
   }, []);
 
-  // Reverse geocode selected point to show a human-readable address (free Nominatim)
+  // Reverse geocode with caching + abort
   useEffect(() => {
-    let abort = false;
-    async function run() {
-      if (latNum == null || lngNum == null) { setSelectedAddress(''); return; }
-      try {
-        const lang = (document.documentElement.getAttribute('lang') || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
-        const url = new URL('https://nominatim.openstreetmap.org/reverse');
-        url.searchParams.set('format', 'jsonv2');
-        url.searchParams.set('lat', String(latNum));
-        url.searchParams.set('lon', String(lngNum));
-        url.searchParams.set('accept-language', lang);
-        const res = await fetch(url.toString(), { headers: { 'Accept-Language': lang } });
-        if (!res.ok) throw new Error('reverse failed');
-        const data = await res.json();
-        if (!abort) setSelectedAddress(data.display_name || '');
-      } catch {
-        if (!abort) setSelectedAddress('');
-      }
-    }
-    void run();
-    return () => { abort = true; };
+    if (latNum == null || lngNum == null) { setSelectedAddress(''); return; }
+    const ac = new AbortController();
+    const lang = getLangFromDocument();
+    reverseGeocodeNominatim(latNum, lngNum, lang, ac.signal)
+      .then((r) => setSelectedAddress(r.displayName))
+      .catch((e) => {
+        if ((e as any)?.name === 'AbortError') return;
+        setSelectedAddress('');
+      });
+    return () => ac.abort();
   }, [latNum, lngNum]);
 
   // Leaflet marker icon (div-based to avoid asset issues)
@@ -239,7 +232,7 @@ export function ServiceForm() {
 
   function handleUseMyLocation() {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
-      toast({ variant: 'destructive', title: 'Geolocation not available', description: 'Your browser does not support geolocation.' });
+      toast({ variant: 'destructive', title: tr(locale, 'form.geo.notAvailableTitle'), description: tr(locale, 'form.geo.notAvailableDesc') });
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -248,10 +241,10 @@ export function ServiceForm() {
         const ln = Number(pos.coords.longitude.toFixed(6));
         form.setValue('lat', la, { shouldValidate: true });
         form.setValue('lng', ln, { shouldValidate: true });
-        toast({ title: 'Location set', description: `${la}, ${ln}` });
+        toast({ title: tr(locale, 'form.geo.setTitle'), description: `${la}, ${ln}` });
       },
       (err) => {
-        toast({ variant: 'destructive', title: 'Could not get location', description: err?.message || 'Permission denied' });
+        toast({ variant: 'destructive', title: tr(locale, 'form.geo.couldNotGetTitle'), description: err?.message || tr(locale, 'form.geo.couldNotGetDesc') });
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -279,14 +272,14 @@ export function ServiceForm() {
         });
         form.setValue('title', result.improvedTitle, { shouldValidate: true });
         toast({
-          title: 'Title improved!',
-          description: 'AI has suggested a new title.',
+          title: tr(locale, 'form.toasts.aiTitleImproved'),
+          description: tr(locale, 'form.toasts.aiSuggested'),
         });
       } catch (error) {
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Could not improve title.',
+          title: tr(locale, 'form.toasts.aiErrorTitle'),
+          description: tr(locale, 'form.toasts.aiErrorDesc'),
         });
       }
     });
@@ -322,8 +315,8 @@ export function ServiceForm() {
     if (!user) {
       toast({
         variant: 'destructive',
-        title: 'Please sign in',
-        description: 'You must be signed in to create a service.',
+        title: tr(locale, 'form.toasts.pleaseSignInTitle'),
+        description: tr(locale, 'form.toasts.pleaseSignInDesc'),
       });
       router.push('/login');
       return;
@@ -355,7 +348,7 @@ export function ServiceForm() {
         } catch (err: any) {
           console.error('Image upload failed', err);
           toast({
-            title: 'Image upload failed',
+            title: tr(locale, 'form.toasts.imageUploadFailed'),
             description:
               mode === 'local'
                 ? 'Local upload failed — please try again.'
@@ -389,15 +382,15 @@ export function ServiceForm() {
       });
 
       toast({
-        title: 'Service Created',
-        description: 'Your service has been published successfully.',
+        title: tr(locale, 'form.toasts.createdTitle'),
+        description: tr(locale, 'form.toasts.createdDesc'),
       });
       router.push(`/services/${serviceId}`);
     } catch (error: any) {
       console.error(error);
       toast({
         variant: 'destructive',
-        title: 'Could not create service',
+        title: tr(locale, 'form.toasts.createFailedTitle'),
         description: error?.message || 'Please try again.',
       });
     } finally {
@@ -413,11 +406,11 @@ export function ServiceForm() {
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Service Title</FormLabel>
+              <FormLabel>{tr(locale, 'form.labels.title')}</FormLabel>
               <div className="flex items-center gap-2">
                 <FormControl>
                   <Input
-                    placeholder="e.g., Expert Home AC Repair and Maintenance"
+                    placeholder={tr(locale, 'form.placeholders.title')}
                     {...field}
                   />
                 </FormControl>
@@ -426,19 +419,19 @@ export function ServiceForm() {
                   variant="outline"
                   onClick={handleImproveTitle}
                   disabled={isImprovingTitle}
-                  aria-label="Improve title with AI"
+                  aria-label={tr(locale, 'form.actions.improve')}
                 >
                   {isImprovingTitle ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Sparkles className="mr-2 h-4 w-4" />
                   )}
-                  Improve
+                  {tr(locale, 'form.actions.improve')}
                 </Button>
               </div>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" onClick={handleUseMyLocation}>Use my location</Button>
-          <Button type="button" variant="outline" onClick={() => { form.setValue('lat', undefined as any); form.setValue('lng', undefined as any); }}>Clear location</Button>
+          <Button type="button" variant="outline" onClick={handleUseMyLocation}>{tr(locale, 'form.actions.useMyLocation')}</Button>
+          <Button type="button" variant="outline" onClick={() => { form.setValue('lat', undefined as any); form.setValue('lng', undefined as any); }}>{tr(locale, 'form.actions.clearLocation')}</Button>
         </div>
               <FormMessage />
             </FormItem>
@@ -449,10 +442,10 @@ export function ServiceForm() {
           name="description"
           render={() => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>{tr(locale, 'form.labels.description')}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Describe your service in detail..."
+                  placeholder={tr(locale, 'form.placeholders.description')}
                   className="min-h-[150px]"
                   {...field}
                   ref={ref}
@@ -460,7 +453,7 @@ export function ServiceForm() {
                 />
               </FormControl>
               <FormDescription>
-                Max 800 characters. Be clear and comprehensive.
+                {tr(locale, 'form.help.description')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -472,7 +465,7 @@ export function ServiceForm() {
             name="category"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Category</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.category')}</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
@@ -480,13 +473,13 @@ export function ServiceForm() {
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder={tr(locale, 'form.labels.category')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {mockCategories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
-                        {cat}
+                        {tr(locale, `categories.${cat}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -499,7 +492,7 @@ export function ServiceForm() {
                       ) : (
                         <Sparkles className="h-4 w-4" />
                       )}
-                      AI Suggestions:
+                      {tr(locale, 'form.ai.suggestions')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {categorySuggestions.map((s) => (
@@ -528,7 +521,7 @@ export function ServiceForm() {
             name="price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price (in LYD)</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
                 <FormControl>
                   <Input type="number" placeholder="100" {...field} />
                 </FormControl>
@@ -543,14 +536,14 @@ export function ServiceForm() {
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>City</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.city')}</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a city" />
+                      <SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -570,9 +563,9 @@ export function ServiceForm() {
             name="area"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Area / Neighborhood</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.area')}</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Hay Al-Andalus" {...field} />
+                  <Input placeholder={tr(locale, 'form.labels.area')} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -585,7 +578,7 @@ export function ServiceForm() {
             name="lat"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Latitude (optional)</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.latitude')}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -607,7 +600,7 @@ export function ServiceForm() {
             name="lng"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Longitude (optional)</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.longitude')}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -624,10 +617,10 @@ export function ServiceForm() {
         </div>
 
         <div className="space-y-3">
-          <FormLabel>Pick location on map (optional)</FormLabel>
+          <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
           <AddressSearch
             className="max-w-md"
-            placeholder="Search address or place (free)"
+            placeholder={tr(locale, 'form.placeholders.searchAddress')}
             countryCodes="ly"
             onSelect={({ lat, lng }) => {
               form.setValue('lat', Number(lat.toFixed(6)), { shouldValidate: true });
@@ -648,6 +641,10 @@ export function ServiceForm() {
                 zoom={13}
                 className="h-full w-full cursor-crosshair"
                 scrollWheelZoom={true}
+                whenReady={(e: any) => {
+                  // Ensure Leaflet computes pane positions after mount/layout
+                  setTimeout(() => e.target.invalidateSize(), 0);
+                }}
                 onClick={(e: any) => {
                   const { lat: la, lng: ln } = e.latlng || {};
                   if (typeof la === 'number' && typeof ln === 'number') {
@@ -680,14 +677,14 @@ export function ServiceForm() {
                       },
                     }}
                   >
-                    <Popup>Selected location</Popup>
+                    <Popup>{tr(locale, 'form.map.selected')}</Popup>
                   </Marker>
                 )}
               </MapContainer>
               <div className="px-2 py-1 text-xs text-muted-foreground">
                 {latNum != null && lngNum != null ? (
                   <span>
-                    Selected: {latNum.toFixed(6)}, {lngNum.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}
+                    {tr(locale, 'form.map.selected')}: {latNum.toFixed(6)}, {lngNum.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}
                     {` `}
                     <a
                       className="underline"
@@ -695,11 +692,11 @@ export function ServiceForm() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      (Open in OSM)
+                      {tr(locale, 'form.map.openInOSM')}
                     </a>
                   </span>
                 ) : (
-                  <span>Click on the map to set a precise location.</span>
+                  <span>{tr(locale, 'form.map.clickToSet')}</span>
                 )}
               </div>
             </div>
@@ -710,9 +707,9 @@ export function ServiceForm() {
           name="availabilityNote"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Availability Note (optional)</FormLabel>
+              <FormLabel>{tr(locale, 'form.labels.availabilityNote')}</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Available evenings and weekends" {...field} />
+                <Input placeholder={tr(locale, 'form.placeholders.availability')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -725,7 +722,7 @@ export function ServiceForm() {
             name="contactPhone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Contact Phone</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., +218911234567" {...field} />
                 </FormControl>
@@ -738,7 +735,7 @@ export function ServiceForm() {
             name="contactWhatsapp"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>WhatsApp Number</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., +218911234567" {...field} />
                 </FormControl>
@@ -753,18 +750,18 @@ export function ServiceForm() {
           name="videoUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>YouTube Video URL (optional)</FormLabel>
+              <FormLabel>{tr(locale, 'form.labels.videoUrl')}</FormLabel>
               <FormControl>
                 <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
               </FormControl>
-              <FormDescription>Paste a YouTube link. It will be embedded on your service page.</FormDescription>
+              <FormDescription>{tr(locale, 'form.help.videoUrl')}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
         <FormItem>
-          <FormLabel>Service Images (1-8)</FormLabel>
+          <FormLabel>{tr(locale, 'form.images.label')}</FormLabel>
           <FormControl>
             <div className="flex w-full items-center justify-center">
               <label
@@ -774,11 +771,10 @@ export function ServiceForm() {
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <UploadCloud className="w-8 h-8 mb-3 text-muted-foreground"/>
                   <p className="mb-2 text-sm text-muted-foreground">
-                    <span className="font-semibold">Click to upload</span> or
-                    drag and drop
+                    <span className="font-semibold">{tr(locale, 'form.actions.clickToUpload')}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    PNG, JPG, or WebP (MAX. 8 images)
+                    {tr(locale, 'form.help.imageTypes')}
                   </p>
                 </div>
                 <Input
@@ -796,18 +792,20 @@ export function ServiceForm() {
             </div>
           </FormControl>
           <FormDescription>
-            The first image will be the main cover image for your service.
+            {tr(locale, 'form.help.coverImage')}
           </FormDescription>
           {selectedFiles.length > 0 && (
             <div className="pt-2 text-sm text-muted-foreground">
-              Selected {selectedFiles.length} file(s): {selectedFiles.map(f => f.name).join(', ')}
+              {tr(locale, 'form.images.selectedCount')
+                .replace('{count}', String(selectedFiles.length))
+                .replace('{names}', selectedFiles.map(f => f.name).join(', '))}
             </div>
           )}
         </FormItem>
 
         <Button type="submit" size="lg" disabled={submitting}>
           {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Create Service
+          {tr(locale, 'form.actions.createService')}
         </Button>
       </form>
     </Form>

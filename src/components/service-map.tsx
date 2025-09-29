@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
+import { getClientLocale, tr } from '@/lib/i18n';
 
 // Dynamically import react-leaflet components on client only to avoid double-initialization
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
@@ -23,7 +24,8 @@ export type ServiceMapProps = {
 export default function ServiceMap({ lat, lng, title, area, city, zoom = 14 }: ServiceMapProps) {
   const center = useMemo(() => [lat, lng] as [number, number], [lat, lng]);
   const [mounted, setMounted] = useState(false);
-  const mapKey = useMemo(() => `${lat}-${lng}-${zoom}`, [lat, lng, zoom]);
+  // Unique key per mounted instance to avoid React Strict Mode double-mount container reuse
+  const instanceKeyRef = useRef<string>(`map-${Math.random().toString(36).slice(2)}`);
   const provider = (process.env.NEXT_PUBLIC_MAP_PROVIDER || 'osm').toLowerCase();
   const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const prefersGoogle = provider === 'google' && !!googleKey;
@@ -31,6 +33,7 @@ export default function ServiceMap({ lat, lng, title, area, city, zoom = 14 }: S
   const gMapRef = useRef<any>(null);
   const gMarkerRef = useRef<any>(null);
   const [googleReady, setGoogleReady] = useState(false);
+  const locale = getClientLocale();
 
   // Leaflet extras for the free map
   const markerIcon = useMemo(() => {
@@ -109,11 +112,21 @@ export default function ServiceMap({ lat, lng, title, area, city, zoom = 14 }: S
   }, [prefersGoogle, googleReady, lat, lng, zoom, title, area, city]);
 
   return (
-    <div className="relative w-full h-72 rounded-lg overflow-hidden border">
+    <div key={`${instanceKeyRef.current}-${prefersGoogle ? 'g' : 'l'}`} className="relative w-full h-72 rounded-lg overflow-hidden border">
       {mounted && prefersGoogle ? (
         <div ref={mapDivRef} className="h-full w-full" />
       ) : mounted && (
-        <MapContainer key={mapKey} center={center} zoom={zoom} className="h-full w-full" scrollWheelZoom={false}>
+        <MapContainer
+          key={instanceKeyRef.current}
+          center={center}
+          zoom={zoom}
+          className="h-full w-full"
+          scrollWheelZoom={false}
+          whenReady={(e: any) => {
+            // Ensure Leaflet computes pane positions after mount
+            setTimeout(() => e.target.invalidateSize(), 0);
+          }}
+        >
           <TileLayer attribution={tileAttrib} url={tileUrl} />
           <ScaleControl position="bottomleft" />
           <Marker position={center as any} icon={markerIcon as any}>
@@ -128,7 +141,7 @@ export default function ServiceMap({ lat, lng, title, area, city, zoom = 14 }: S
                     target="_blank"
                     rel="noreferrer"
                   >
-                    View on OpenStreetMap
+                    {tr(locale, 'form.map.openInOSM')}
                   </a>
                 </div>
               </div>
@@ -138,7 +151,7 @@ export default function ServiceMap({ lat, lng, title, area, city, zoom = 14 }: S
       )}
       {provider !== 'google' && process.env.NODE_ENV !== 'production' && (
         <div className="pointer-events-none absolute bottom-2 right-2 rounded bg-background/80 px-2 py-1 text-xs text-muted-foreground shadow">
-          Using OpenStreetMap (free)
+          {tr(locale, 'map.usingOSMBadge')}
         </div>
       )}
     </div>

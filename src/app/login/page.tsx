@@ -32,6 +32,7 @@ import { signUp, signIn, resetPassword } from '@/lib/auth';
 import { getUserProfile, createUserProfile, UserProfile, UserRole } from '@/lib/user';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import { getClientLocale, tr } from '@/lib/i18n';
 
 const signUpSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -55,6 +56,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
   const [resetting, setResetting] = useState(false);
+  const locale = getClientLocale();
 
 
   const signUpForm = useForm<SignUpFormData>({
@@ -101,8 +103,8 @@ export default function LoginPage() {
       if (userCredential.user) {
         await createUserProfile(userCredential.user.uid, data.email, data.role as UserRole);
         toast({
-          title: 'Account Created',
-          description: 'You have been successfully signed up.',
+          title: tr(locale, 'login.toasts.accountCreatedTitle'),
+          description: tr(locale, 'login.toasts.accountCreatedDesc'),
         });
         await handleRedirect(userCredential.user);
       }
@@ -113,14 +115,14 @@ export default function LoginPage() {
         signInForm.setValue('email', data.email, { shouldValidate: true });
         toast({
           variant: 'destructive',
-          title: 'Email already in use',
-          description: 'We switched you to Sign In. If you forgot your password, click "Forgot password?"',
+          title: tr(locale, 'login.toasts.emailInUseTitle'),
+          description: tr(locale, 'login.toasts.emailInUseDesc'),
         });
       } else {
         toast({
           variant: 'destructive',
-          title: 'Sign Up Failed',
-          description: error?.message || 'An unexpected error occurred.',
+          title: tr(locale, 'login.toasts.signUpFailedTitle'),
+          description: error?.message || tr(locale, 'login.toasts.signUpFailedDesc'),
         });
       }
     } finally {
@@ -133,15 +135,15 @@ export default function LoginPage() {
     try {
       const userCredential = await signIn(data.email, data.password);
       toast({
-        title: 'Signed In',
-        description: 'You have been successfully signed in.',
+        title: tr(locale, 'login.toasts.signedInTitle'),
+        description: tr(locale, 'login.toasts.signedInDesc'),
       });
       await handleRedirect(userCredential.user);
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Sign In Failed',
-        description: error.message || 'An unexpected error occurred.',
+        title: tr(locale, 'login.tabs.signin'),
+        description: error?.message || tr(locale, 'login.toasts.signUpFailedDesc'),
       });
     } finally {
       setLoading(false);
@@ -158,16 +160,16 @@ export default function LoginPage() {
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Welcome</CardTitle>
+          <CardTitle>{tr(locale, 'login.welcome')}</CardTitle>
           <CardDescription>
-            Sign in or create an account to continue
+            {tr(locale, 'login.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin">{tr(locale, 'login.tabs.signin')}</TabsTrigger>
+              <TabsTrigger value="signup">{tr(locale, 'login.tabs.signup')}</TabsTrigger>
             </TabsList>
             <TabsContent value="signin">
               <Form {...signInForm}>
@@ -180,11 +182,11 @@ export default function LoginPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>{tr(locale, 'login.fields.email')}</FormLabel>
                         <FormControl>
                           <Input
                             type="email"
-                            placeholder="your@email.com"
+                            placeholder={tr(locale, 'login.fields.email')}
                             {...field}
                             disabled={loading}
                           />
@@ -198,11 +200,11 @@ export default function LoginPage() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel>{tr(locale, 'login.fields.password')}</FormLabel>
                         <FormControl>
                           <Input
                             type="password"
-                            placeholder="********"
+                            placeholder={tr(locale, 'login.fields.password')}
                             {...field}
                             disabled={loading}
                           />
@@ -221,8 +223,8 @@ export default function LoginPage() {
                         if (!email) {
                           toast({
                             variant: 'destructive',
-                            title: 'Email required',
-                            description: 'Enter your email, then click Forgot password.',
+                            title: tr(locale, 'login.toasts.emailRequiredTitle'),
+                            description: tr(locale, 'login.toasts.emailRequiredDesc'),
                           });
                           return;
                         }
@@ -230,14 +232,14 @@ export default function LoginPage() {
                           setResetting(true);
                           await resetPassword(email);
                           toast({
-                            title: 'Password reset sent',
-                            description: 'Check your email for a reset link.',
+                            title: tr(locale, 'login.toasts.resetSentTitle'),
+                            description: tr(locale, 'login.toasts.resetSentDesc'),
                           });
                         } catch (err: any) {
                           toast({
                             variant: 'destructive',
-                            title: 'Reset failed',
-                            description: err?.message || 'Could not send reset email.',
+                            title: tr(locale, 'login.toasts.resetFailedTitle'),
+                            description: err?.message || tr(locale, 'login.toasts.resetFailedDesc'),
                           });
                         } finally {
                           setResetting(false);
@@ -245,12 +247,12 @@ export default function LoginPage() {
                       }}
                       disabled={loading || resetting}
                     >
-                      Forgot password?
+                      {tr(locale, 'login.actions.forgot')}
                     </Button>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {isSigningIn && <Loader2 className="mr-2 animate-spin" />}
-                    Sign In
+                    {tr(locale, 'login.actions.signIn')}
                   </Button>
                 </form>
               </Form>
@@ -266,11 +268,11 @@ export default function LoginPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>{tr(locale, 'login.fields.email')}</FormLabel>
                         <FormControl>
                           <Input
                             type="email"
-                            placeholder="your@email.com"
+                            placeholder={tr(locale, 'login.fields.email')}
                             {...field}
                             disabled={loading}
                           />
@@ -284,11 +286,11 @@ export default function LoginPage() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel>{tr(locale, 'login.fields.password')}</FormLabel>
                         <FormControl>
                           <Input
                             type="password"
-                            placeholder="********"
+                            placeholder={tr(locale, 'login.fields.password')}
                             {...field}
                             disabled={loading}
                           />
@@ -302,7 +304,7 @@ export default function LoginPage() {
                     name="role"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel>I am a...</FormLabel>
+                        <FormLabel>{tr(locale, 'login.fields.roleLabel')}</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -315,7 +317,7 @@ export default function LoginPage() {
                                 <RadioGroupItem value="seeker" />
                               </FormControl>
                               <FormLabel className="font-normal">
-                                Service Seeker (Looking for a professional)
+                                {tr(locale, 'login.fields.roleSeeker')}
                               </FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center space-x-3 space-y-0">
@@ -323,7 +325,7 @@ export default function LoginPage() {
                                 <RadioGroupItem value="provider" />
                               </FormControl>
                               <FormLabel className="font-normal">
-                                Service Provider (Offering my services)
+                                {tr(locale, 'login.fields.roleProvider')}
                               </FormLabel>
                             </FormItem>
                           </RadioGroup>
@@ -334,7 +336,7 @@ export default function LoginPage() {
                   />
                   <Button type="submit" className="w-full" disabled={loading}>
                     {isSigningUp && <Loader2 className="mr-2 animate-spin" />}
-                    Create Account
+                    {tr(locale, 'login.actions.signUp')}
                   </Button>
                 </form>
               </Form>

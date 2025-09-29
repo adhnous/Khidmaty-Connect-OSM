@@ -2,7 +2,7 @@
 import { db } from './firebase';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
-export type UserRole = 'seeker' | 'provider';
+export type UserRole = 'seeker' | 'provider' | 'admin' | 'owner';
 
 export interface UserProfile {
   uid: string;

@@ -9,12 +9,14 @@ import dynamic from 'next/dynamic';
 import { deleteField } from 'firebase/firestore';
 import L from 'leaflet';
 import { useMapEvents } from 'react-leaflet';
+import { reverseGeocodeNominatim, getLangFromDocument } from '@/lib/geocode';
 
 import { getServiceById, updateService, type Service, type ServiceImage } from '@/lib/services';
 import { serviceSchema } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
+import { getClientLocale, tr } from '@/lib/i18n';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -59,6 +61,7 @@ export default function EditServicePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+  const locale = getClientLocale();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -86,7 +89,7 @@ export default function EditServicePage() {
   // Require sign-in to edit
   useEffect(() => {
     if (!authLoading && !user) {
-      toast({ variant: 'destructive', title: 'Please sign in', description: 'You must be signed in to edit a service.' });
+      toast({ variant: 'destructive', title: tr(locale, 'form.toasts.pleaseSignInTitle'), description: tr(locale, 'form.toasts.pleaseSignInDesc') });
       router.push('/login');
     }
   }, [authLoading, user, router, toast]);
@@ -102,7 +105,7 @@ export default function EditServicePage() {
       }
       // Optional: Only allow the owner to edit
       if (user && (doc as Service).providerId && (doc as Service).providerId !== user.uid) {
-        toast({ variant: 'destructive', title: 'Not allowed', description: 'You can only edit your own service.' });
+        toast({ variant: 'destructive', title: tr(locale, 'dashboard.serviceForm.notAllowedTitle'), description: tr(locale, 'dashboard.serviceForm.notAllowedDesc') });
         router.push('/dashboard/services');
         return;
       }
@@ -143,28 +146,18 @@ export default function EditServicePage() {
   const tileUrl = process.env.NEXT_PUBLIC_OSM_TILE_URL || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
   const tileAttrib = process.env.NEXT_PUBLIC_OSM_ATTRIBUTION || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-  // Reverse geocode selected point to show human-readable address (free Nominatim)
+  // Reverse geocode selected point to show human-readable address (free, cached)
   useEffect(() => {
-    let abort = false;
-    async function run() {
-      if (typeof lat !== 'number' || typeof lng !== 'number') { setSelectedAddress(''); return; }
-      try {
-        const lang = (document.documentElement.getAttribute('lang') || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
-        const url = new URL('https://nominatim.openstreetmap.org/reverse');
-        url.searchParams.set('format', 'jsonv2');
-        url.searchParams.set('lat', String(lat));
-        url.searchParams.set('lon', String(lng));
-        url.searchParams.set('accept-language', lang);
-        const res = await fetch(url.toString(), { headers: { 'Accept-Language': lang } });
-        if (!res.ok) throw new Error('reverse failed');
-        const data = await res.json();
-        if (!abort) setSelectedAddress(data.display_name || '');
-      } catch {
-        if (!abort) setSelectedAddress('');
-      }
-    }
-    void run();
-    return () => { abort = true; };
+    if (typeof lat !== 'number' || typeof lng !== 'number') { setSelectedAddress(''); return; }
+    const ac = new AbortController();
+    const lang = getLangFromDocument();
+    reverseGeocodeNominatim(lat, lng, lang, ac.signal)
+      .then((r) => setSelectedAddress(r.displayName))
+      .catch((e) => {
+        if ((e as any)?.name === 'AbortError') return;
+        setSelectedAddress('');
+      });
+    return () => ac.abort();
   }, [lat, lng]);
 
   // Keep lat/lng synced to the map center when zooming or panning (edit form)
@@ -257,9 +250,9 @@ export default function EditServicePage() {
         added = dataUrls.map((u) => ({ url: u }));
       }
       setImages((prev) => [...prev, ...added]);
-      toast({ title: 'Images added' });
+      toast({ title: tr(locale, 'form.toasts.imagesAdded') });
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Add images failed', description: e?.message || 'Please try again.' });
+      toast({ variant: 'destructive', title: tr(locale, 'form.toasts.addImagesFailed'), description: e?.message || '' });
     }
   }
 
@@ -278,17 +271,17 @@ export default function EditServicePage() {
         next = { url };
       }
       setImages((prev) => prev.map((it, i) => (i === index ? next : it)));
-      toast({ title: 'Image replaced' });
+      toast({ title: tr(locale, 'form.toasts.imageReplaced') });
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Replace failed', description: e?.message || 'Please try again.' });
+      toast({ variant: 'destructive', title: tr(locale, 'form.toasts.replaceFailed'), description: e?.message || '' });
     }
   }
 
   function handleReplaceUrl(index: number) {
-    const url = window.prompt('Paste new image URL');
+    const url = window.prompt(tr(locale, 'form.images.pasteUrlPlaceholder'));
     if (!url) return;
     setImages((prev) => prev.map((it, i) => (i === index ? { url } : it)));
-    toast({ title: 'Image replaced' });
+    toast({ title: tr(locale, 'form.toasts.imageReplaced') });
   }
 
   function moveImage(index: number, delta: number) {
@@ -316,7 +309,7 @@ export default function EditServicePage() {
 
   function handleUseMyLocation() {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
-      toast({ variant: 'destructive', title: 'Geolocation not available', description: 'Your browser does not support geolocation.' });
+      toast({ variant: 'destructive', title: tr(locale, 'form.geo.notAvailableTitle'), description: tr(locale, 'form.geo.notAvailableDesc') });
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -325,10 +318,10 @@ export default function EditServicePage() {
         const ln = Number(pos.coords.longitude.toFixed(6));
         setLat(la);
         setLng(ln);
-        toast({ title: 'Location set', description: `${la}, ${ln}` });
+        toast({ title: tr(locale, 'form.geo.setTitle'), description: `${la}, ${ln}` });
       },
       (err) => {
-        toast({ variant: 'destructive', title: 'Could not get location', description: err?.message || 'Permission denied' });
+        toast({ variant: 'destructive', title: tr(locale, 'form.geo.couldNotGetTitle'), description: err?.message || tr(locale, 'form.geo.couldNotGetDesc') });
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -356,25 +349,25 @@ export default function EditServicePage() {
       if (typeof data.videoUrl === 'string' && data.videoUrl.trim()) payload.videoUrl = data.videoUrl.trim(); else payload.videoUrl = deleteField();
 
       await updateService(id, payload);
-      toast({ title: 'Service updated' });
+      toast({ title: tr(locale, 'form.toasts.updateSuccess') });
       router.push(`/services/${id}`);
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Update failed', description: err?.message || 'Please try again.' });
+      toast({ variant: 'destructive', title: tr(locale, 'form.toasts.updateFailedTitle'), description: err?.message || '' });
     } finally {
       setSubmitting(false);
     }
   }
 
   if (loading) {
-    return <p className="text-muted-foreground">Loading…</p>;
+    return <p className="text-muted-foreground">{tr(locale, 'dashboard.services.loading')}</p>;
   }
 
   return (
     <div className="mx-auto max-w-4xl">
       <Card>
         <CardHeader>
-          <CardTitle>Edit service</CardTitle>
-          <CardDescription>Update your listing information.</CardDescription>
+          <CardTitle>{tr(locale, 'dashboard.serviceForm.editTitle')}</CardTitle>
+          <CardDescription>{tr(locale, 'dashboard.serviceForm.editSubtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -384,7 +377,7 @@ export default function EditServicePage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Service Title</FormLabel>
+                    <FormLabel>{tr(locale, 'form.labels.title')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -397,7 +390,7 @@ export default function EditServicePage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>{tr(locale, 'form.labels.description')}</FormLabel>
                     <FormControl>
                       <Textarea className="min-h-[150px]" {...field} />
                     </FormControl>
@@ -411,11 +404,11 @@ export default function EditServicePage() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>{tr(locale, 'form.labels.category')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
+                            <SelectValue placeholder={tr(locale, 'form.labels.category')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -433,7 +426,7 @@ export default function EditServicePage() {
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price (in LYD)</FormLabel>
+                      <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
@@ -448,7 +441,7 @@ export default function EditServicePage() {
                 name="videoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>YouTube Video URL (optional)</FormLabel>
+                    <FormLabel>{tr(locale, 'form.labels.videoUrl')}</FormLabel>
                     <FormControl>
                       <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
                     </FormControl>
@@ -466,7 +459,7 @@ export default function EditServicePage() {
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a city" />
+                            <SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -484,7 +477,7 @@ export default function EditServicePage() {
                   name="area"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Area / Neighborhood</FormLabel>
+                      <FormLabel>{tr(locale, 'form.labels.area')}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -498,7 +491,7 @@ export default function EditServicePage() {
                 name="availabilityNote"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Availability Note (optional)</FormLabel>
+                    <FormLabel>{tr(locale, 'form.labels.availabilityNote')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -512,7 +505,7 @@ export default function EditServicePage() {
                   name="contactPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Phone</FormLabel>
+                      <FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., +218911234567" {...field} />
                       </FormControl>
@@ -525,7 +518,7 @@ export default function EditServicePage() {
                   name="contactWhatsapp"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>WhatsApp Number</FormLabel>
+                      <FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., +218911234567" {...field} />
                       </FormControl>
@@ -536,10 +529,10 @@ export default function EditServicePage() {
               </div>
 
               <div className="space-y-3">
-                <FormLabel>Location (optional)</FormLabel>
+                <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
                 <AddressSearch
                   className="max-w-md"
-                  placeholder="Search address or place (free)"
+                  placeholder={tr(locale, 'form.placeholders.searchAddress')}
                   countryCodes="ly"
                   onSelect={({ lat, lng }) => {
                     setLat(Number(lat.toFixed(6)));
@@ -548,7 +541,7 @@ export default function EditServicePage() {
                 />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div>
-                    <FormLabel className="text-xs">Latitude</FormLabel>
+                    <FormLabel className="text-xs">{tr(locale, 'form.labels.latitude')}</FormLabel>
                     <Input
                       placeholder="e.g., 32.8872"
                       value={lat ?? ''}
@@ -559,7 +552,7 @@ export default function EditServicePage() {
                     />
                   </div>
                   <div>
-                    <FormLabel className="text-xs">Longitude</FormLabel>
+                    <FormLabel className="text-xs">{tr(locale, 'form.labels.longitude')}</FormLabel>
                     <Input
                       placeholder="e.g., 13.1913"
                       value={lng ?? ''}
@@ -575,7 +568,7 @@ export default function EditServicePage() {
                       variant="outline"
                       onClick={handleUseMyLocation}
                     >
-                      Use my location
+                      {tr(locale, 'form.actions.useMyLocation')}
                     </Button>
                     <Button
                       type="button"
@@ -585,7 +578,7 @@ export default function EditServicePage() {
                         setLng(undefined);
                       }}
                     >
-                      Clear location
+                      {tr(locale, 'form.actions.clearLocation')}
                     </Button>
                   </div>
                 </div>
@@ -605,8 +598,9 @@ export default function EditServicePage() {
                       zoom={13}
                       className="h-full w-full cursor-crosshair"
                       scrollWheelZoom={true}
-                      whenReady={(m: any) => {
-                        // no-op, but ensures first render happens after mount
+                      whenReady={(e: any) => {
+                        // Ensure proper pane positions after mount/layout
+                        setTimeout(() => e.target.invalidateSize(), 0);
                       }}
                       onClick={(e: any) => {
                         const { lat: la, lng: ln } = e.latlng || {};
@@ -632,15 +626,15 @@ export default function EditServicePage() {
                             },
                           }}
                         >
-                          <Popup>Selected location</Popup>
+                          <Popup>{tr(locale, 'form.map.selected')}</Popup>
                         </Marker>
                       )}
                     </MapContainer>
                     <div className="px-2 py-1 text-xs text-muted-foreground">
                       {lat != null && lng != null ? (
-                        <span>Selected: {lat.toFixed(6)}, {lng.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}</span>
+                        <span>{tr(locale, 'form.map.selected')}: {lat.toFixed(6)}, {lng.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}</span>
                       ) : (
-                        <span>Click on the map to set a precise location.</span>
+                        <span>{tr(locale, 'form.map.clickToSet')}</span>
                       )}
                     </div>
                   </div>
@@ -648,7 +642,7 @@ export default function EditServicePage() {
               </div>
 
               <div className="space-y-3">
-                <FormLabel>Images</FormLabel>
+                <FormLabel>{tr(locale, 'form.images.label')}</FormLabel>
                 <div className="flex flex-wrap gap-3">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
                     <input
@@ -658,15 +652,15 @@ export default function EditServicePage() {
                       className="hidden"
                       onChange={(e) => handleAddFiles(Array.from(e.target.files ?? []))}
                     />
-                    Add files
+                    {tr(locale, 'form.images.addFiles')}
                   </label>
                   <div className="flex items-center gap-2">
                     <Input
-                      placeholder="Paste image URL"
+                      placeholder={tr(locale, 'form.images.pasteUrlPlaceholder')}
                       value={newImageUrl}
                       onChange={(e) => setNewImageUrl(e.target.value)}
                     />
-                    <Button type="button" variant="outline" onClick={handleAddUrl}>Add URL</Button>
+                    <Button type="button" variant="outline" onClick={handleAddUrl}>{tr(locale, 'form.images.addUrl')}</Button>
                   </div>
                 </div>
 
@@ -683,8 +677,8 @@ export default function EditServicePage() {
                         />
                         <div className="flex items-center justify-between gap-2 p-2">
                           <div className="flex gap-1">
-                            <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, -1)} disabled={i === 0}>Up</Button>
-                            <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1}>Down</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, -1)} disabled={i === 0}>{tr(locale, 'form.images.moveUp')}</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1}>{tr(locale, 'form.images.moveDown')}</Button>
                           </div>
                           <div className="flex gap-1">
                             <input
@@ -699,21 +693,21 @@ export default function EditServicePage() {
                                 e.currentTarget.value = '';
                               }}
                             />
-                            <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`replace-file-${i}`)?.click()}>Replace</Button>
-                            <Button type="button" variant="outline" size="sm" onClick={() => handleReplaceUrl(i)}>Replace URL</Button>
-                            <Button type="button" variant="destructive" size="sm" onClick={() => removeImage(i)}>Remove</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`replace-file-${i}`)?.click()}>{tr(locale, 'form.images.replace')}</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => handleReplaceUrl(i)}>{tr(locale, 'form.images.replaceUrl')}</Button>
+                            <Button type="button" variant="destructive" size="sm" onClick={() => removeImage(i)}>{tr(locale, 'form.images.remove')}</Button>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No images yet.</p>
+                  <p className="text-sm text-muted-foreground">{tr(locale, 'form.images.none')}</p>
                 )}
               </div>
 
               <Button type="submit" disabled={submitting}>
-                {submitting ? 'Saving…' : 'Save Changes'}
+                {submitting ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}
               </Button>
             </form>
           </Form>

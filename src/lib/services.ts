@@ -35,6 +35,7 @@ export type Service = {
   contactWhatsapp?: string;
   videoUrl?: string;
   providerId: string;
+  status?: 'pending' | 'approved' | 'rejected';
   // Optional geolocation for map; when absent, UI falls back to city centroid
   lat?: number;
   lng?: number;
@@ -57,7 +58,7 @@ export async function uploadServiceImages(
 
 export async function createService(data: Omit<Service, 'id' | 'createdAt'>) {
   const colRef = collection(db, 'services');
-  const payload = { ...data, createdAt: serverTimestamp() };
+  const payload = { ...data, status: 'pending', createdAt: serverTimestamp() };
   const docRef = await addDoc(colRef, payload);
   return docRef.id;
 }
@@ -71,7 +72,7 @@ export async function getServiceById(id: string): Promise<Service | null> {
 
 export async function listServices(count = 12): Promise<Service[]> {
   const colRef = collection(db, 'services');
-  const q = query(colRef, orderBy('createdAt', 'desc'), limit(count));
+  const q = query(colRef, where('status', '==', 'approved'), orderBy('createdAt', 'desc'), limit(count));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Service) }));
 }
@@ -123,6 +124,7 @@ export async function listServicesFiltered(filters: ListFilters = {}): Promise<S
   let q: any;
   try {
     const wheres: any[] = [];
+    wheres.push(where('status', '==', 'approved'));
     if (category) wheres.push(where('category', '==', category));
     if (city && city.toLowerCase() !== 'all cities') wheres.push(where('city', '==', city));
     if (typeof maxPrice === 'number') wheres.push(where('price', '<=', maxPrice));
@@ -133,6 +135,7 @@ export async function listServicesFiltered(filters: ListFilters = {}): Promise<S
     // Fallback 1: drop orderBy
     try {
       const wheres: any[] = [];
+      wheres.push(where('status', '==', 'approved'));
       if (category) wheres.push(where('category', '==', category));
       if (city && city.toLowerCase() !== 'all cities') wheres.push(where('city', '==', city));
       if (typeof maxPrice === 'number') wheres.push(where('price', '<=', maxPrice));

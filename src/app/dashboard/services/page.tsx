@@ -22,12 +22,14 @@ import { useEffect, useState } from 'react';
 import { listServicesByProvider, deleteService, createService, type Service } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { getClientLocale, tr } from '@/lib/i18n';
 
 export default function MyServicesPage() {
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const locale = getClientLocale();
 
   useEffect(() => {
     (async () => {
@@ -44,14 +46,14 @@ export default function MyServicesPage() {
 
   const handleDelete = async (id?: string) => {
     if (!id) return;
-    const ok = window.confirm('Delete this service? This cannot be undone.');
+    const ok = window.confirm(tr(locale, 'dashboard.services.confirmDelete'));
     if (!ok) return;
     try {
       await deleteService(id);
       setServices(prev => prev.filter(s => s.id !== id));
-      toast({ title: 'Service deleted' });
+      toast({ title: tr(locale, 'dashboard.services.toast.deleted') });
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Delete failed', description: err?.message || 'Please try again.' });
+      toast({ variant: 'destructive', title: tr(locale, 'dashboard.services.toast.deleteFailed'), description: err?.message || '' });
     }
   };
 
@@ -106,9 +108,9 @@ export default function MyServicesPage() {
       }
       const data = await listServicesByProvider(user.uid);
       setServices(data);
-      toast({ title: 'Sample services created' });
+      toast({ title: tr(locale, 'dashboard.services.toast.seeded') });
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Seeding failed', description: err?.message || 'Please try again.' });
+      toast({ variant: 'destructive', title: tr(locale, 'dashboard.services.toast.seedFailed'), description: err?.message || '' });
     } finally {
       setLoading(false);
     }
@@ -118,38 +120,38 @@ export default function MyServicesPage() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>My Services</CardTitle>
+          <CardTitle>{tr(locale, 'dashboard.services.title')}</CardTitle>
           <CardDescription>
-            View and manage all your service listings.
+            {tr(locale, 'dashboard.services.subtitle')}
           </CardDescription>
         </div>
         <div className="flex gap-2">
           <Button asChild size="sm">
-            <Link href="/dashboard/services/new">New Service</Link>
+            <Link href="/dashboard/services/new">{tr(locale, 'dashboard.services.newService')}</Link>
           </Button>
-          <Button variant="outline" size="sm" onClick={seedSampleServices}>Seed samples</Button>
+          <Button variant="outline" size="sm" onClick={seedSampleServices}>{tr(locale, 'dashboard.services.seedSamples')}</Button>
         </div>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-muted-foreground">Loading…</p>
+          <p className="text-muted-foreground">{tr(locale, 'dashboard.services.loading')}</p>
         ) : services.length === 0 ? (
           <div className="text-muted-foreground">
-            <p>You have no services yet.</p>
+            <p>{tr(locale, 'dashboard.services.emptyTitle')}</p>
             <Button asChild className="mt-3 mr-3">
-              <Link href="/dashboard/services/new">Create your first service</Link>
+              <Link href="/dashboard/services/new">{tr(locale, 'dashboard.services.createFirst')}</Link>
             </Button>
-            <Button variant="outline" onClick={seedSampleServices} className="mt-3">Seed sample services</Button>
+            <Button variant="outline" onClick={seedSampleServices} className="mt-3">{tr(locale, 'dashboard.services.seedSampleServices')}</Button>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>City</TableHead>
-                <TableHead>Price (LYD)</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{tr(locale, 'dashboard.services.table.headers.title')}</TableHead>
+                <TableHead>{tr(locale, 'dashboard.services.table.headers.category')}</TableHead>
+                <TableHead>{tr(locale, 'dashboard.services.table.headers.city')}</TableHead>
+                <TableHead>{tr(locale, 'dashboard.services.table.headers.price')}</TableHead>
+                <TableHead>{tr(locale, 'dashboard.services.table.headers.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -163,13 +165,13 @@ export default function MyServicesPage() {
                   <TableCell>{service.price}</TableCell>
                   <TableCell className="space-x-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/services/${service.id}`}>View</Link>
+                      <Link href={`/services/${service.id}`}>{tr(locale, 'dashboard.services.actions.view')}</Link>
                     </Button>
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/services/${service.id}/edit`}>Edit</Link>
+                      <Link href={`/dashboard/services/${service.id}/edit`}>{tr(locale, 'dashboard.services.actions.edit')}</Link>
                     </Button>
                     <Button variant="destructive" size="sm" onClick={() => handleDelete(service.id)}>
-                      Delete
+                      {tr(locale, 'dashboard.services.actions.delete')}
                     </Button>
                   </TableCell>
                 </TableRow>

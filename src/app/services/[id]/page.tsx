@@ -1,6 +1,4 @@
 "use client";
-
-import Image from 'next/image';
 import {
   Calendar,
   MapPin,
@@ -13,20 +11,17 @@ import { Header } from '@/components/layout/header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from '@/components/ui/carousel';
+import MediaGallery from '@/components/media-gallery';
+import StarRating from '@/components/star-rating';
+import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getServiceById, type Service } from '@/lib/services';
 import ServiceMap from '@/components/service-map';
-import { transformCloudinary } from '@/lib/images';
+import { listReviewsByService, getUserReviewForService, upsertReview, deleteMyReview, type Review } from '@/lib/reviews';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 import { getClientLocale, tr } from '@/lib/i18n';
 
 export default function ServiceDetailPage() {
@@ -35,8 +30,13 @@ export default function ServiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
   const locale = getClientLocale();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [myRating, setMyRating] = useState<number>(0);
+  const [myText, setMyText] = useState<string>('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const raw = (params as any)?.id as string | string[] | undefined;
@@ -103,15 +103,7 @@ export default function ServiceDetailPage() {
     })();
   }, [params]);
 
-  // Auto-advance carousel every 10 seconds
-  useEffect(() => {
-    if (!carouselApi) return;
-    const id = setInterval(() => {
-      if (carouselApi.canScrollNext()) carouselApi.scrollNext();
-      else carouselApi.scrollTo(0);
-    }, 10000);
-    return () => clearInterval(id);
-  }, [carouselApi]);
+  // no-op: carousel replaced by MediaGallery
 
   const whatsappLink = useMemo(() => {
     const number = (service as any)?.contactWhatsapp || (service as any)?.contactPhone;
@@ -121,6 +113,95 @@ export default function ServiceDetailPage() {
       `Hello, I'm interested in your '${service.title}' service.`
     )}`;
   }, [service]);
+
+  // Load reviews once service is ready (skip for demo services)
+  useEffect(() => {
+    (async () => {
+      if (!service || service.providerId === 'demo') return;
+      try {
+        const list = await listReviewsByService(service.id!);
+        setReviews(list);
+      } catch {}
+    })();
+  }, [service?.id]);
+
+  // Load my review if signed in
+  useEffect(() => {
+    (async () => {
+      if (!service || !user || service.providerId === 'demo') return;
+      try {
+        const mine = await getUserReviewForService(service.id!, user.uid);
+        if (mine) {
+          setMyRating(mine.rating || 0);
+          setMyText(mine.text || '');
+        } else {
+          setMyRating(0);
+          setMyText('');
+        }
+      } catch {}
+    })();
+  }, [service?.id, user?.uid]);
+
+  const avgRating = useMemo(() => {
+    if (!reviews.length) return 0;
+    return reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length;
+  }, [reviews]);
+
+  const isOwner = useMemo(() => {
+    return !!(user && service && service.providerId === user.uid);
+  }, [user?.uid, service?.providerId]);
+
+  // Track a view when the service loads (skip demo services)
+  useEffect(() => {
+    if (!service || !service.id || service.providerId === 'demo') return;
+    const controller = new AbortController();
+    const ref = typeof document !== 'undefined' ? document.referrer || null : null;
+    const city = service.city || null;
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'service_view', serviceId: service.id, city, ref }),
+      signal: controller.signal,
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [service?.id]);
+
+  async function handleSaveReview() {
+    if (!service || !user) return;
+    if (myRating < 1) {
+      toast({ variant: 'destructive', title: tr(locale, 'reviews.toasts.requiredRating') });
+      return;
+    }
+    try {
+      setSaving(true);
+      await upsertReview({ serviceId: service.id!, authorId: user.uid, rating: myRating, text: myText.slice(0, 1000) });
+      // Refresh list and my state
+      const list = await listReviewsByService(service.id!);
+      setReviews(list);
+      toast({ title: tr(locale, 'reviews.toasts.saved') });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: tr(locale, 'reviews.toasts.saveFailed'), description: e?.message || '' });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteReview() {
+    if (!service || !user) return;
+    try {
+      setSaving(true);
+      await deleteMyReview(service.id!, user.uid);
+      const list = await listReviewsByService(service.id!);
+      setReviews(list);
+      setMyRating(0);
+      setMyText('');
+      toast({ title: tr(locale, 'reviews.toasts.deleted') });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: tr(locale, 'reviews.toasts.deleteFailed'), description: e?.message || '' });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const coords = useMemo(() => {
     if (service?.lat != null && service?.lng != null) {
@@ -198,37 +279,28 @@ export default function ServiceDetailPage() {
           {!loading && service && (
           <>
           <div className="md:col-span-2">
-            <Carousel className="mb-8 w-full overflow-hidden rounded-lg border" opts={{ loop: true }} setApi={setCarouselApi}>
-              <CarouselContent>
-                {(service.images && service.images.length > 0 ? service.images : [{ url: 'https://placehold.co/800x600.png' }]).map((img, index) => (
-                  <CarouselItem key={index}>
-                    <Image
-                      src={transformCloudinary(img.url, { w: 1000, q: 'auto' })}
-                      alt={`${service.title} - image ${index + 1}`}
-                      width={800}
-                      height={600}
-                      className="aspect-video w-full object-cover"
-                      data-ai-hint={(img as any).hint}
-                    />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-4" />
-              <CarouselNext className="right-4" />
-            </Carousel>
+            <MediaGallery
+              title={service.title}
+              images={service.images || []}
+              videoEmbedUrl={videoEmbedUrl}
+            />
 
             <h1 className="mb-4 text-3xl font-bold font-headline md:text-4xl">
               {service.title}
             </h1>
             <div className="mb-6 flex flex-wrap items-center gap-4 text-muted-foreground">
               <Badge variant="secondary" className="text-base">
-                {service.category}
+                {tr(locale, `categories.${service.category}`)}
               </Badge>
               <div className="flex items-center gap-1.5">
                 <MapPin className="h-5 w-5" />
                 <span>
                   {service.city}, {service.area}
                 </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <StarRating value={Math.round(avgRating)} readOnly size="md" />
+                <span className="text-sm">({reviews.length})</span>
               </div>
             </div>
 
@@ -238,24 +310,6 @@ export default function ServiceDetailPage() {
             <p className="whitespace-pre-wrap text-lg text-foreground/80">
               {service.description}
             </p>
-
-            {videoEmbedUrl && (
-              <>
-                <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
-                  {tr(locale, 'details.video')}
-                </h2>
-                <div className="aspect-video w-full overflow-hidden rounded-lg border">
-                  <iframe
-                    src={videoEmbedUrl}
-                    className="h-full w-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title={`${service.title} - video`}
-                  />
-                </div>
-              </>
-            )}
 
             <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
               {tr(locale, 'details.availability')}
@@ -285,6 +339,70 @@ export default function ServiceDetailPage() {
                 </div>
               </>
             )}
+
+            {/* Reviews & Ratings */}
+            <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
+              {tr(locale, 'details.reviews')}
+            </h2>
+            <div className="mb-3 flex items-center gap-3">
+              <StarRating value={Math.round(avgRating)} readOnly size="lg" />
+              <span className="text-sm text-muted-foreground">({reviews.length})</span>
+            </div>
+            {reviews.length > 0 ? (
+              <div className="space-y-3">
+                {reviews.map((r, idx) => (
+                  <div key={r.id || idx} className="rounded border bg-background p-3">
+                    <StarRating value={r.rating || 0} readOnly size="sm" />
+                    {r.text ? (
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/80">{r.text}</p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.empty')}</p>
+            )}
+
+            {/* Review form */}
+            <div className="mt-4">
+              {isOwner ? (
+                <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.ownerBlocked')}</p>
+              ) : (
+                <div className="rounded border bg-background p-4">
+                  <label className="mb-2 block text-sm font-medium">{tr(locale, 'reviews.ratingLabel')}</label>
+                  <StarRating value={myRating} onChange={user ? setMyRating : undefined} size="lg" />
+                  {!user && (
+                    <p className="mt-2 text-xs text-muted-foreground">{tr(locale, 'reviews.signInPrompt')}</p>
+                  )}
+                  <label className="mb-2 mt-4 block text-sm font-medium">{tr(locale, 'reviews.writeReview')}</label>
+                  <Textarea
+                    value={myText}
+                    onChange={(e) => user && setMyText(e.target.value)}
+                    placeholder={tr(locale, 'reviews.placeholder')}
+                    className="min-h-[100px]"
+                    disabled={!user}
+                  />
+                  <div className="mt-3 flex gap-2">
+                    {user ? (
+                      <>
+                        <Button onClick={handleSaveReview} disabled={saving}>
+                          {tr(locale, myRating > 0 ? 'reviews.update' : 'reviews.submit')}
+                        </Button>
+                        {reviews.some((r) => r.id === user.uid || (r as any).authorId === user.uid) && (
+                          <Button variant="outline" onClick={handleDeleteReview} disabled={saving}>
+                            {tr(locale, 'reviews.delete')}
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <Button asChild>
+                        <Link href="/login">{tr(locale, 'header.login')}</Link>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="md:col-span-1">
@@ -300,24 +418,41 @@ export default function ServiceDetailPage() {
               <CardContent className="flex flex-col gap-3">
                 {((service as any)?.contactWhatsapp || (service as any)?.contactPhone) ? (
                   <>
-                    <Button
-                      asChild
-                      size="lg"
-                      className="h-12 w-full bg-green-500 text-lg text-white hover:bg-green-600"
-                    >
-                      <a href={whatsappLink ?? '#'} target="_blank" rel="noopener noreferrer">
+                    <Button asChild size="lg" className="h-12 w-full bg-green-500 text-lg text-white hover:bg-green-600">
+                      <a
+                        href={whatsappLink ?? '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => {
+                          if (!service?.id) return;
+                          const ref = typeof document !== 'undefined' ? document.referrer || null : null;
+                          const city = service?.city || null;
+                          fetch('/api/track', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type: 'cta_click', serviceId: service.id, city, ref }),
+                          }).catch(() => {});
+                        }}
+                      >
                         <MessageCircle className="mr-2" />
                         {tr(locale, 'details.contactWhatsApp')}
                       </a>
                     </Button>
                     {(service as any)?.contactPhone && (
-                      <Button
-                        asChild
-                        size="lg"
-                        variant="outline"
-                        className="h-12 w-full text-lg"
-                      >
-                        <a href={`tel:${(service as any).contactPhone}`}>
+                      <Button asChild size="lg" variant="outline" className="h-12 w-full text-lg">
+                        <a
+                          href={`tel:${(service as any).contactPhone}`}
+                          onClick={() => {
+                            if (!service?.id) return;
+                            const ref = typeof document !== 'undefined' ? document.referrer || null : null;
+                            const city = service?.city || null;
+                            fetch('/api/track', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ type: 'cta_click', serviceId: service.id, city, ref }),
+                            }).catch(() => {});
+                          }}
+                        >
                           <Phone className="mr-2" />
                           {tr(locale, 'details.callProvider')}
                         </a>

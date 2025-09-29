@@ -1,13 +1,18 @@
 import type {NextConfig} from 'next';
 
+const isCIOrProd = process.env.CI === 'true' || process.env.NODE_ENV === 'production';
+
 const nextConfig: NextConfig = {
   /* config options here */
+  // Disable React Strict Mode to avoid double-mount issues with Leaflet in dev
+  // (Strict Mode has no effect in production builds.)
   reactStrictMode: false,
+  // Re-enable type and lint checks for CI/prod; keep relaxed in dev for velocity
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: !isCIOrProd,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: !isCIOrProd,
   },
   images: {
     remotePatterns: [

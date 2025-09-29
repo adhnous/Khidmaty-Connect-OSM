@@ -1,0 +1,25 @@
+{
+  "name": "owner-console",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": ">=20 <21" },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "15.3.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "firebase": "^10.12.2",
+    "firebase-admin": "^12.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18"
+  }
+}
