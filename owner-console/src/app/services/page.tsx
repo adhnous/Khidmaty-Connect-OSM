@@ -7,6 +7,7 @@ type Row = {
   id: string;
   title: string;
   providerId: string;
+  providerName?: string | null;
   status: 'pending' | 'approved' | 'rejected' | null;
   createdAt: string | null;
   imageUrl?: string | null;
@@ -133,7 +134,7 @@ export default function ServicesModerationPage() {
                   </div>
                 )}
                 <div className="oc-meta" style={{ marginTop: 6 }}>
-                  <span className="oc-subtle">Provider: {r.providerId}</span>
+                  <span className="oc-subtle">Provider: {r.providerName || r.providerId}</span>
                   <span className="oc-subtle">Created: {r.createdAt || '-'}</span>
                   {(r.contactPhone || r.contactWhatsapp) && (
                     <span className="oc-subtle">Contact: {[r.contactPhone, r.contactWhatsapp].filter(Boolean).join(' / ')}</span>

@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { serviceSchema, type ServiceFormData } from '@/lib/schemas';
+import { libyanCities, cityLabel, cityCenter } from '@/lib/cities';
 import { useState, useTransition, useCallback, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import L from 'leaflet';
@@ -44,7 +45,7 @@ const mockCategories = [
   'Carpentry',
   'Gardening',
 ];
-const mockCities = ['Tripoli', 'Benghazi', 'Misrata'];
+// Cities are centralized in lib/cities.ts
 
 // Client-only react-leaflet components
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
@@ -186,6 +187,10 @@ export function ServiceForm() {
       contactPhone: '',
       contactWhatsapp: '',
       videoUrl: '',
+      subservices: [],
+      // Default to Tripoli center
+      lat: 32.8872 as any,
+      lng: 13.1913 as any,
     },
   });
 
@@ -194,6 +199,7 @@ export function ServiceForm() {
   const lng = form.watch('lng') as number | undefined;
   const cityWatch = form.watch('city');
   const [selectedAddress, setSelectedAddress] = useState<string>('');
+  const selectedCityCenter = useMemo(() => cityCenter(String(cityWatch || '')), [cityWatch]);
 
   // Ensure numeric values for map and formatting (watchers may be strings)
   const latNum =
@@ -239,6 +245,18 @@ export function ServiceForm() {
 
   const tileUrl = process.env.NEXT_PUBLIC_OSM_TILE_URL || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
   const tileAttrib = process.env.NEXT_PUBLIC_OSM_ATTRIBUTION || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+  // Dynamic sub-services
+  const subFieldArray = useFieldArray({ control: form.control, name: 'subservices' });
+  const subWatch = form.watch('subservices') as any[] | undefined;
+  const subTotal = (subWatch || []).reduce((sum, s) => sum + (Number(s?.price) || 0), 0);
+
+  // Keep main price in sync with sub-services total
+  useEffect(() => {
+    form.setValue('price', Number.isFinite(subTotal) ? Number(subTotal) : 0, {
+      shouldValidate: true,
+    });
+  }, [subTotal]);
 
   function handleUseMyLocation() {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
@@ -374,6 +392,9 @@ export function ServiceForm() {
         }
       }
 
+      const providerName = userProfile?.displayName || user.displayName || (user.email ? user.email.split('@')[0] : null);
+      const providerEmail = user.email || null;
+
       const serviceId = await createService({
         title: data.title,
         description: data.description,
@@ -389,6 +410,9 @@ export function ServiceForm() {
         ...(data.videoUrl ? { videoUrl: data.videoUrl } : {}),
         images,
         providerId: user.uid,
+        providerName,
+        providerEmail,
+        subservices: data.subservices ?? [],
       });
 
       toast({
@@ -439,6 +463,99 @@ export function ServiceForm() {
                   {tr(locale, 'form.actions.improve')}
                 </Button>
               </div>
+        {/* Sub-services repeater */}
+        <div className="space-y-3">
+          <FormLabel>Sub-services</FormLabel>
+          <div className="space-y-3">
+            {subFieldArray.fields.length === 0 && (
+              <p className="text-sm text-muted-foreground">No sub-services yet.</p>
+            )}
+            {subFieldArray.fields.map((field, index) => (
+              <div key={field.id} className="rounded border p-3 space-y-2">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                  <FormField
+                    control={form.control}
+                    name={`subservices.${index}.title` as const}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., AC gas refill" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`subservices.${index}.price` as const}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step="1" placeholder="50" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`subservices.${index}.unit` as const}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Unit</FormLabel>
+                        <FormControl>
+                          <Input placeholder="per hour / per item" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex items-end">
+                    <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+                <FormField
+                  control={form.control}
+                  name={`subservices.${index}.description` as const}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea rows={2} placeholder="Short details…" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            ))}
+
+            <div className="flex items-center justify-between text-sm">
+              <div className="text-muted-foreground">Sub-services total</div>
+              <div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div>
+            </div>
+
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                subFieldArray.append({
+                  id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                  title: '',
+                  price: 0,
+                  unit: '',
+                  description: '',
+                })
+              }
+            >
+              + Add sub-service
+            </Button>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button type="button" variant="outline" onClick={handleUseMyLocation}>{tr(locale, 'form.actions.useMyLocation')}</Button>
           <Button type="button" variant="outline" onClick={() => { form.setValue('lat', undefined as any); form.setValue('lng', undefined as any); }}>{tr(locale, 'form.actions.clearLocation')}</Button>
@@ -533,8 +650,11 @@ export function ServiceForm() {
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="100" {...field} />
+                  <Input type="number" placeholder="100" readOnly {...field} />
                 </FormControl>
+                <FormDescription>
+                  Auto-calculated from sub-services total.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -548,7 +668,14 @@ export function ServiceForm() {
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.city')}</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
+                  onValueChange={(v) => {
+                    field.onChange(v);
+                    const c = cityCenter(v);
+                    if (c) {
+                      form.setValue('lat', c.lat, { shouldValidate: true });
+                      form.setValue('lng', c.lng, { shouldValidate: true });
+                    }
+                  }}
                   defaultValue={field.value}
                 >
                   <FormControl>
@@ -557,9 +684,9 @@ export function ServiceForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {mockCities.map((city) => (
-                      <SelectItem key={city} value={city}>
-                        {city}
+                    {libyanCities.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {cityLabel(locale, c.value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -632,6 +759,7 @@ export function ServiceForm() {
             className="max-w-md"
             placeholder={tr(locale, 'form.placeholders.searchAddress')}
             countryCodes="ly"
+            city={String(cityWatch || '')}
             onSelect={({ lat, lng }) => {
               form.setValue('lat', Number(lat.toFixed(6)), { shouldValidate: true });
               form.setValue('lng', Number(lng.toFixed(6)), { shouldValidate: true });
@@ -643,11 +771,7 @@ export function ServiceForm() {
                 key={`${latNum ?? 'city'}-${lngNum ?? 'city'}-${cityWatch}`}
                 center={(latNum != null && lngNum != null)
                   ? [latNum, lngNum]
-                  : (String(cityWatch || '').toLowerCase() === 'benghazi'
-                      ? [32.1167, 20.0667]
-                      : String(cityWatch || '').toLowerCase() === 'misrata'
-                        ? [32.3783, 15.0906]
-                        : [32.8872, 13.1913])}
+                  : [selectedCityCenter?.lat ?? 32.8872, selectedCityCenter?.lng ?? 13.1913]}
                 zoom={13}
                 className="h-full w-full cursor-crosshair"
                 scrollWheelZoom={true}

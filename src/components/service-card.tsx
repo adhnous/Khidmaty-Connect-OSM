@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin } from 'lucide-react';
 import { transformCloudinary } from '@/lib/images';
 import { getClientLocale, tr } from '@/lib/i18n';
+import { cityLabel } from '@/lib/cities';
 
 type ServiceCardProps = {
   id?: string;
@@ -56,7 +57,7 @@ export function ServiceCard({
       <CardFooter className="flex items-center justify-between p-3 pt-0">
         <div className="flex items-center text-xs text-muted-foreground">
           <MapPin className="mr-1 h-3.5 w-3.5" />
-          <span>{city}</span>
+          <span>{cityLabel(locale, city)}</span>
         </div>
         <p className="text-base font-semibold text-primary">LYD {price}</p>
       </CardFooter>

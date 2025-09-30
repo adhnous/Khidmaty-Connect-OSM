@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import dynamic from 'next/dynamic';
 import { deleteField } from 'firebase/firestore';
@@ -26,6 +26,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,6 +45,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import AddressSearch from '@/components/address-search';
+import { libyanCities, cityLabel, cityCenter } from '@/lib/cities';
 
 const EditSchema = serviceSchema; // reuse same fields
 
@@ -83,6 +85,7 @@ export default function EditServicePage() {
       availabilityNote: '',
       contactPhone: '',
       contactWhatsapp: '',
+      subservices: [],
     },
   });
 
@@ -121,10 +124,19 @@ export default function EditServicePage() {
         contactPhone: (doc as any).contactPhone ?? '',
         contactWhatsapp: (doc as any).contactWhatsapp ?? '',
         videoUrl: (doc as any).videoUrl ?? '',
+        subservices: (doc as any).subservices ?? [],
       });
       setImages(doc.images ?? []);
-      setLat((doc as any).lat);
-      setLng((doc as any).lng);
+      // Default to Tripoli center if missing
+      const latVal = (doc as any).lat;
+      const lngVal = (doc as any).lng;
+      if (typeof latVal === 'number' && typeof lngVal === 'number') {
+        setLat(latVal);
+        setLng(lngVal);
+      } else {
+        setLat(32.8872);
+        setLng(13.1913);
+      }
       setLoading(false);
     })();
   }, [params, form, router, user, toast]);
@@ -145,6 +157,16 @@ export default function EditServicePage() {
 
   const tileUrl = process.env.NEXT_PUBLIC_OSM_TILE_URL || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
   const tileAttrib = process.env.NEXT_PUBLIC_OSM_ATTRIBUTION || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+  // Sub-services editing
+  const subFieldArray = useFieldArray({ control: form.control, name: 'subservices' as const });
+  const subWatch = form.watch('subservices') as any[] | undefined;
+  const subTotal = (subWatch || []).reduce((sum, s) => sum + (Number(s?.price) || 0), 0);
+
+  // Keep price synced to subservices total
+  useEffect(() => {
+    form.setValue('price', Number.isFinite(subTotal) ? Number(subTotal) : 0, { shouldValidate: true });
+  }, [subTotal]);
 
   // Reverse geocode selected point to show human-readable address (free, cached)
   useEffect(() => {
@@ -342,6 +364,7 @@ export default function EditServicePage() {
         contactPhone: data.contactPhone,
         contactWhatsapp: data.contactWhatsapp,
         images,
+        subservices: data.subservices ?? [],
       };
       // Handle optional coordinates: set values if present, otherwise delete fields
       if (typeof lat === 'number') payload.lat = lat; else payload.lat = deleteField();
@@ -428,12 +451,105 @@ export default function EditServicePage() {
                     <FormItem>
                       <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" readOnly {...field} />
                       </FormControl>
+                      <FormDescription>Auto-calculated from sub-services total.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* Sub-services repeater */}
+              <div className="space-y-3">
+                <FormLabel>Sub-services</FormLabel>
+                <div className="space-y-3">
+                  {subFieldArray.fields.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No sub-services yet.</p>
+                  )}
+                  {subFieldArray.fields.map((field, index) => (
+                    <div key={field.id} className="rounded border p-3 space-y-2">
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                        <FormField
+                          control={form.control}
+                          name={`subservices.${index}.title` as const}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Title</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., AC gas refill" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`subservices.${index}.price` as const}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Price</FormLabel>
+                              <FormControl>
+                                <Input type="number" min={0} step="1" placeholder="50" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`subservices.${index}.unit` as const}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Unit</FormLabel>
+                              <FormControl>
+                                <Input placeholder="per hour / per item" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="flex items-end">
+                          <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name={`subservices.${index}.description` as const}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea rows={2} placeholder="Short details…" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="text-muted-foreground">Sub-services total</div>
+                    <div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      subFieldArray.append({
+                        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                        title: '',
+                        price: 0,
+                        unit: '',
+                        description: '',
+                      })
+                    }
+                  >
+                    + Add sub-service
+                  </Button>
+                </div>
               </div>
 
               <FormField
@@ -456,15 +572,19 @@ export default function EditServicePage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>City</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={(v) => {
+                        field.onChange(v);
+                        const c = cityCenter(v);
+                        if (c) { setLat(c.lat); setLng(c.lng); }
+                      }} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {['Tripoli','Benghazi','Misrata'].map(city => (
-                            <SelectItem key={city} value={city}>{city}</SelectItem>
+                          {libyanCities.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{cityLabel(locale, c.value)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -534,6 +654,7 @@ export default function EditServicePage() {
                   className="max-w-md"
                   placeholder={tr(locale, 'form.placeholders.searchAddress')}
                   countryCodes="ly"
+                  city={String(form.getValues('city') || '')}
                   onSelect={({ lat, lng }) => {
                     setLat(Number(lat.toFixed(6)));
                     setLng(Number(lng.toFixed(6)));
@@ -590,11 +711,7 @@ export default function EditServicePage() {
                       key={`${lat ?? 'city'}-${lng ?? 'city'}`}
                       center={(lat != null && lng != null)
                         ? [lat, lng]
-                        : (form.getValues('city')?.toLowerCase() === 'benghazi'
-                            ? [32.1167, 20.0667]
-                            : form.getValues('city')?.toLowerCase() === 'misrata'
-                              ? [32.3783, 15.0906]
-                              : [32.8872, 13.1913])}
+                        : (() => { const c = cityCenter(String(form.getValues('city') || '')); return [c?.lat ?? 32.8872, c?.lng ?? 13.1913] as [number, number]; })()}
                       zoom={13}
                       className="h-full w-full cursor-crosshair"
                       scrollWheelZoom={true}

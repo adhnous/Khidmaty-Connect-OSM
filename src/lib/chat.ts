@@ -41,20 +41,19 @@ export async function findOrCreateConversation(
 ): Promise<string> {
   const convId = conversationIdFor(serviceId, providerId, seekerId);
   const ref = doc(db, 'conversations', convId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(
-      ref,
-      {
-        serviceId,
-        providerId,
-        seekerId,
-        participants: { [providerId]: true, [seekerId]: true },
-        lastMessageAt: serverTimestamp(),
-      } as Conversation,
-      { merge: true }
-    );
-  }
+  // Important: do not read before write. Reads to a non-existent doc are denied by rules
+  // because you're not yet listed in participants. Instead, write with merge unconditionally.
+  await setDoc(
+    ref,
+    {
+      serviceId,
+      providerId,
+      seekerId,
+      participants: { [providerId]: true, [seekerId]: true },
+      lastMessageAt: serverTimestamp(),
+    } as Conversation,
+    { merge: true }
+  );
   return convId;
 }
 

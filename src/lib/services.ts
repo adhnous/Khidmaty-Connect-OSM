@@ -21,6 +21,14 @@ export type ServiceImage = {
   publicId?: string; // Cloudinary public_id if available
 };
 
+export type SubService = {
+  id: string;
+  title: string;
+  price: number;
+  unit?: string;
+  description?: string;
+};
+
 export type Service = {
   id?: string;
   title: string;
@@ -35,6 +43,9 @@ export type Service = {
   contactWhatsapp?: string;
   videoUrl?: string;
   providerId: string;
+  providerName?: string | null;
+  providerEmail?: string | null;
+  subservices?: SubService[];
   status?: 'pending' | 'approved' | 'rejected';
   // Optional geolocation for map; when absent, UI falls back to city centroid
   lat?: number;
@@ -58,7 +69,14 @@ export async function uploadServiceImages(
 
 export async function createService(data: Omit<Service, 'id' | 'createdAt'>) {
   const colRef = collection(db, 'services');
-  const payload = { ...data, status: 'pending', createdAt: serverTimestamp() };
+  const payload = {
+    ...data,
+    subservices: Array.isArray((data as any).subservices) ? (data as any).subservices : [],
+    providerName: (data as any).providerName ?? null,
+    providerEmail: (data as any).providerEmail ?? null,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+  };
   const docRef = await addDoc(colRef, payload);
   return docRef.id;
 }

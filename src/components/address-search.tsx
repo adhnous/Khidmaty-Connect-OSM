@@ -9,6 +9,7 @@ export type AddressSearchProps = {
   countryCodes?: string; // e.g., 'ly'
   onSelect: (res: { lat: number; lng: number; displayName: string }) => void;
   className?: string;
+  city?: string; // scope search to a given city; when provided, show city places even if query is empty
 };
 
 export default function AddressSearch({
@@ -17,6 +18,7 @@ export default function AddressSearch({
   countryCodes = 'ly',
   onSelect,
   className = '',
+  city,
 }: AddressSearchProps) {
   const [q, setQ] = useState(defaultQuery);
   const [open, setOpen] = useState(false);
@@ -33,7 +35,9 @@ export default function AddressSearch({
 
   useEffect(() => {
     if (t.current) window.clearTimeout(t.current);
-    if (!q || q.trim().length < 2) {
+    const hasQuery = !!q && q.trim().length >= 2;
+    const hasCity = !!city && city.trim().length > 0;
+    if (!hasQuery && !hasCity) {
       setResults([]);
       setOpen(false);
       return;
@@ -41,20 +45,15 @@ export default function AddressSearch({
     t.current = window.setTimeout(async () => {
       try {
         setLoading(true);
-        const url = new URL('https://nominatim.openstreetmap.org/search');
-        url.searchParams.set('format', 'jsonv2');
-        url.searchParams.set('q', q);
-        url.searchParams.set('limit', '5');
-        url.searchParams.set('addressdetails', '1');
+        const url = new URL('/api/geocode/search', window.location.origin);
+        if (hasQuery) url.searchParams.set('q', q);
+        if (hasCity) url.searchParams.set('city', city!);
+        url.searchParams.set('limit', hasQuery ? '5' : '10');
         if (countryCodes) url.searchParams.set('countrycodes', countryCodes);
-        url.searchParams.set('accept-language', lang);
-        const res = await fetch(url.toString(), {
-          headers: {
-            'Accept-Language': lang,
-          },
-        });
+        url.searchParams.set('lang', lang);
+        const res = await fetch(url.toString());
         const data = (await res.json()) as Array<{ display_name: string; lat: string; lon: string }>;
-        setResults(data);
+        setResults(Array.isArray(data) ? data : []);
         setOpen(true);
       } catch (e) {
         setResults([]);
@@ -66,7 +65,7 @@ export default function AddressSearch({
     return () => {
       if (t.current) window.clearTimeout(t.current);
     };
-  }, [q, lang, countryCodes]);
+  }, [q, city, lang, countryCodes]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -82,6 +81,10 @@ export default function AddressSearch({
       <Input
         value={q}
         onChange={(e) => setQ(e.target.value)}
+        onFocus={() => {
+          // If we already have city-scoped results, show them on focus
+          if (results.length > 0) setOpen(true);
+        }}
         placeholder={placeholder}
         className="h-10"
       />

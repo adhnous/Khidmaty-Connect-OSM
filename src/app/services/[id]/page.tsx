@@ -11,6 +11,7 @@ import { Header } from '@/components/layout/header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import MediaGallery from '@/components/media-gallery';
 import StarRating from '@/components/star-rating';
 import { Textarea } from '@/components/ui/textarea';
@@ -173,6 +174,15 @@ export default function ServiceDetailPage() {
     if (!reviews.length) return 0;
     return reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length;
   }, [reviews]);
+
+  const subservicesList = useMemo(() => {
+    const arr = (service as any)?.subservices;
+    return Array.isArray(arr) ? arr : [];
+  }, [service?.subservices]);
+
+  const subservicesTotal = useMemo(() => {
+    return subservicesList.reduce((sum: number, s: any) => sum + (Number(s?.price) || 0), 0);
+  }, [subservicesList]);
 
   const isOwner = useMemo(() => {
     return !!(user && service && service.providerId === user.uid);
@@ -376,6 +386,34 @@ export default function ServiceDetailPage() {
               <p>{service.availabilityNote}</p>
             </div>
 
+            {subservicesList.length > 0 && (
+              <>
+                <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">Sub-services</h2>
+                <div className="rounded border bg-background p-3">
+                  <ul className="space-y-2">
+                    {subservicesList.map((s: any) => (
+                      <li key={s.id} className="flex items-start justify-between gap-3 text-sm">
+                        <div>
+                          <div className="font-medium">
+                            {s.title}{' '}
+                            {s.unit ? <span className="text-muted-foreground">({s.unit})</span> : null}
+                          </div>
+                          {s.description ? (
+                            <div className="text-muted-foreground">{s.description}</div>
+                          ) : null}
+                        </div>
+                        <div className="whitespace-nowrap font-semibold">LYD {Number(s.price ?? 0)}</div>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 flex items-center justify-end text-sm">
+                    <span className="text-muted-foreground mr-2">Total</span>
+                    <span className="font-semibold">LYD {subservicesTotal}</span>
+                  </div>
+                </div>
+              </>
+            )}
+
             {coords && (
               <>
                 <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
@@ -475,6 +513,46 @@ export default function ServiceDetailPage() {
                 </p>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
+                {subservicesList.length > 0 && (
+                  <div className="rounded border bg-background p-3">
+                    <div className="mb-2 text-sm font-medium text-muted-foreground">Sub-services</div>
+                    <ul className="space-y-1">
+                      {subservicesList.slice(0, 3).map((s: any) => (
+                        <li key={s.id} className="flex items-center justify-between text-sm">
+                          <span className="truncate">
+                            {s.title}
+                            {s.unit ? <span className="text-muted-foreground"> ({s.unit})</span> : null}
+                          </span>
+                          <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {subservicesList.length > 3 && (
+                      <Accordion type="single" collapsible className="mt-2">
+                        <AccordionItem value="all">
+                          <AccordionTrigger className="text-sm">Show all {subservicesList.length} items</AccordionTrigger>
+                          <AccordionContent>
+                            <ul className="space-y-1">
+                              {subservicesList.slice(3).map((s: any) => (
+                                <li key={s.id} className="flex items-center justify-between text-sm">
+                                  <span className="truncate">
+                                    {s.title}
+                                    {s.unit ? <span className="text-muted-foreground"> ({s.unit})</span> : null}
+                                  </span>
+                                  <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
+                    <div className="mt-2 flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="font-semibold">LYD {subservicesTotal}</span>
+                    </div>
+                  </div>
+                )}
                 {((service as any)?.contactWhatsapp || (service as any)?.contactPhone) ? (
                   <>
                     {/* In-app chat: visible for signed-in non-owners and non-demo services */}

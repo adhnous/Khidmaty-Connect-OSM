@@ -23,63 +23,8 @@ import { ServiceCard } from '@/components/service-card';
 import { useEffect, useState } from 'react';
 import { listServicesFiltered, type Service, type ListFilters } from '@/lib/services';
 import { getClientLocale, tr } from '@/lib/i18n';
+import { libyanCities, cityLabel } from '@/lib/cities';
 
-const mockServices = [
-  {
-    id: '1',
-    title: 'Professional Plumbing Repairs & Installation',
-    category: 'Plumbing',
-    city: 'Tripoli',
-    price: 150,
-    imageUrl: 'https://placehold.co/400x300.png',
-    aiHint: 'plumbing repair',
-  },
-  {
-    id: '2',
-    title: 'Full House Cleaning Service',
-    category: 'Home Services',
-    city: 'Benghazi',
-    price: 250,
-    imageUrl: 'https://placehold.co/400x300.png',
-    aiHint: 'house cleaning',
-  },
-  {
-    id: '3',
-    title: 'Expert Car Mechanic for All Brands',
-    category: 'Automotive',
-    city: 'Misrata',
-    price: 200,
-    imageUrl: 'https://placehold.co/400x300.png',
-    aiHint: 'car mechanic',
-  },
-  {
-    id: '4',
-    title: 'Private Math & Science Tutoring',
-    category: 'Education',
-    city: 'Tripoli',
-    price: 100,
-    imageUrl: 'https://placehold.co/400x300.png',
-    aiHint: 'tutoring session',
-  },
-  {
-    id: '5',
-    title: 'Electrical Wiring and Fixture Installation',
-    category: 'Electrical',
-    city: 'Benghazi',
-    price: 180,
-    imageUrl: 'https://placehold.co/400x300.png',
-    aiHint: 'electrical work',
-  },
-  {
-    id: '6',
-    title: 'Custom Wood Furniture and Carpentry',
-    category: 'Carpentry',
-    city: 'Tripoli',
-    price: 500,
-    imageUrl: 'https://placehold.co/400x300.png',
-    aiHint: 'carpentry wood',
-  },
-];
 
 const mockCategories = [
   { name: 'Plumbing', icon: Wrench },
@@ -88,7 +33,7 @@ const mockCategories = [
   { name: 'Education', icon: Briefcase },
   { name: 'Electrical', icon: Hammer },
 ];
-const mockCities = ['All Cities', 'Tripoli', 'Benghazi', 'Misrata'];
+const cityOptions = ['All Cities', ...libyanCities.map((c) => c.value)];
 
 export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
@@ -136,14 +81,12 @@ export default function Home() {
       }
       setServices(filtered);
     } catch (e) {
-      console.warn('Failed to load services, showing demo cards.', e);
+      console.warn('Failed to load services, showing empty state.', e);
       setServices([]);
     } finally {
       setLoading(false);
     }
   }
-
-  const cards = (services.length ? services : null) ?? [];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -185,9 +128,9 @@ export default function Home() {
                     <SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockCities.map((c) => (
+                    {cityOptions.map((c) => (
                       <SelectItem key={c} value={c}>
-                        {c === 'All Cities' ? tr(locale, 'home.allCities') : c}
+                        {c === 'All Cities' ? tr(locale, 'home.allCities') : cityLabel(locale, c)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -277,23 +220,18 @@ export default function Home() {
               </div>
             )}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {(cards.length
-                ? cards.map((s) => ({
-                    id: s.id!,
-                    title: s.title,
-                    category: s.category,
-                    city: s.city,
-                    price: s.price,
-                    imageUrl: s.images?.[0]?.url || 'https://placehold.co/400x300.png',
-                    aiHint: s.category,
-                    href: `/services/${s.id}`,
-                  }))
-                : mockServices.map((m) => ({
-                    ...m,
-                    href: `/services/demo-${m.id}`,
-                  }))
-              ).map((service) => (
-                <ServiceCard key={service.id} {...service} />
+              {services.map((s) => (
+                <ServiceCard
+                  key={s.id}
+                  id={s.id}
+                  title={s.title}
+                  category={s.category}
+                  city={s.city}
+                  price={s.price}
+                  imageUrl={s.images?.[0]?.url || 'https://placehold.co/400x300.png'}
+                  aiHint={s.category}
+                  href={`/services/${s.id}`}
+                />
               ))}
             </div>
           </div>

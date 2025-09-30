@@ -38,8 +38,24 @@ export async function GET(req: Request) {
     } as const;
   });
 
-  // Sort newest first without requiring a composite index
-  rows.sort((a: any, b: any) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  // Lookup provider display names
+  const providerIds = Array.from(new Set(rows.map((r: any) => r.providerId).filter(Boolean)));
+  const namesById: Record<string, string> = {};
+  if (providerIds.length) {
+    const snaps = await Promise.all(providerIds.map((id) => db.collection('users').doc(id).get()));
+    for (const s of snaps) {
+      if (s.exists) {
+        const d = s.data() || {};
+        const name = d.displayName || d.name || (typeof d.email === 'string' ? d.email.split('@')[0] : null);
+        if (name) namesById[s.id] = String(name);
+      }
+    }
+  }
 
-  return NextResponse.json({ rows });
+  const rowsWithNames = rows.map((r: any) => ({ ...r, providerName: namesById[r.providerId] || null }));
+
+  // Sort newest first without requiring a composite index
+  rowsWithNames.sort((a: any, b: any) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+  return NextResponse.json({ rows: rowsWithNames });
 }
