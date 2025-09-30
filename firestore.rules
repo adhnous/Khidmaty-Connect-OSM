@@ -14,14 +14,16 @@ service cloud.firestore {
       allow read: if resource.data.status == 'approved' || isProviderOwner() || isAdmin();
       // Providers can create only their own services; default status should be 'pending'. Admins can create too.
       function isPendingOnCreate() { return !(request.resource.data.status is string) || request.resource.data.status == 'pending'; }
-      allow create: if (isSignedIn() && request.resource.data.providerId == request.auth.uid && isPendingOnCreate()) || isAdmin();
+      allow create: if (
+        (isSignedIn() && userRole() == 'provider' && request.resource.data.providerId == request.auth.uid && isPendingOnCreate())
+        || isAdmin()
+      );
       // Providers can update only their own docs and cannot change status or providerId.
       // Admins can update any field (including status).
       allow update: if (
         (isProviderOwner() && request.resource.data.providerId == resource.data.providerId && request.resource.data.status == resource.data.status)
         || isAdmin()
       );
-      allow delete: if isProviderOwner() || isAdmin();
 
       // Reviews subcollection: one review per user (doc id = authorId)
       match /reviews/{authorId} {
@@ -64,5 +66,34 @@ service cloud.firestore {
       allow read: if false;
       allow write: if false;
     }
+
+    // Conversations and messages (in-app chat)
+    match /conversations/{conversationId} {
+      function convExists() { return exists(/databases/$(database)/documents/conversations/$(conversationId)); }
+      function convParticipants() {
+        return convExists() ? get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants : {};
+      }
+      function isConvParticipant() { return isSignedIn() && (convParticipants()[request.auth.uid] == true); }
+      function isConvParticipantOnCreate() { return isSignedIn() && (request.resource.data.participants[request.auth.uid] == true); }
+
+      // Only participants (or admin) can read/update conversations. Anyone creating must include themselves in participants.
+      allow read: if isConvParticipant() || isAdmin();
+      allow create: if isConvParticipantOnCreate() || isAdmin();
+      allow update, delete: if isConvParticipant() || isAdmin();
+
+      match /messages/{messageId} {
+        function parentParticipants() { return convParticipants(); }
+        function inParent() { return isSignedIn() && (parentParticipants()[request.auth.uid] == true); }
+        function textOk() { return request.resource.data.text is string && request.resource.data.text.size() <= 2000; }
+
+        // Only participants can read messages
+        allow read: if inParent() || isAdmin();
+        // Only participants can send, and senderId must match auth
+        allow create: if inParent() && request.resource.data.senderId == request.auth.uid && textOk();
+        // No client updates/deletes of messages
+        allow update, delete: if false;
+      }
+    }
   }
+
 }

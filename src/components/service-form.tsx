@@ -154,7 +154,17 @@ export function ServiceForm() {
   const locale = getClientLocale();
   const { toast } = useToast();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userProfile, loading } = useAuth();
+  
+  // Only providers can access the service creation form
+  if (loading) return null;
+  if (userProfile?.role !== 'provider') {
+    return (
+      <div className="rounded border bg-background p-4 text-sm text-muted-foreground">
+        This page is for provider accounts only.
+      </div>
+    );
+  }
   const [isImprovingTitle, startImprovingTitleTransition] = useTransition();
   const [isCategorizing, startCategorizingTransition] = useTransition();
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);

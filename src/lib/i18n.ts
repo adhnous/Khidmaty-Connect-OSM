@@ -105,7 +105,17 @@ const dict = {
       contactWhatsApp: 'Contact via WhatsApp',
       callProvider: 'Call Provider',
       noContact: 'Contact details not provided.',
+      chatInApp: 'Chat with Provider',
       reviews: 'Reviews & Ratings',
+    },
+    chat: {
+      title: 'Chat',
+      typeMessage: 'Type a message…',
+      send: 'Send',
+      start: 'Start a conversation',
+      notAllowed: 'You do not have access to this conversation.',
+      signInPrompt: 'Please sign in to chat.',
+      empty: 'No messages yet.'
     },
     reviews: {
       ratingLabel: 'Your rating',
@@ -340,7 +350,17 @@ const dict = {
       contactWhatsApp: 'تواصل عبر واتساب',
       callProvider: 'اتصل بالمقدم',
       noContact: 'لا توجد بيانات تواصل.',
+      chatInApp: 'دردشة داخل التطبيق',
       reviews: 'التقييمات والمراجعات',
+    },
+    chat: {
+      title: 'المحادثة',
+      typeMessage: 'اكتب رسالة…',
+      send: 'إرسال',
+      start: 'ابدأ محادثة',
+      notAllowed: 'ليس لديك صلاحية للوصول إلى هذه المحادثة.',
+      signInPrompt: 'يرجى تسجيل الدخول للمحادثة.',
+      empty: 'لا توجد رسائل بعد.'
     },
     reviews: {
       ratingLabel: 'تقييمك',

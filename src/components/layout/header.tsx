@@ -85,9 +85,9 @@ export function Header() {
             <Button variant="ghost" asChild>
               <Link href="/">{tr(locale, 'header.browse')}</Link>
             </Button>
-            { userProfile?.role !== 'provider' && (
+            { userProfile?.role === 'provider' && (
               <Button variant="ghost" asChild>
-                <Link href="/dashboard">{tr(locale, 'header.providers')}</Link>
+                <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>
               </Button>
             )}
           </nav>

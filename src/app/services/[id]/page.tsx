@@ -16,8 +16,9 @@ import StarRating from '@/components/star-rating';
 import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getServiceById, type Service } from '@/lib/services';
+import { findOrCreateConversation } from '@/lib/chat';
 import ServiceMap from '@/components/service-map';
 import { listReviewsByService, getUserReviewForService, upsertReview, deleteMyReview, type Review } from '@/lib/reviews';
 import { useAuth } from '@/hooks/use-auth';
@@ -26,6 +27,7 @@ import { getClientLocale, tr } from '@/lib/i18n';
 
 export default function ServiceDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -114,6 +116,31 @@ export default function ServiceDetailPage() {
     )}`;
   }, [service]);
 
+  const [startingChat, setStartingChat] = useState(false);
+
+  async function handleChat() {
+    if (!service) return;
+    if (service.providerId === 'demo') return;
+    if (!user) {
+      // Ask user to sign in then come back
+      toast({ variant: 'destructive', title: tr(locale, 'chat.signInPrompt') });
+      router.push('/login');
+      return;
+    }
+    try {
+      setStartingChat(true);
+      const convId = await findOrCreateConversation(service.id!, service.providerId, user.uid);
+      // Navigate to dedicated chat page
+      router.push(`/messages/${convId}`);
+    } catch (e: any) {
+      // eslint-disable-next-line no-console
+      console.error('chat start failed', e);
+      toast({ variant: 'destructive', title: 'Could not start chat' });
+    } finally {
+      setStartingChat(false);
+    }
+  }
+
   // Load reviews once service is ready (skip for demo services)
   useEffect(() => {
     (async () => {
@@ -151,6 +178,19 @@ export default function ServiceDetailPage() {
     return !!(user && service && service.providerId === user.uid);
   }, [user?.uid, service?.providerId]);
 
+  // DEBUG: log owner check when service/user changes
+  useEffect(() => {
+    if (service && user) {
+      // eslint-disable-next-line no-console
+      console.log('[reviews] owner check', {
+        serviceId: service.id,
+        providerId: service.providerId,
+        myUid: user.uid,
+        isOwner,
+      });
+    }
+  }, [service?.id, user?.uid, isOwner]);
+
   // Track a view when the service loads (skip demo services)
   useEffect(() => {
     if (!service || !service.id || service.providerId === 'demo') return;
@@ -168,6 +208,19 @@ export default function ServiceDetailPage() {
 
   async function handleSaveReview() {
     if (!service || !user) return;
+    if (service.providerId === 'demo') {
+      toast({ variant: 'destructive', title: 'Reviews are disabled for demo services.' });
+      return;
+    }
+    // DEBUG: log attempt details
+    // eslint-disable-next-line no-console
+    console.log('[reviews] attempt save', {
+      serviceId: service.id,
+      providerId: service.providerId,
+      myUid: user.uid,
+      myRating,
+      myTextLen: myText.length,
+    });
     if (myRating < 1) {
       toast({ variant: 'destructive', title: tr(locale, 'reviews.toasts.requiredRating') });
       return;
@@ -188,6 +241,10 @@ export default function ServiceDetailPage() {
 
   async function handleDeleteReview() {
     if (!service || !user) return;
+    if (service.providerId === 'demo') {
+      toast({ variant: 'destructive', title: 'Reviews are disabled for demo services.' });
+      return;
+    }
     try {
       setSaving(true);
       await deleteMyReview(service.id!, user.uid);
@@ -367,6 +424,8 @@ export default function ServiceDetailPage() {
             <div className="mt-4">
               {isOwner ? (
                 <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.ownerBlocked')}</p>
+              ) : service.providerId === 'demo' ? (
+                <p className="text-sm text-muted-foreground">Reviews are disabled for demo services.</p>
               ) : (
                 <div className="rounded border bg-background p-4">
                   <label className="mb-2 block text-sm font-medium">{tr(locale, 'reviews.ratingLabel')}</label>
@@ -418,6 +477,12 @@ export default function ServiceDetailPage() {
               <CardContent className="flex flex-col gap-3">
                 {((service as any)?.contactWhatsapp || (service as any)?.contactPhone) ? (
                   <>
+                    {/* In-app chat: visible for signed-in non-owners and non-demo services */}
+                    {service.providerId !== 'demo' && !isOwner && (
+                      <Button size="lg" className="h-12 w-full text-lg" onClick={handleChat} disabled={startingChat}>
+                        {tr(locale, 'details.chatInApp')}
+                      </Button>
+                    )}
                     <Button asChild size="lg" className="h-12 w-full bg-green-500 text-lg text-white hover:bg-green-600">
                       <a
                         href={whatsappLink ?? '#'}

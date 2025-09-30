@@ -29,17 +29,39 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return;
+    // Not signed in -> login
+    if (!user) {
       router.push('/login');
+      return;
     }
-  }, [user, loading, router]);
+    // Signed in but not a provider (or missing profile) -> send home (seekers cannot access provider dashboard)
+    if (user && (userProfile?.role !== 'provider')) {
+      router.push('/');
+    }
+  }, [user, userProfile, loading, router]);
   
   if (loading || !user) {
     return null; // Or a loading spinner
+  }
+  // If seeker (or missing profile) somehow lands here before redirect finishes, render a friendly message instead of provider UI
+  if (userProfile?.role !== 'provider') {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Header />
+        <main className="container py-8">
+          <h1 className="mb-2 text-2xl font-bold">For Providers Only</h1>
+          <p className="text-muted-foreground">
+            Your account is a seeker. Service creation and provider dashboard are available only to provider accounts.
+          </p>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
@@ -100,3 +122,4 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
+
