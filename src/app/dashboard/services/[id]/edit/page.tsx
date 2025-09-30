@@ -444,28 +444,24 @@ export default function EditServicePage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
-                      <FormControl>
-                        <Input type="number" readOnly {...field} />
-                      </FormControl>
-                      <FormDescription>Auto-calculated from sub-services total.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Sub-services repeater */}
-              <div className="space-y-3">
-                <FormLabel>Sub-services</FormLabel>
                 <div className="space-y-3">
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
+                        <FormControl>
+                          <Input type="number" readOnly {...field} />
+                        </FormControl>
+                        <FormDescription>{tr(locale, 'form.subservices.autoCalc')}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {/* Sub-services repeater */}
                   {subFieldArray.fields.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No sub-services yet.</p>
+                    <p className="text-sm text-muted-foreground">{tr(locale, 'form.subservices.empty')}</p>
                   )}
                   {subFieldArray.fields.map((field, index) => (
                     <div key={field.id} className="rounded border p-3 space-y-2">
@@ -475,9 +471,9 @@ export default function EditServicePage() {
                           name={`subservices.${index}.title` as const}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Title</FormLabel>
+                              <FormLabel>{tr(locale, 'form.subservices.title')}</FormLabel>
                               <FormControl>
-                                <Input placeholder="e.g., AC gas refill" {...field} />
+                                <Input {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -488,7 +484,7 @@ export default function EditServicePage() {
                           name={`subservices.${index}.price` as const}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Price</FormLabel>
+                              <FormLabel>{tr(locale, 'form.subservices.price')}</FormLabel>
                               <FormControl>
                                 <Input type="number" min={0} step="1" placeholder="50" {...field} />
                               </FormControl>
@@ -501,9 +497,9 @@ export default function EditServicePage() {
                           name={`subservices.${index}.unit` as const}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Unit</FormLabel>
+                              <FormLabel>{tr(locale, 'form.subservices.unit')}</FormLabel>
                               <FormControl>
-                                <Input placeholder="per hour / per item" {...field} />
+                                <Input placeholder={tr(locale, 'form.subservices.unitPlaceholder')} {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -511,7 +507,7 @@ export default function EditServicePage() {
                         />
                         <div className="flex items-end">
                           <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>
-                            Remove
+                            {tr(locale, 'form.subservices.remove')}
                           </Button>
                         </div>
                       </div>
@@ -520,9 +516,9 @@ export default function EditServicePage() {
                         name={`subservices.${index}.description` as const}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Description</FormLabel>
+                            <FormLabel>{tr(locale, 'form.subservices.description')}</FormLabel>
                             <FormControl>
-                              <Textarea rows={2} placeholder="Short details…" {...field} />
+                              <Textarea rows={2} placeholder={tr(locale, 'form.subservices.descriptionPlaceholder')} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -531,7 +527,7 @@ export default function EditServicePage() {
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-sm">
-                    <div className="text-muted-foreground">Sub-services total</div>
+                    <div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div>
                     <div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div>
                   </div>
                   <Button
@@ -547,7 +543,7 @@ export default function EditServicePage() {
                       })
                     }
                   >
-                    + Add sub-service
+                    + {tr(locale, 'form.subservices.add')}
                   </Button>
                 </div>
               </div>
@@ -571,7 +567,7 @@ export default function EditServicePage() {
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
+                      <FormLabel>{tr(locale, 'form.labels.city')}</FormLabel>
                       <Select onValueChange={(v) => {
                         field.onChange(v);
                         const c = cityCenter(v);
@@ -627,7 +623,7 @@ export default function EditServicePage() {
                     <FormItem>
                       <FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., +218911234567" {...field} />
+                        <Input placeholder={tr(locale, 'form.placeholders.contactPhone')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -640,7 +636,7 @@ export default function EditServicePage() {
                     <FormItem>
                       <FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., +218911234567" {...field} />
+                        <Input placeholder={tr(locale, 'form.placeholders.contactWhatsapp')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

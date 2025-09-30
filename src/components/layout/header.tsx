@@ -77,30 +77,38 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b brand-gradient text-white">
       <div className="container flex h-16 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2 md:gap-4">
           <nav className="hidden items-center gap-2 md:flex">
-            <Button variant="ghost" asChild>
+            <Button variant="ghost" className="text-white hover:bg-white/10 font-medium" asChild>
               <Link href="/">{tr(locale, 'header.browse')}</Link>
             </Button>
             { userProfile?.role === 'provider' && (
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" className="text-white hover:bg-white/10 font-medium" asChild>
                 <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>
               </Button>
             )}
           </nav>
-          <Button variant="outline" size="sm" onClick={toggleLocale} title={tr(locale, 'header.switch')}>
+          <Button
+            size="sm"
+            className="h-8 rounded-full bg-white px-3 text-primary hover:bg-white/90 border-0 shadow-sm"
+            onClick={toggleLocale}
+            title={tr(locale, 'header.switch')}
+            aria-label={tr(locale, 'header.switch')}
+          >
             {locale === 'ar' ? 'EN' : 'AR'}
           </Button>
           {user ? (
              <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-9 w-9">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full text-primary-foreground">
+                  <Avatar className="h-9 w-9 ring-1 ring-white/30">
                     <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-                    <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                    <AvatarFallback className="bg-white text-primary font-semibold">
+                      {getInitials(user.email)}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>

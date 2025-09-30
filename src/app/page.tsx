@@ -20,6 +20,7 @@ import {
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { ServiceCard } from '@/components/service-card';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { listServicesFiltered, type Service, type ListFilters } from '@/lib/services';
 import { getClientLocale, tr } from '@/lib/i18n';
@@ -33,14 +34,17 @@ const mockCategories = [
   { name: 'Education', icon: Briefcase },
   { name: 'Electrical', icon: Hammer },
 ];
-const cityOptions = ['All Cities', ...libyanCities.map((c) => c.value)];
+// Stable sentinel values so labels can be localized while values remain constant
+const ALL_CATEGORIES = 'ALL_CATEGORIES';
+const ALL_CITIES = 'ALL_CITIES';
+const cityOptions = [ALL_CITIES, ...libyanCities.map((c) => c.value)];
 
 export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [q, setQ] = useState('');
-  const [city, setCity] = useState<string>('All Cities');
-  const [category, setCategory] = useState<string>('All Categories');
+  const [city, setCity] = useState<string>(ALL_CITIES);
+  const [category, setCategory] = useState<string>(ALL_CATEGORIES);
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest');
   const locale = getClientLocale();
@@ -61,8 +65,8 @@ export default function Home() {
     try {
       setLoading(true);
       const filters: ListFilters = {};
-      if (category && category !== 'All Categories') filters.category = category;
-      if (city && city !== 'All Cities') filters.city = city;
+      if (category && category !== ALL_CATEGORIES) filters.category = category;
+      if (city && city !== ALL_CITIES) filters.city = city;
       if (maxPrice) filters.maxPrice = Number(maxPrice);
       const data = await listServicesFiltered({ ...filters, limit: 24 });
       const needle = q.trim().toLowerCase();
@@ -92,45 +96,60 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <main className="flex-1">
-        <section className="bg-secondary py-16 md:py-24">
-          <div className="container text-center">
+        <section className="relative hero-gradient text-white overflow-hidden py-16 md:py-24">
+          <div className="texture-waves absolute inset-0" aria-hidden="true" />
+          <div className="container relative text-center">
             <h1 className="text-4xl font-bold font-headline md:text-5xl">
               {tr(locale, 'home.heroTitle')}
             </h1>
-            <p className="mb-8 mt-4 text-lg text-muted-foreground">
+            <p className="mb-8 mt-4 text-lg text-white/90">
               {tr(locale, 'home.heroSubtitle')}
             </p>
-            <div className="mx-auto max-w-6xl">
-              <div className="grid grid-cols-1 gap-2 rounded-lg bg-background p-4 shadow-lg md:grid-cols-7">
+            <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+              <Link href="/dashboard/services">
+                <Button size="sm" className="h-10 bg-white text-primary hover:bg-white/90">
+                  {tr(locale, 'home.providerCta')}
+                </Button>
+              </Link>
+              <Link href="#search">
+                <Button size="sm" variant="outline" className="h-10 border-white text-white bg-transparent hover:bg-white/10">
+                  {tr(locale, 'home.seekerCta')}
+                </Button>
+              </Link>
+            </div>
+            <div id="search" className="mx-auto max-w-6xl">
+              <div className="grid grid-cols-1 gap-2 rounded-lg bg-background text-foreground p-4 shadow-lg md:grid-cols-7">
                 <div className="md:col-span-2">
                   <Input
                     type="text"
                     placeholder={tr(locale, 'home.searchPlaceholder')}
-                    className="h-12 text-base"
+                    className="h-12 text-base text-foreground placeholder:text-muted-foreground"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                   />
                 </div>
                 <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="h-12 text-base">
-                    <SelectValue placeholder={tr(locale, 'home.categoryPlaceholder')} />
+                  <SelectTrigger className="h-12 text-base text-foreground">
+                    <SelectValue className="text-foreground" placeholder={tr(locale, 'home.categoryPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {[tr(locale, 'home.allCategories'), ...mockCategories.map((c) => c.name)].map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c === tr(locale, 'home.allCategories') ? tr(locale, 'home.allCategories') : tr(locale, `categories.${c}`)}
+                    <SelectItem value={ALL_CATEGORIES}>{tr(locale, 'home.allCategories')}</SelectItem>
+                    {mockCategories.map((c) => (
+                      <SelectItem key={c.name} value={c.name}>
+                        {tr(locale, `categories.${c.name}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <Select value={city} onValueChange={setCity}>
-                  <SelectTrigger className="h-12 text-base">
-                    <SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} />
+                  <SelectTrigger className="h-12 text-base text-foreground">
+                    <SelectValue className="text-foreground" placeholder={tr(locale, 'home.cityPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {cityOptions.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c === 'All Cities' ? tr(locale, 'home.allCities') : cityLabel(locale, c)}
+                    <SelectItem value={ALL_CITIES}>{tr(locale, 'home.allCities')}</SelectItem>
+                    {libyanCities.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {cityLabel(locale, c.value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -138,13 +157,13 @@ export default function Home() {
                 <Input
                   type="number"
                   placeholder={tr(locale, 'home.maxPricePlaceholder')}
-                  className="h-12 text-base"
+                  className="h-12 text-base text-foreground placeholder:text-muted-foreground"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
                 />
                 <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-                  <SelectTrigger className="h-12 text-base">
-                    <SelectValue placeholder={tr(locale, 'home.sortBy')} />
+                  <SelectTrigger className="h-12 text-base text-foreground">
+                    <SelectValue className="text-foreground" placeholder={tr(locale, 'home.sortBy')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="newest">{tr(locale, 'home.sortNewest')}</SelectItem>

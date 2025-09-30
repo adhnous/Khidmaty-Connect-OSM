@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { getClientLocale, tr } from '@/lib/i18n';
 
 import {
   Sidebar,
@@ -31,6 +32,7 @@ export default function DashboardLayout({
 }) {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
+  const locale = getClientLocale();
 
   useEffect(() => {
     if (loading) return;
@@ -76,7 +78,7 @@ export default function DashboardLayout({
                   <SidebarMenuButton asChild>
                     <Link href="/dashboard/services">
                       <List />
-                      My Services
+                      {tr(locale, 'dashboard.sidebar.myServices')}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -84,7 +86,7 @@ export default function DashboardLayout({
                   <SidebarMenuButton asChild>
                     <Link href="/dashboard/services/new">
                       <PlusCircle />
-                      Add New Service
+                      {tr(locale, 'dashboard.sidebar.addService')}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -92,7 +94,7 @@ export default function DashboardLayout({
                   <SidebarMenuButton asChild>
                     <Link href="/dashboard/analytics">
                       <BarChart2 />
-                      Analytics
+                      {tr(locale, 'dashboard.sidebar.analytics')}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -100,7 +102,7 @@ export default function DashboardLayout({
                   <SidebarMenuButton asChild>
                     <Link href="/dashboard/profile">
                       <User />
-                      Profile
+                      {tr(locale, 'dashboard.sidebar.profile')}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -108,7 +110,7 @@ export default function DashboardLayout({
                   <SidebarMenuButton asChild>
                     <Link href="/dashboard/settings">
                       <Settings />
-                      Settings
+                      {tr(locale, 'dashboard.sidebar.settings')}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -183,7 +183,7 @@ export function ServiceForm() {
       category: '',
       city: 'Tripoli',
       area: '',
-      availabilityNote: 'Available on weekdays, 9am to 5pm.',
+      availabilityNote: '',
       contactPhone: '',
       contactWhatsapp: '',
       videoUrl: '',
@@ -465,10 +465,10 @@ export function ServiceForm() {
               </div>
         {/* Sub-services repeater */}
         <div className="space-y-3">
-          <FormLabel>Sub-services</FormLabel>
+          <FormLabel>{tr(locale, 'form.subservices.label')}</FormLabel>
           <div className="space-y-3">
             {subFieldArray.fields.length === 0 && (
-              <p className="text-sm text-muted-foreground">No sub-services yet.</p>
+              <p className="text-sm text-muted-foreground">{tr(locale, 'form.subservices.empty')}</p>
             )}
             {subFieldArray.fields.map((field, index) => (
               <div key={field.id} className="rounded border p-3 space-y-2">
@@ -478,9 +478,9 @@ export function ServiceForm() {
                     name={`subservices.${index}.title` as const}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Title</FormLabel>
+                        <FormLabel>{tr(locale, 'form.subservices.title')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., AC gas refill" {...field} />
+                          <Input {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -491,7 +491,7 @@ export function ServiceForm() {
                     name={`subservices.${index}.price` as const}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Price</FormLabel>
+                        <FormLabel>{tr(locale, 'form.subservices.price')}</FormLabel>
                         <FormControl>
                           <Input type="number" min={0} step="1" placeholder="50" {...field} />
                         </FormControl>
@@ -504,9 +504,9 @@ export function ServiceForm() {
                     name={`subservices.${index}.unit` as const}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Unit</FormLabel>
+                        <FormLabel>{tr(locale, 'form.subservices.unit')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="per hour / per item" {...field} />
+                          <Input placeholder={tr(locale, 'form.subservices.unitPlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -514,7 +514,7 @@ export function ServiceForm() {
                   />
                   <div className="flex items-end">
                     <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>
-                      Remove
+                      {tr(locale, 'form.subservices.remove')}
                     </Button>
                   </div>
                 </div>
@@ -523,9 +523,9 @@ export function ServiceForm() {
                   name={`subservices.${index}.description` as const}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{tr(locale, 'form.subservices.description')}</FormLabel>
                       <FormControl>
-                        <Textarea rows={2} placeholder="Short details…" {...field} />
+                        <Textarea rows={2} placeholder={tr(locale, 'form.subservices.descriptionPlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -535,7 +535,7 @@ export function ServiceForm() {
             ))}
 
             <div className="flex items-center justify-between text-sm">
-              <div className="text-muted-foreground">Sub-services total</div>
+              <div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div>
               <div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div>
             </div>
 
@@ -552,7 +552,7 @@ export function ServiceForm() {
                 })
               }
             >
-              + Add sub-service
+              + {tr(locale, 'form.subservices.add')}
             </Button>
           </div>
         </div>
@@ -653,7 +653,7 @@ export function ServiceForm() {
                   <Input type="number" placeholder="100" readOnly {...field} />
                 </FormControl>
                 <FormDescription>
-                  Auto-calculated from sub-services total.
+                  {tr(locale, 'form.subservices.autoCalc')}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -858,7 +858,7 @@ export function ServiceForm() {
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., +218911234567" {...field} />
+                  <Input placeholder={tr(locale, 'form.placeholders.contactPhone')} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -871,7 +871,7 @@ export function ServiceForm() {
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., +218911234567" {...field} />
+                  <Input placeholder={tr(locale, 'form.placeholders.contactWhatsapp')} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
