@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/owner-console/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,10 +16,12 @@
 
 # next.js
 /.next/
+/owner-console/.next
 /out/
 
 # production
 /build
+/owner-console/build
 
 # misc
 .DS_Store
@@ -37,21 +40,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# genkit output
 .genkit/*
-.env*
+
+# env & secrets
+.env
+.env.local
+.env.*.local
 !.env.example
 
-# firebase
+# firebase logs
 firebase-debug.log
 firestore-debug.log
-# dependencies
-/node_modules
-/owner-console/node_modules
-
-# next.js
-/.next/
-/owner-console/.next
-
-# build
-/build
-/owner-console/build
