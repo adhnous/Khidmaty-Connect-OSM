@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'nodejs';
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get('q') || '').trim();
@@ -17,15 +19,21 @@ export async function GET(req: NextRequest) {
   url.searchParams.set('q', searchQ);
   url.searchParams.set('limit', String(q ? limit : '10'));
   url.searchParams.set('addressdetails', '1');
-  if (countrycodes) url.searchParams.set('countrycodes', countrycodes);
-  url.searchParams.set('accept-language', lang);
+  if (countrycodes) {
+    url.searchParams.set('countrycodes', countrycodes);
+  } else {
+    // Default to Libya
+    url.searchParams.set('countrycodes', 'ly');
+  }
+  // Language is provided via header below
 
   try {
+    const UA = process.env.NOMINATIM_UA || 'KhidmatyConnect/1.0 (+https://example.local/contact)';
     const res = await fetch(url.toString(), {
       headers: {
         'Accept-Language': lang,
         // Identify the app per Nominatim usage policy
-        'User-Agent': 'KhidmatyConnect/1.0 (+https://example.local)'
+        'User-Agent': UA
       },
       // Cache a little to be nicer to the API
       next: { revalidate: 300 },

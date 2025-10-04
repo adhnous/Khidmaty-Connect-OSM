@@ -35,17 +35,8 @@ import { createService, uploadServiceImages, type ServiceImage } from '@/lib/ser
 import AddressSearch from '@/components/address-search';
 import { reverseGeocodeNominatim, getLangFromDocument } from '@/lib/geocode';
 import { getClientLocale, tr } from '@/lib/i18n';
-
-const mockCategories = [
-  'Plumbing',
-  'Home Services',
-  'Automotive',
-  'Education',
-  'Electrical',
-  'Carpentry',
-  'Gardening',
-];
-// Cities are centralized in lib/cities.ts
+import { tileUrl, tileAttribution, markerHtml } from '@/lib/map';
+import { categories } from '@/lib/categories';
 
 // Client-only react-leaflet components
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
@@ -215,6 +206,22 @@ export function ServiceForm() {
         ? undefined
         : Number(lng as any);
 
+  const gmapsUrl = useMemo(() => (
+    latNum != null && lngNum != null
+      ? `https://www.google.com/maps/search/?api=1&query=${latNum},${lngNum}`
+      : null
+  ), [latNum, lngNum]);
+  const appleMapsUrl = useMemo(() => (
+    latNum != null && lngNum != null
+      ? `http://maps.apple.com/?q=${latNum},${lngNum}`
+      : null
+  ), [latNum, lngNum]);
+  const geoUrl = useMemo(() => (
+    latNum != null && lngNum != null
+      ? `geo:${latNum},${lngNum}?q=${latNum},${lngNum}`
+      : null
+  ), [latNum, lngNum]);
+
   useEffect(() => {
     setMapMounted(true);
   }, []);
@@ -237,14 +244,11 @@ export function ServiceForm() {
   const markerIcon = useMemo(() => {
     return L.divIcon({
       className: '',
-      html: '<div style="width:20px;height:20px;border-radius:50%;background:#22c55e;border:2px solid white;box-shadow:0 0 0 2px rgba(0,0,0,0.15)"></div>',
+      html: markerHtml,
       iconSize: [20, 20],
       iconAnchor: [10, 10],
     });
   }, []);
-
-  const tileUrl = process.env.NEXT_PUBLIC_OSM_TILE_URL || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttrib = process.env.NEXT_PUBLIC_OSM_ATTRIBUTION || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   // Dynamic sub-services
   const subFieldArray = useFieldArray({ control: form.control, name: 'subservices' });
@@ -604,7 +608,7 @@ export function ServiceForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {mockCategories.map((cat) => (
+                    {categories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {tr(locale, `categories.${cat}`)}
                       </SelectItem>
@@ -766,7 +770,7 @@ export function ServiceForm() {
             }}
           />
           {mapMounted && (
-            <div className="h-64 w-full overflow-hidden rounded border">
+            <div className="relative h-64 w-full overflow-hidden rounded border">
               <MapContainer
                 key={`${latNum ?? 'city'}-${lngNum ?? 'city'}-${cityWatch}`}
                 center={(latNum != null && lngNum != null)
@@ -796,7 +800,7 @@ export function ServiceForm() {
                   map.on('zoomend', update);
                 }}
               >
-                <TileLayer attribution={tileAttrib} url={tileUrl} />
+                <TileLayer attribution={tileAttribution} url={tileUrl} />
                 <ScaleControl position="bottomleft" />
                 {(latNum != null && lngNum != null) && (
                   <Marker
@@ -815,40 +819,92 @@ export function ServiceForm() {
                   </Marker>
                 )}
               </MapContainer>
-              <div className="px-2 py-1 text-xs text-muted-foreground">
-                {latNum != null && lngNum != null ? (
-                  <span>
-                    {tr(locale, 'form.map.selected')}: {latNum.toFixed(6)}, {lngNum.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}
-                    {` `}
-                    <a
-                      className="underline"
-                      href={`https://www.openstreetmap.org/?mlat=${latNum}&mlon=${lngNum}#map=13/${latNum}/${lngNum}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {tr(locale, 'form.map.openInOSM')}
-                    </a>
-                  </span>
-                ) : (
-                  <span>{tr(locale, 'form.map.clickToSet')}</span>
-                )}
+              <div className="pointer-events-auto absolute bottom-2 right-2 flex gap-2">
+                <a
+                  className="rounded bg-background/80 px-2 py-1 text-xs underline shadow"
+                  href={gmapsUrl ?? '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => { if (!gmapsUrl) e.preventDefault(); }}
+                >
+                  Google Maps
+                </a>
+                <a
+                  className="rounded bg-background/80 px-2 py-1 text-xs underline shadow"
+                  href={appleMapsUrl ?? '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => { if (!appleMapsUrl) e.preventDefault(); }}
+                >
+                  Apple Maps
+                </a>
               </div>
             </div>
           )}
+          <div className="px-2 py-1 text-xs text-muted-foreground">
+            {latNum != null && lngNum != null ? (
+              <span>
+                {tr(locale, 'form.map.selected')}: {latNum.toFixed(6)}, {lngNum.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}
+                {` `}
+                <a
+                  className="underline"
+                  href={`https://www.openstreetmap.org/?mlat=${latNum}&mlon=${lngNum}#map=13/${latNum}/${lngNum}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {tr(locale, 'form.map.openInOSM')}
+                </a>
+                {` `}·{` `}
+                <a
+                  className="underline"
+                  href={gmapsUrl ?? '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => { if (!gmapsUrl) e.preventDefault(); }}
+                >
+                  Google Maps
+                </a>
+                {` `}·{` `}
+                <a
+                  className="underline"
+                  href={appleMapsUrl ?? '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => { if (!appleMapsUrl) e.preventDefault(); }}
+                >
+                  Apple Maps
+                </a>
+                {` `}·{` `}
+                <a
+                  className="underline"
+                  href={geoUrl ?? '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => { if (!geoUrl) e.preventDefault(); }}
+                >
+                  Open in Maps app
+                </a>
+              </span>
+            ) : (
+              <span>{tr(locale, 'form.map.clickToSet')}</span>
+            )}
+          </div>
+
+          <FormField
+            control={form.control}
+            name="availabilityNote"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{tr(locale, 'form.labels.availabilityNote')}</FormLabel>
+                <FormControl>
+                  <Input placeholder={tr(locale, 'form.placeholders.availability')} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
         </div>
-        <FormField
-          control={form.control}
-          name="availabilityNote"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{tr(locale, 'form.labels.availabilityNote')}</FormLabel>
-              <FormControl>
-                <Input placeholder={tr(locale, 'form.placeholders.availability')} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           <FormField

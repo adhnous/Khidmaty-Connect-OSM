@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { getClientLocale } from '@/lib/i18n';
 
 export type AddressSearchProps = {
   placeholder?: string;
@@ -27,11 +28,7 @@ export default function AddressSearch({
   const t = useRef<number | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  const lang = useMemo(() => {
-    if (typeof document === 'undefined') return 'en';
-    const l = (document.documentElement.getAttribute('lang') || 'en').toLowerCase();
-    return l.startsWith('ar') ? 'ar' : 'en';
-  }, []);
+  const lang = getClientLocale();
 
   useEffect(() => {
     if (t.current) window.clearTimeout(t.current);

@@ -41,6 +41,11 @@ export default function DashboardLayout({
       router.push('/login');
       return;
     }
+    // Signed in but email not verified -> verify first
+    if (user && !user.emailVerified) {
+      router.push('/verify');
+      return;
+    }
     // Signed in but not a provider (or missing profile) -> send home (seekers cannot access provider dashboard)
     if (user && (userProfile?.role !== 'provider')) {
       router.push('/');

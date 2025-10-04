@@ -28,7 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { signUp, signIn, resetPassword } from '@/lib/auth';
+import { signUp, signIn, resetPassword, sendVerificationEmail } from '@/lib/auth';
 import { getUserProfile, createUserProfile, UserProfile, UserRole } from '@/lib/user';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
@@ -102,11 +102,17 @@ export default function LoginPage() {
       const userCredential = await signUp(data.email, data.password);
       if (userCredential.user) {
         await createUserProfile(userCredential.user.uid, data.email, data.role as UserRole);
+        // Send email verification and redirect to verify page
+        await sendVerificationEmail(userCredential.user);
         toast({
-          title: tr(locale, 'login.toasts.accountCreatedTitle'),
-          description: tr(locale, 'login.toasts.accountCreatedDesc'),
+          title: tr(locale, 'login.toasts.verifyEmailSentTitle'),
+          description: tr(locale, 'login.toasts.verifyEmailSentDesc'),
         });
-        await handleRedirect(userCredential.user);
+        toast({
+          title: tr(locale, 'login.toasts.pleaseVerifyTitle'),
+          description: tr(locale, 'login.toasts.pleaseVerifyDesc'),
+        });
+        router.push('/verify');
       }
     } catch (error: any) {
       if (error?.code === 'auth/email-already-in-use') {
@@ -134,6 +140,15 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const userCredential = await signIn(data.email, data.password);
+      if (!userCredential.user.emailVerified) {
+        toast({
+          variant: 'destructive',
+          title: tr(locale, 'login.toasts.pleaseVerifyTitle'),
+          description: tr(locale, 'login.toasts.pleaseVerifyDesc'),
+        });
+        router.push('/verify');
+        return;
+      }
       toast({
         title: tr(locale, 'login.toasts.signedInTitle'),
         description: tr(locale, 'login.toasts.signedInDesc'),

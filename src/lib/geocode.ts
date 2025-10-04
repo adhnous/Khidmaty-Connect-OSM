@@ -43,7 +43,6 @@ export function reverseGeocodeNominatim(
     url.searchParams.set('format', 'jsonv2');
     url.searchParams.set('lat', String(lat));
     url.searchParams.set('lon', String(lng));
-    url.searchParams.set('accept-language', lang);
     const res = await fetch(url.toString(), {
       headers: { 'Accept-Language': lang },
       signal,
