@@ -162,6 +162,7 @@ export function ServiceForm() {
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
   const debounceTimeout = useRef<NodeJS.Timeout>();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [newVideoUrl, setNewVideoUrl] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [mapMounted, setMapMounted] = useState(false);
 
@@ -178,6 +179,9 @@ export function ServiceForm() {
       contactPhone: '',
       contactWhatsapp: '',
       videoUrl: '',
+      videoUrls: [],
+      facebookUrl: '',
+      telegramUrl: '',
       subservices: [],
       // Default to Tripoli center
       lat: 32.8872 as any,
@@ -254,6 +258,7 @@ export function ServiceForm() {
   const subFieldArray = useFieldArray({ control: form.control, name: 'subservices' });
   const subWatch = form.watch('subservices') as any[] | undefined;
   const subTotal = (subWatch || []).reduce((sum, s) => sum + (Number(s?.price) || 0), 0);
+  // Additional YouTube links managed via watch/setValue
 
   // Keep main price in sync with sub-services total
   useEffect(() => {
@@ -412,6 +417,11 @@ export function ServiceForm() {
         contactPhone: data.contactPhone,
         contactWhatsapp: data.contactWhatsapp,
         ...(data.videoUrl ? { videoUrl: data.videoUrl } : {}),
+        ...(Array.isArray(data.videoUrls) && data.videoUrls.filter(Boolean).length > 0
+          ? { videoUrls: data.videoUrls.filter((u) => typeof u === 'string' && u.trim() !== '') }
+          : {}),
+        ...(data.facebookUrl && data.facebookUrl.trim() ? { facebookUrl: data.facebookUrl.trim() } : {}),
+        ...(data.telegramUrl && data.telegramUrl.trim() ? { telegramUrl: data.telegramUrl.trim() } : {}),
         images,
         providerId: user.uid,
         providerName,
@@ -949,6 +959,86 @@ export function ServiceForm() {
             </FormItem>
           )}
         />
+
+        {/* Additional YouTube links */}
+        <div className="space-y-2">
+          <FormLabel>{tr(locale, 'form.labels.videoUrls')}</FormLabel>
+          <div className="space-y-2">
+            {(form.watch('videoUrls') || []).map((url, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <Input
+                  value={url}
+                  onChange={(e) => {
+                    const next = [...(form.getValues('videoUrls') || [])];
+                    next[idx] = e.target.value;
+                    form.setValue('videoUrls', next, { shouldValidate: true });
+                  }}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const next = (form.getValues('videoUrls') || []).filter((_, i) => i !== idx);
+                    form.setValue('videoUrls', next, { shouldValidate: true });
+                  }}
+                >
+                  {tr(locale, 'form.subservices.remove')}
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={newVideoUrl}
+              onChange={(e) => setNewVideoUrl(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                const v = newVideoUrl.trim();
+                if (!v) return;
+                const next = [...(form.getValues('videoUrls') || []), v];
+                form.setValue('videoUrls', next, { shouldValidate: true });
+                setNewVideoUrl('');
+              }}
+            >
+              + Add
+            </Button>
+          </div>
+        </div>
+
+        {/* Social links */}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="facebookUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{tr(locale, 'form.labels.facebookUrl')}</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://facebook.com/yourpage" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="telegramUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{tr(locale, 'form.labels.telegramUrl')}</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://t.me/yourchannel" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormItem>
           <FormLabel>{tr(locale, 'form.images.label')}</FormLabel>

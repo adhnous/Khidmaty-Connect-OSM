@@ -85,19 +85,25 @@ export default function EditServicePage() {
       availabilityNote: '',
       contactPhone: '',
       contactWhatsapp: '',
+      videoUrl: '',
+      videoUrls: [],
+      facebookUrl: '',
+      telegramUrl: '',
       subservices: [],
     },
   });
 
-  // Require sign-in to edit
+  // Require sign-in to edit and load the service
   useEffect(() => {
     if (!authLoading && !user) {
-      toast({ variant: 'destructive', title: tr(locale, 'form.toasts.pleaseSignInTitle'), description: tr(locale, 'form.toasts.pleaseSignInDesc') });
+      toast({
+        variant: 'destructive',
+        title: tr(locale, 'form.toasts.pleaseSignInTitle'),
+        description: tr(locale, 'form.toasts.pleaseSignInDesc'),
+      });
       router.push('/login');
+      return;
     }
-  }, [authLoading, user, router, toast]);
-
-  useEffect(() => {
     (async () => {
       const id = params?.id;
       if (!id) return;
@@ -108,7 +114,11 @@ export default function EditServicePage() {
       }
       // Optional: Only allow the owner to edit
       if (user && (doc as Service).providerId && (doc as Service).providerId !== user.uid) {
-        toast({ variant: 'destructive', title: tr(locale, 'dashboard.serviceForm.notAllowedTitle'), description: tr(locale, 'dashboard.serviceForm.notAllowedDesc') });
+        toast({
+          variant: 'destructive',
+          title: tr(locale, 'dashboard.serviceForm.notAllowedTitle'),
+          description: tr(locale, 'dashboard.serviceForm.notAllowedDesc'),
+        });
         router.push('/dashboard/services');
         return;
       }
@@ -124,6 +134,9 @@ export default function EditServicePage() {
         contactPhone: (doc as any).contactPhone ?? '',
         contactWhatsapp: (doc as any).contactWhatsapp ?? '',
         videoUrl: (doc as any).videoUrl ?? '',
+        videoUrls: Array.isArray((doc as any).videoUrls) ? (doc as any).videoUrls : [],
+        facebookUrl: (doc as any).facebookUrl ?? '',
+        telegramUrl: (doc as any).telegramUrl ?? '',
         subservices: (doc as any).subservices ?? [],
       });
       setImages(doc.images ?? []);
@@ -139,7 +152,7 @@ export default function EditServicePage() {
       }
       setLoading(false);
     })();
-  }, [params, form, router, user, toast]);
+  }, [authLoading, user, params, form, router, toast, locale]);
 
   useEffect(() => {
     setMapMounted(true);
@@ -370,6 +383,15 @@ export default function EditServicePage() {
       if (typeof lat === 'number') payload.lat = lat; else payload.lat = deleteField();
       if (typeof lng === 'number') payload.lng = lng; else payload.lng = deleteField();
       if (typeof data.videoUrl === 'string' && data.videoUrl.trim()) payload.videoUrl = data.videoUrl.trim(); else payload.videoUrl = deleteField();
+      // Additional video links
+      if (Array.isArray((data as any).videoUrls) && (data as any).videoUrls.filter(Boolean).length > 0) {
+        payload.videoUrls = (data as any).videoUrls.filter((u: string) => typeof u === 'string' && u.trim() !== '');
+      } else {
+        payload.videoUrls = deleteField();
+      }
+      // Social links
+      if ((data as any).facebookUrl && (data as any).facebookUrl.trim()) payload.facebookUrl = (data as any).facebookUrl.trim(); else payload.facebookUrl = deleteField();
+      if ((data as any).telegramUrl && (data as any).telegramUrl.trim()) payload.telegramUrl = (data as any).telegramUrl.trim(); else payload.telegramUrl = deleteField();
 
       await updateService(id, payload);
       toast({ title: tr(locale, 'form.toasts.updateSuccess') });
@@ -561,6 +583,85 @@ export default function EditServicePage() {
                   </FormItem>
                 )}
               />
+              {/* Additional YouTube links */}
+              <div className="space-y-2">
+                <FormLabel>{tr(locale, 'form.labels.videoUrls')}</FormLabel>
+                <div className="space-y-2">
+                  {(form.watch('videoUrls') as any[] || []).map((url: string, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Input
+                        value={url}
+                        onChange={(e) => {
+                          const next = [...((form.getValues('videoUrls') as any[]) || [])];
+                          next[idx] = e.target.value;
+                          form.setValue('videoUrls' as any, next, { shouldValidate: true });
+                        }}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const next = ((form.getValues('videoUrls') as any[]) || []).filter((_, i) => i !== idx);
+                          form.setValue('videoUrls' as any, next, { shouldValidate: true });
+                        }}
+                      >
+                        {tr(locale, 'form.subservices.remove')}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={(form as any)._newVideoUrl || ''}
+                    onChange={(e) => ((form as any)._newVideoUrl = e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      const v = String((form as any)._newVideoUrl || '').trim();
+                      if (!v) return;
+                      const next = [...((form.getValues('videoUrls') as any[]) || []), v];
+                      form.setValue('videoUrls' as any, next, { shouldValidate: true });
+                      (form as any)._newVideoUrl = '';
+                    }}
+                  >
+                    + Add
+                  </Button>
+                </div>
+              </div>
+
+              {/* Social links */}
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="facebookUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{tr(locale, 'form.labels.facebookUrl')}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://facebook.com/yourpage" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="telegramUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{tr(locale, 'form.labels.telegramUrl')}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://t.me/yourchannel" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <FormField
                   control={form.control}

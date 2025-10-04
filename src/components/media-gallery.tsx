@@ -9,13 +9,14 @@ export type MediaGalleryProps = {
   title: string;
   images: Array<{ url: string; hint?: string }>;
   videoEmbedUrl?: string | null;
+  videoEmbedUrls?: string[] | null;
 };
 
 type MediaItem =
   | { type: 'image'; url: string; hint?: string }
   | { type: 'video'; url: string };
 
-export default function MediaGallery({ title, images, videoEmbedUrl }: MediaGalleryProps) {
+export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedUrls }: MediaGalleryProps) {
   const media: MediaItem[] = useMemo(() => {
     const pics: MediaItem[] = (images && images.length > 0 ? images : [{ url: 'https://placehold.co/800x600.png' }]).map(
       (img) => ({
@@ -25,27 +26,26 @@ export default function MediaGallery({ title, images, videoEmbedUrl }: MediaGall
       })
     );
     const items: MediaItem[] = [...pics];
-    if (videoEmbedUrl) {
-      items.push({ type: 'video', url: videoEmbedUrl });
-    }
+    const vids: string[] = [];
+    if (videoEmbedUrl) vids.push(videoEmbedUrl);
+    if (Array.isArray(videoEmbedUrls)) vids.push(...videoEmbedUrls.filter(Boolean));
+    for (const v of vids) items.push({ type: 'video', url: v });
     return items;
-  }, [images, videoEmbedUrl]);
+  }, [images, videoEmbedUrl, videoEmbedUrls]);
 
   const [active, setActive] = useState(0);
 
-  const youtubeThumb = useMemo(() => {
-    if (!videoEmbedUrl) return null;
+  function getYoutubeThumb(embedUrl: string | null): string | null {
+    if (!embedUrl) return null;
     try {
-      // videoEmbedUrl looks like https://www.youtube-nocookie.com/embed/<id>?...
-      const u = new URL(videoEmbedUrl);
-      const parts = u.pathname.split('/');
-      const id = parts[parts.length - 1] || '';
+      const u = new URL(embedUrl);
+      const id = u.pathname.split('/').pop() || '';
       if (!id) return null;
       return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
     } catch {
       return null;
     }
-  }, [videoEmbedUrl]);
+  }
 
   const isVideo = media[active]?.type === 'video';
 
@@ -71,9 +71,9 @@ export default function MediaGallery({ title, images, videoEmbedUrl }: MediaGall
                 height={64}
                 className="h-full w-full object-cover"
               />
-            ) : youtubeThumb ? (
+            ) : getYoutubeThumb(m.url) ? (
               // Use normal img tag to avoid Next.js remotePatterns issues
-              <img src={youtubeThumb} alt={title} className="h-full w-full object-cover" />
+              <img src={getYoutubeThumb(m.url) as string} alt={title} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-black/80 text-white">Video</div>
             )}

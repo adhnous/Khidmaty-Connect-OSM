@@ -156,6 +156,9 @@ const dict = {
         contactPhone: 'Contact Phone',
         contactWhatsapp: 'WhatsApp Number',
         videoUrl: 'YouTube Video URL (optional)',
+        videoUrls: 'Additional YouTube Links',
+        facebookUrl: 'Facebook URL (optional)',
+        telegramUrl: 'Telegram URL (optional)',
         images: 'Service Images (1-8)',
       },
       subservices: {
@@ -470,6 +473,9 @@ const dict = {
         contactPhone: 'رقم الهاتف',
         contactWhatsapp: 'رقم واتساب',
         videoUrl: 'رابط فيديو يوتيوب (اختياري)',
+        videoUrls: 'روابط يوتيوب إضافية',
+        facebookUrl: 'رابط فيسبوك (اختياري)',
+        telegramUrl: 'رابط تيليغرام (اختياري)',
         images: 'صور الخدمة (1-8)',
       },
       subservices: {

@@ -23,6 +23,16 @@ export const serviceSchema = z.object({
   // Optional YouTube video URL. Empty string becomes undefined.
   videoUrl: z
     .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url('Enter a valid URL').optional()),
+  // New: multiple video URLs (YouTube). Empty items are filtered out on submit.
+  videoUrls: z
+    .array(z.string().url('Enter a valid URL'))
+    .optional()
+    .default([]),
+  // New: social links (optional). Empty string becomes undefined.
+  facebookUrl: z
+    .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url('Enter a valid URL').optional()),
+  telegramUrl: z
+    .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url('Enter a valid URL').optional()),
   // images: z.any() // Image handling is complex, placeholder for now
   subservices: z.array(subServiceSchema).default([]),
 });

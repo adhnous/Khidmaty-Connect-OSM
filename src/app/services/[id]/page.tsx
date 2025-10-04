@@ -4,6 +4,7 @@ import {
   MapPin,
   MessageCircle,
   Phone,
+  ExternalLink,
 } from 'lucide-react';
 
 import { Footer } from '@/components/layout/footer';
@@ -286,42 +287,79 @@ export default function ServiceDetailPage() {
   // Build a privacy-friendly YouTube embed URL if provided
   const videoEmbedUrl = useMemo(() => {
     const raw = (service as any)?.videoUrl as string | undefined;
-    if (!raw) return null;
-    try {
-      const url = new URL(raw);
-      const host = url.hostname.toLowerCase();
-      let id: string | null = null;
-      if (host.includes('youtube.com')) {
-        const v = url.searchParams.get('v');
-        if (v) id = v;
-        if (!id && url.pathname.startsWith('/embed/')) id = url.pathname.split('/embed/')[1]?.split(/[?&]/)[0] ?? null;
-        if (!id && url.pathname.startsWith('/shorts/')) id = url.pathname.split('/shorts/')[1]?.split(/[?&]/)[0] ?? null;
-      } else if (host.includes('youtu.be')) {
-        id = url.pathname.replace(/^\//, '').split(/[?&]/)[0] || null;
-      }
-      if (!id) return null;
-      // Parse optional start time
-      const t = url.searchParams.get('t') || url.searchParams.get('start') || undefined;
-      let start: number | undefined = undefined;
-      if (t) {
-        // Parse formats like 90, 45s, 1m30s, 1h2m3s
-        const m = String(t).match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?|(\d+)/);
-        if (m) {
-          if (m[4]) start = parseInt(m[4], 10);
-          else {
-            const h = m[1] ? parseInt(m[1], 10) : 0;
-            const mm = m[2] ? parseInt(m[2], 10) : 0;
-            const ss = m[3] ? parseInt(m[3], 10) : 0;
-            start = h * 3600 + mm * 60 + ss;
+    const conv = (rawStr: string | undefined) => {
+      if (!rawStr) return null;
+      try {
+        const url = new URL(rawStr);
+        const host = url.hostname.toLowerCase();
+        let id: string | null = null;
+        if (host.includes('youtube.com')) {
+          const v = url.searchParams.get('v');
+          if (v) id = v;
+          if (!id && url.pathname.startsWith('/embed/')) id = url.pathname.split('/embed/')[1]?.split(/[?&]/)[0] ?? null;
+          if (!id && url.pathname.startsWith('/shorts/')) id = url.pathname.split('/shorts/')[1]?.split(/[?&]/)[0] ?? null;
+        } else if (host.includes('youtu.be')) {
+          id = url.pathname.replace(/^\//, '').split(/[?&]/)[0] || null;
+        }
+        if (!id) return null;
+        const t = url.searchParams.get('t') || url.searchParams.get('start') || undefined;
+        let start: number | undefined = undefined;
+        if (t) {
+          const m = String(t).match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?|(\d+)/);
+          if (m) {
+            if (m[4]) start = parseInt(m[4], 10);
+            else {
+              const h = m[1] ? parseInt(m[1], 10) : 0;
+              const mm = m[2] ? parseInt(m[2], 10) : 0;
+              const ss = m[3] ? parseInt(m[3], 10) : 0;
+              start = h * 3600 + mm * 60 + ss;
+            }
           }
         }
-      }
-      const base = `https://www.youtube-nocookie.com/embed/${id}`;
-      return start && start > 0 ? `${base}?start=${start}` : base;
-    } catch {
-      return null;
-    }
+        const base = `https://www.youtube-nocookie.com/embed/${id}`;
+        return start && start > 0 ? `${base}?start=${start}` : base;
+      } catch { return null; }
+    };
+    return conv(raw);
   }, [service?.videoUrl]);
+
+  const videoEmbedUrls = useMemo(() => {
+    const arr = (((service as any)?.videoUrls as string[] | undefined) || []).filter(Boolean);
+    const out: string[] = [];
+    for (const raw of arr) {
+      try {
+        const url = new URL(raw);
+        const host = url.hostname.toLowerCase();
+        let id: string | null = null;
+        if (host.includes('youtube.com')) {
+          const v = url.searchParams.get('v');
+          if (v) id = v;
+          if (!id && url.pathname.startsWith('/embed/')) id = url.pathname.split('/embed/')[1]?.split(/[?&]/)[0] ?? null;
+          if (!id && url.pathname.startsWith('/shorts/')) id = url.pathname.split('/shorts/')[1]?.split(/[?&]/)[0] ?? null;
+        } else if (host.includes('youtu.be')) {
+          id = url.pathname.replace(/^\//, '').split(/[?&]/)[0] || null;
+        }
+        if (!id) continue;
+        const t = url.searchParams.get('t') || url.searchParams.get('start') || undefined;
+        let start: number | undefined = undefined;
+        if (t) {
+          const m = String(t).match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?|(\d+)/);
+          if (m) {
+            if (m[4]) start = parseInt(m[4], 10);
+            else {
+              const h = m[1] ? parseInt(m[1], 10) : 0;
+              const mm = m[2] ? parseInt(m[2], 10) : 0;
+              const ss = m[3] ? parseInt(m[3], 10) : 0;
+              start = h * 3600 + mm * 60 + ss;
+            }
+          }
+        }
+        const base = `https://www.youtube-nocookie.com/embed/${id}`;
+        out.push(start && start > 0 ? `${base}?start=${start}` : base);
+      } catch {}
+    }
+    return out;
+  }, [service?.videoUrls]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -350,6 +388,7 @@ export default function ServiceDetailPage() {
               title={service.title}
               images={service.images || []}
               videoEmbedUrl={videoEmbedUrl}
+              videoEmbedUrls={videoEmbedUrls}
             />
 
             <h1 className="mb-4 text-3xl font-bold font-headline md:text-4xl">
@@ -553,6 +592,27 @@ export default function ServiceDetailPage() {
                     </div>
                   </div>
                 )}
+                {/* Social links */}
+                {((service as any)?.facebookUrl || (service as any)?.telegramUrl) && (
+                  <div className="rounded border bg-background p-3">
+                    <div className="mb-2 text-sm font-medium text-muted-foreground">Social</div>
+                    <div className="flex flex-col gap-2 text-sm">
+                      {(service as any)?.facebookUrl && (
+                        <a className="underline inline-flex items-center gap-2" href={(service as any).facebookUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4"/>
+                          Facebook
+                        </a>
+                      )}
+                      {(service as any)?.telegramUrl && (
+                        <a className="underline inline-flex items-center gap-2" href={(service as any).telegramUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4"/>
+                          Telegram
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {((service as any)?.contactWhatsapp || (service as any)?.contactPhone) ? (
                   <>
                     {/* In-app chat: visible for signed-in non-owners and non-demo services */}

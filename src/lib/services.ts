@@ -42,6 +42,10 @@ export type Service = {
   contactPhone?: string;
   contactWhatsapp?: string;
   videoUrl?: string;
+  // New: multiple YouTube links (preferred) and social links
+  videoUrls?: string[];
+  facebookUrl?: string;
+  telegramUrl?: string;
   providerId: string;
   providerName?: string | null;
   providerEmail?: string | null;
