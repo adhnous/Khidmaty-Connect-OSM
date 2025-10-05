@@ -463,6 +463,19 @@ export default function ServiceDetailPage() {
                     {tr(locale, 'details.approxIn')} {service.city}
                     {service.area ? `, ${service.area}` : ''}.
                   </div>
+                  {(service as any)?.mapUrl && (
+                    <div>
+                      <a
+                        className="underline inline-flex items-center gap-2"
+                        href={(service as any).mapUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        {tr(locale, 'details.viewOnMap')}
+                      </a>
+                    </div>
+                  )}
                   <ServiceMap
                     lat={coords.lat}
                     lng={coords.lng}

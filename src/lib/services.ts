@@ -29,32 +29,34 @@ export type SubService = {
   description?: string;
 };
 
-export type Service = {
-  id?: string;
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  city: string;
-  area: string;
-  availabilityNote?: string;
-  images: ServiceImage[];
-  contactPhone?: string;
-  contactWhatsapp?: string;
-  videoUrl?: string;
-  // New: multiple YouTube links (preferred) and social links
-  videoUrls?: string[];
-  facebookUrl?: string;
-  telegramUrl?: string;
-  providerId: string;
-  providerName?: string | null;
-  providerEmail?: string | null;
-  subservices?: SubService[];
-  status?: 'pending' | 'approved' | 'rejected';
-  // Optional geolocation for map; when absent, UI falls back to city centroid
-  lat?: number;
-  lng?: number;
-  createdAt?: unknown;
+  export type Service = {
+    id?: string;
+    title: string;
+    description: string;
+    price: number;
+    category: string;
+    city: string;
+    area: string;
+    availabilityNote?: string;
+    images: ServiceImage[];
+    contactPhone?: string;
+    contactWhatsapp?: string;
+    videoUrl?: string;
+    // New: multiple YouTube links (preferred) and social links
+    videoUrls?: string[];
+    facebookUrl?: string;
+    telegramUrl?: string;
+    // Optional map URL to external maps (Google Maps/OSM)
+    mapUrl?: string;
+    providerId: string;
+    providerName?: string | null;
+    providerEmail?: string | null;
+    subservices?: SubService[];
+    status?: 'pending' | 'approved' | 'rejected';
+    // Optional geolocation for map; when absent, UI falls back to city centroid
+    lat?: number;
+    lng?: number;
+    createdAt?: unknown;
 };
 
 export async function uploadServiceImages(

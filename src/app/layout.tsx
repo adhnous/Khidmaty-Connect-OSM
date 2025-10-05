@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/use-auth';
 import { cookies } from 'next/headers';
+import SwRegister from '@/components/sw-register';
 
 export const metadata: Metadata = {
   title: 'Khidmaty Connect',
@@ -26,12 +27,15 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0ea5e9" />
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
           {children}
         </AuthProvider>
         <Toaster />
+        <SwRegister />
       </body>
     </html>
   );

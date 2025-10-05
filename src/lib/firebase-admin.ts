@@ -6,8 +6,12 @@ export async function getAdmin() {
   try {
     const appMod = await import('firebase-admin/app');
     const fsMod = await import('firebase-admin/firestore');
+    const authMod = await import('firebase-admin/auth');
+    const msgMod = await import('firebase-admin/messaging');
     const { getApps, initializeApp, cert, applicationDefault } = appMod as any;
     const { getFirestore, FieldValue } = fsMod as any;
+    const { getAuth } = authMod as any;
+    const { getMessaging } = msgMod as any;
 
     if (!getApps().length) {
       const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -23,7 +27,9 @@ export async function getAdmin() {
     }
 
     const db = getFirestore();
-    return { db, FieldValue } as { db: any; FieldValue: any };
+    const auth = getAuth();
+    const messaging = getMessaging();
+    return { db, FieldValue, auth, messaging } as { db: any; FieldValue: any; auth: any; messaging: any };
   } catch (e: any) {
     const err = new Error(
       'firebase_admin_unavailable: Install firebase-admin and set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.'

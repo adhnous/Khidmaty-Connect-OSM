@@ -1,7 +1,7 @@
 
 'use client';
 
-import { LogIn, User, LogOut, Briefcase } from 'lucide-react';
+import { LogIn, User, LogOut, Briefcase, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { signOut } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
+import { getFcmToken, saveFcmToken } from '@/lib/messaging';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,6 +77,29 @@ export function Header() {
     window.location.reload();
   };
 
+  const [notifLoading, setNotifLoading] = useState(false);
+  const enableNotifications = async () => {
+    if (!user) return;
+    try {
+      setNotifLoading(true);
+      const token = await getFcmToken();
+      if (!token) {
+        const granted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+        const description = granted
+          ? 'Missing or invalid Web Push VAPID key. Set NEXT_PUBLIC_FIREBASE_VAPID_KEY to the PUBLIC key from Firebase Console.'
+          : 'Permission denied or unsupported.';
+        toast({ variant: 'destructive', title: 'Notifications not enabled', description });
+        return;
+      }
+      await saveFcmToken(user.uid, token);
+      toast({ title: 'Notifications enabled', description: 'You will receive alerts for new activity.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Enable failed', description: 'Could not enable notifications.' });
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b brand-gradient text-white">
       <div className="container flex h-16 items-center justify-between">
@@ -91,6 +115,20 @@ export function Header() {
               </Button>
             )}
           </nav>
+          {user && userProfile?.role === 'provider' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full text-white hover:bg-white/10 border-0"
+              onClick={enableNotifications}
+              disabled={notifLoading}
+              title="Enable notifications"
+              aria-label="Enable notifications"
+            >
+              <Bell className="mr-1 h-4 w-4" />
+              Notifications
+            </Button>
+          )}
           <Button
             size="sm"
             className="h-8 rounded-full bg-white px-3 text-primary hover:bg-white/90 border-0 shadow-sm"

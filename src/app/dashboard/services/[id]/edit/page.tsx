@@ -82,6 +82,7 @@ export default function EditServicePage() {
       category: '',
       city: 'Tripoli',
       area: '',
+      mapUrl: '',
       availabilityNote: '',
       contactPhone: '',
       contactWhatsapp: '',
@@ -130,6 +131,7 @@ export default function EditServicePage() {
         category: doc.category,
         city: doc.city,
         area: doc.area,
+        mapUrl: (doc as any).mapUrl ?? '',
         availabilityNote: doc.availabilityNote ?? '',
         contactPhone: (doc as any).contactPhone ?? '',
         contactWhatsapp: (doc as any).contactWhatsapp ?? '',
@@ -382,6 +384,7 @@ export default function EditServicePage() {
       // Handle optional coordinates: set values if present, otherwise delete fields
       if (typeof lat === 'number') payload.lat = lat; else payload.lat = deleteField();
       if (typeof lng === 'number') payload.lng = lng; else payload.lng = deleteField();
+      if (typeof (data as any).mapUrl === 'string' && (data as any).mapUrl.trim()) payload.mapUrl = (data as any).mapUrl.trim(); else payload.mapUrl = deleteField();
       if (typeof data.videoUrl === 'string' && data.videoUrl.trim()) payload.videoUrl = data.videoUrl.trim(); else payload.videoUrl = deleteField();
       // Additional video links
       if (Array.isArray((data as any).videoUrls) && (data as any).videoUrls.filter(Boolean).length > 0) {
@@ -703,6 +706,19 @@ export default function EditServicePage() {
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="mapUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{tr(locale, 'form.labels.mapUrl')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://maps.google.com/?q=... or https://www.openstreetmap.org/..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="availabilityNote"

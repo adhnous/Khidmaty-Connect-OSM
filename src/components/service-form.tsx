@@ -178,6 +178,7 @@ export function ServiceForm() {
       availabilityNote: '',
       contactPhone: '',
       contactWhatsapp: '',
+      mapUrl: '',
       videoUrl: '',
       videoUrls: [],
       facebookUrl: '',
@@ -413,6 +414,7 @@ export function ServiceForm() {
         area: data.area,
         ...(data.lat != null ? { lat: data.lat } : {}),
         ...(data.lng != null ? { lng: data.lng } : {}),
+        ...(data.mapUrl && data.mapUrl.trim() ? { mapUrl: data.mapUrl.trim() } : {}),
         availabilityNote: data.availabilityNote,
         contactPhone: data.contactPhone,
         contactWhatsapp: data.contactWhatsapp,
@@ -899,6 +901,20 @@ export function ServiceForm() {
               <span>{tr(locale, 'form.map.clickToSet')}</span>
             )}
           </div>
+
+          <FormField
+            control={form.control}
+            name="mapUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{tr(locale, 'form.labels.mapUrl')}</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://maps.google.com/?q=... or https://www.openstreetmap.org/..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}

@@ -11,17 +11,21 @@ service cloud.firestore {
     // Allow public read access for services
     match /services/{serviceId} {
       function isProviderOwner() { return isSignedIn() && resource.data.providerId == request.auth.uid; }
+      // Ensure non-negative price on create/update (applies to provider actions)
+      function priceNonNegative() {
+        return request.resource.data.price is number && request.resource.data.price >= 0;
+      }
       allow read: if resource.data.status == 'approved' || isProviderOwner() || isAdmin();
       // Providers can create only their own services; default status should be 'pending'. Admins can create too.
       function isPendingOnCreate() { return !(request.resource.data.status is string) || request.resource.data.status == 'pending'; }
       allow create: if (
-        (isSignedIn() && userRole() == 'provider' && request.resource.data.providerId == request.auth.uid && isPendingOnCreate())
+        (isSignedIn() && userRole() == 'provider' && request.resource.data.providerId == request.auth.uid && isPendingOnCreate() && priceNonNegative())
         || isAdmin()
       );
       // Providers can update only their own docs and cannot change status or providerId.
       // Admins can update any field (including status).
       allow update: if (
-        (isProviderOwner() && request.resource.data.providerId == resource.data.providerId && request.resource.data.status == resource.data.status)
+        (isProviderOwner() && request.resource.data.providerId == resource.data.providerId && request.resource.data.status == resource.data.status && priceNonNegative())
         || isAdmin()
       );
 

@@ -17,6 +17,9 @@ export const serviceSchema = z.object({
   area: z.string().min(2, 'Please provide a specific area or neighborhood.').max(50),
   lat: z.coerce.number().min(-90).max(90).optional(),
   lng: z.coerce.number().min(-180).max(180).optional(),
+  // Optional map URL (Google Maps or OpenStreetMap). Empty string becomes undefined.
+  mapUrl: z
+    .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url('Enter a valid URL').optional()),
   availabilityNote: z.string().optional(),
   contactPhone: z.string().min(6, 'Enter a valid phone number.').max(20).optional(),
   contactWhatsapp: z.string().min(6, 'Enter a valid WhatsApp number.').max(20).optional(),

@@ -1,4 +1,5 @@
 import { db } from './firebase';
+import { getAuth } from 'firebase/auth';
 import {
   addDoc,
   collection,
@@ -75,6 +76,21 @@ export async function sendMessage(conversationId: string, senderId: string, text
     },
     { merge: true }
   );
+  // Fire-and-forget server-side push notification to other participant(s)
+  try {
+    const auth = getAuth();
+    const idToken = await auth.currentUser?.getIdToken();
+    if (idToken) {
+      await fetch('/api/notify/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ conversationId, text: trimmed.slice(0, 140) }),
+      });
+    }
+  } catch {}
 }
 
 export function subscribeMessages(

@@ -1,0 +1,17 @@
+{
+  "name": "Khidmaty Connect",
+  "short_name": "Khidmaty",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "description": "Your connection to skilled professionals in Libya.",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
