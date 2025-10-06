@@ -85,6 +85,15 @@ export default function Home() {
       } else if (sort === 'priceHigh') {
         filtered = [...filtered].sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
       }
+      // Promote services flagged as boosted/featured to the top while preserving current order within groups
+      {
+        const isBoosted = (s: Service) => (((s as any)?.priority ?? 0) > 0) || ((s as any)?.featured === true);
+        if (filtered.some((s) => isBoosted(s))) {
+          const boosted = filtered.filter(isBoosted);
+          const normal = filtered.filter((s) => !isBoosted(s));
+          filtered = [...boosted, ...normal];
+        }
+      }
       setServices(filtered);
     } catch (e) {
       console.warn('Failed to load services, showing empty state.', e);

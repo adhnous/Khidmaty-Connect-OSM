@@ -5,6 +5,7 @@ import {
   MessageCircle,
   Phone,
   ExternalLink,
+  Share2,
 } from 'lucide-react';
 
 import { Footer } from '@/components/layout/footer';
@@ -19,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { getServiceById, type Service } from '@/lib/services';
+import { getServiceById, updateService, type Service } from '@/lib/services';
 import { findOrCreateConversation } from '@/lib/chat';
 import ServiceMap from '@/components/service-map';
 import { listReviewsByService, getUserReviewForService, upsertReview, deleteMyReview, type Review } from '@/lib/reviews';
@@ -121,6 +122,7 @@ export default function ServiceDetailPage() {
 
   const [startingChat, setStartingChat] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   async function handleChat() {
     if (!service) return;
@@ -169,6 +171,40 @@ export default function ServiceDetailPage() {
       toast({ variant: 'destructive', title: tr(locale, 'details.requestFailed') });
     } finally {
       setRequesting(false);
+    }
+  }
+
+  async function handleShare() {
+    if (!service) return;
+    try {
+      setSharing(true);
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const url = `${origin}/?ref=${service.providerId}`;
+      let shared = false;
+      if (typeof navigator !== 'undefined' && (navigator as any).share) {
+        try {
+          await (navigator as any).share({
+            title: 'Khidmaty Connect',
+            text: 'Discover local services on Khidmaty Connect',
+            url,
+          });
+          shared = true;
+        } catch {}
+      }
+      if (!shared && typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+      }
+      if (isOwner && service.id) {
+        const nextCount = ((service as any).shareCount ?? 0) + 1;
+        const nextPriority = Math.min(5, (((service as any).priority ?? 0) + 1));
+        await updateService(service.id, { shareCount: nextCount, priority: nextPriority });
+        setService({ ...(service as any), shareCount: nextCount, priority: nextPriority });
+      }
+      toast({ title: 'Share link ready', description: (shared ? 'Thanks for sharing!' : 'Link copied to clipboard.') });
+    } catch {
+      toast({ variant: 'destructive', title: 'Share failed' });
+    } finally {
+      setSharing(false);
     }
   }
 
@@ -517,7 +553,7 @@ export default function ServiceDetailPage() {
             )}
 
             {/* Reviews & Ratings */}
-            <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
+            <h2 id="reviews" className="scroll-mt-24 mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
               {tr(locale, 'details.reviews')}
             </h2>
             <div className="mb-3 flex items-center gap-3">
@@ -594,6 +630,14 @@ export default function ServiceDetailPage() {
                 </p>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
+                <Button
+                  size="lg"
+                  className="h-12 w-full text-lg"
+                  onClick={handleShare}
+                  disabled={sharing}
+                >
+                  <Share2 className="mr-2" /> {isOwner ? 'Share app (boost your service)' : 'Share this service'}
+                </Button>
                 {service.providerId !== 'demo' && !isOwner && (
                   <Button
                     size="lg"

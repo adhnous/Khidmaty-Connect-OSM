@@ -56,8 +56,13 @@ export type SubService = {
     // Optional geolocation for map; when absent, UI falls back to city centroid
     lat?: number;
     lng?: number;
+    // Boosting / promotion flags
+    featured?: boolean;      // manually featured
+    priority?: number;       // 0..N, higher floats to top client-side
+    // Simple share metric (owner-incremented client-side)
+    shareCount?: number;     // total times owner pressed Share
     createdAt?: unknown;
-};
+  };
 
 export async function uploadServiceImages(
   providerId: string,
