@@ -47,6 +47,7 @@ export default function Home() {
   const [category, setCategory] = useState<string>(ALL_CATEGORIES);
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest');
+  const [searchFocused, setSearchFocused] = useState(false);
   const locale = getClientLocale();
 
   useEffect(() => {
@@ -73,6 +74,7 @@ export default function Home() {
       let filtered = needle
         ? data.filter((s) =>
             (s.title || '').toLowerCase().includes(needle) ||
+            (s.description || '').toLowerCase().includes(needle) ||
             (s.category || '').toLowerCase().includes(needle) ||
             (s.city || '').toLowerCase().includes(needle)
           )
@@ -126,6 +128,8 @@ export default function Home() {
                       className="h-12 text-base text-foreground placeholder:text-muted-foreground"
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => setSearchFocused(false)}
                     />
                   </div>
                   <Select value={category} onValueChange={setCategory}>
@@ -176,6 +180,7 @@ export default function Home() {
                     {tr(locale, 'home.search')}
                   </Button>
                   </div>
+                  {!(searchFocused || q.trim().length > 0) && (
                   <div className="mt-4 border-t pt-4">
                     <h3 className="mb-3 text-sm font-semibold text-foreground/70">
                       {tr(locale, 'home.featuredCategories')}
@@ -214,6 +219,7 @@ export default function Home() {
                       })}
                     </div>
                   </div>
+                  )}
                 </div>
               </div>
             </div>
