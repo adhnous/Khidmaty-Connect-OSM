@@ -101,16 +101,16 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b brand-gradient text-white">
+    <header className="sticky top-0 z-50 w-full border-b bg-ink text-snow border-white/10">
       <div className="container flex h-16 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2 md:gap-4">
           <nav className="hidden items-center gap-2 md:flex">
-            <Button variant="ghost" className="text-white hover:bg-white/10 font-medium" asChild>
+            <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
               <Link href="/">{tr(locale, 'header.browse')}</Link>
             </Button>
             { userProfile?.role === 'provider' && (
-              <Button variant="ghost" className="text-white hover:bg-white/10 font-medium" asChild>
+              <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
                 <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>
               </Button>
             )}
@@ -119,7 +119,7 @@ export function Header() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 rounded-full text-white hover:bg-white/10 border-0"
+              className="h-8 rounded-full text-snow hover:bg-white/10 border-0"
               onClick={enableNotifications}
               disabled={notifLoading}
               title="Enable notifications"
@@ -131,7 +131,7 @@ export function Header() {
           )}
           <Button
             size="sm"
-            className="h-8 rounded-full bg-white px-3 text-primary hover:bg-white/90 border-0 shadow-sm"
+            className="h-8 rounded-full bg-snow px-3 text-ink hover:bg-snow/90 border-0 shadow-sm"
             onClick={toggleLocale}
             title={tr(locale, 'header.switch')}
             aria-label={tr(locale, 'header.switch')}
@@ -144,7 +144,7 @@ export function Header() {
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full text-primary-foreground">
                   <Avatar className="h-9 w-9 ring-1 ring-white/30">
                     <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-                    <AvatarFallback className="bg-white text-primary font-semibold">
+                    <AvatarFallback className="bg-snow text-ink font-semibold">
                       {getInitials(user.email)}
                     </AvatarFallback>
                   </Avatar>

@@ -72,6 +72,15 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        // Brand palette
+        ink: '#0A0A0A',
+        copper: '#D97800',
+        copperDark: '#B86300',
+        copperLight: '#FFC178',
+        power: '#E52117',
+        powerDark: '#C01610',
+        snow: '#FFFFFF',
+        steel: '#9CA3AF',
       },
       borderRadius: {
         lg: 'var(--radius)',

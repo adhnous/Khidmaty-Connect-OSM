@@ -91,138 +91,136 @@ export default function Home() {
       setLoading(false);
     }
   }
-
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-ink">
       <Header />
       <main className="flex-1">
-        <section className="relative hero-gradient text-white overflow-hidden py-16 md:py-24">
-          <div className="texture-waves absolute inset-0" aria-hidden="true" />
+        <section className="relative bg-gradient-to-b from-ink via-copperDark to-copper text-snow overflow-hidden py-16 md:py-24">
           <div className="container relative text-center">
-            <h1 className="text-4xl font-bold font-headline md:text-5xl">
+            <h1 className="text-5xl md:text-6xl font-extrabold leading-tight font-headline">
               {tr(locale, 'home.heroTitle')}
             </h1>
-            <p className="mb-8 mt-4 text-lg text-white/90">
+            <p className="mt-4 text-lg text-snow/80">
               {tr(locale, 'home.heroSubtitle')}
             </p>
-            <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-8 mb-6 flex flex-wrap items-center justify-center gap-3">
               <Link href="/dashboard/services">
-                <Button size="sm" className="h-10 bg-white text-primary hover:bg-white/90">
+                <Button size="sm" className="h-10 bg-copper hover:bg-copperDark text-ink font-semibold">
                   {tr(locale, 'home.providerCta')}
                 </Button>
               </Link>
               <Link href="#search">
-                <Button size="sm" variant="outline" className="h-10 border-white text-white bg-transparent hover:bg-white/10">
+                <Button size="sm" className="h-10 bg-power hover:bg-powerDark text-snow font-semibold">
                   {tr(locale, 'home.seekerCta')}
                 </Button>
               </Link>
             </div>
-            <div id="search" className="mx-auto max-w-6xl">
-              <div className="grid grid-cols-1 gap-2 rounded-lg bg-background text-foreground p-4 shadow-lg md:grid-cols-7">
-                <div className="md:col-span-2">
+            <div id="search" className="mx-auto max-w-6xl mt-6">
+              <div className="rounded-2xl copper-gradient p-[2px]">
+                <div className="rounded-[1rem] bg-background text-foreground p-4 shadow-lg">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
+                  <div className="md:col-span-2">
+                    <Input
+                      type="text"
+                      placeholder={tr(locale, 'home.searchPlaceholder')}
+                      className="h-12 text-base text-foreground placeholder:text-muted-foreground"
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                    />
+                  </div>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger className="h-12 text-base text-foreground">
+                      <SelectValue className="text-foreground" placeholder={tr(locale, 'home.categoryPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_CATEGORIES}>{tr(locale, 'home.allCategories')}</SelectItem>
+                      {mockCategories.map((c) => (
+                        <SelectItem key={c.name} value={c.name}>
+                          {tr(locale, `categories.${c.name}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={city} onValueChange={setCity}>
+                    <SelectTrigger className="h-12 text-base text-foreground">
+                      <SelectValue className="text-foreground" placeholder={tr(locale, 'home.cityPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_CITIES}>{tr(locale, 'home.allCities')}</SelectItem>
+                      {libyanCities.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {cityLabel(locale, c.value)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
-                    type="text"
-                    placeholder={tr(locale, 'home.searchPlaceholder')}
+                    type="number"
+                    placeholder={tr(locale, 'home.maxPricePlaceholder')}
                     className="h-12 text-base text-foreground placeholder:text-muted-foreground"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
                   />
+                  <Select value={sort} onValueChange={(v) => setSort(v as any)}>
+                    <SelectTrigger className="h-12 text-base text-foreground">
+                      <SelectValue className="text-foreground" placeholder={tr(locale, 'home.sortBy')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">{tr(locale, 'home.sortNewest')}</SelectItem>
+                      <SelectItem value="priceLow">{tr(locale, 'home.sortPriceLow')}</SelectItem>
+                      <SelectItem value="priceHigh">{tr(locale, 'home.sortPriceHigh')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button size="lg" className="h-12 text-base" onClick={fetchServices}>
+                    <Search className="mr-2" />
+                    {tr(locale, 'home.search')}
+                  </Button>
+                  </div>
+                  <div className="mt-4 border-t pt-4">
+                    <h3 className="mb-3 text-sm font-semibold text-foreground/70">
+                      {tr(locale, 'home.featuredCategories')}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
+                      {mockCategories.map((categoryItem) => {
+                        const selected = category === categoryItem.name;
+                        return (
+                          <Button
+                            key={categoryItem.name}
+                            variant="ghost"
+                            aria-label={tr(locale, `categories.${categoryItem.name}`)}
+                            aria-pressed={selected}
+                            className={`group h-24 w-full overflow-hidden rounded-xl border bg-gradient-to-br from-background to-secondary/50 p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                              selected
+                                ? 'ring-2 ring-primary/50 border-primary/40'
+                                : 'border-border/60 hover:border-primary/30'
+                            }`}
+                            onClick={() => {
+                              setCategory(categoryItem.name);
+                              setTimeout(() => fetchServices(), 0);
+                            }}
+                          >
+                            <div className="flex h-full w-full items-center justify-center gap-3 p-5">
+                              <div className={`rounded-full p-3 ring-1 ${
+                                selected ? 'bg-primary/10 ring-primary/40' : 'bg-primary/5 ring-primary/20 group-hover:bg-primary/10'
+                              }`}>
+                                <categoryItem.icon className="h-6 w-6 text-primary" />
+                              </div>
+                              <span className={`text-sm font-medium ${selected ? 'text-foreground' : 'text-foreground/90'}`}>
+                                {tr(locale, `categories.${categoryItem.name}`)}
+                              </span>
+                            </div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="h-12 text-base text-foreground">
-                    <SelectValue className="text-foreground" placeholder={tr(locale, 'home.categoryPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_CATEGORIES}>{tr(locale, 'home.allCategories')}</SelectItem>
-                    {mockCategories.map((c) => (
-                      <SelectItem key={c.name} value={c.name}>
-                        {tr(locale, `categories.${c.name}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={city} onValueChange={setCity}>
-                  <SelectTrigger className="h-12 text-base text-foreground">
-                    <SelectValue className="text-foreground" placeholder={tr(locale, 'home.cityPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_CITIES}>{tr(locale, 'home.allCities')}</SelectItem>
-                    {libyanCities.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        {cityLabel(locale, c.value)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  type="number"
-                  placeholder={tr(locale, 'home.maxPricePlaceholder')}
-                  className="h-12 text-base text-foreground placeholder:text-muted-foreground"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                />
-                <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-                  <SelectTrigger className="h-12 text-base text-foreground">
-                    <SelectValue className="text-foreground" placeholder={tr(locale, 'home.sortBy')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">{tr(locale, 'home.sortNewest')}</SelectItem>
-                    <SelectItem value="priceLow">{tr(locale, 'home.sortPriceLow')}</SelectItem>
-                    <SelectItem value="priceHigh">{tr(locale, 'home.sortPriceHigh')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="lg" className="h-12 text-base" onClick={fetchServices}>
-                  <Search className="mr-2" />
-                  {tr(locale, 'home.search')}
-                </Button>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="py-16">
-          <div className="container">
-            <h2 className="mb-8 text-center text-3xl font-bold font-headline">
-              {tr(locale, 'home.featuredCategories')}
-            </h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-              {mockCategories.map((categoryItem) => {
-                const selected = category === categoryItem.name;
-                return (
-                  <Button
-                    key={categoryItem.name}
-                    variant="ghost"
-                    aria-label={tr(locale, `categories.${categoryItem.name}`)}
-                    aria-pressed={selected}
-                    className={`group relative h-28 w-full overflow-hidden rounded-2xl border bg-gradient-to-br from-background to-secondary/70 p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                      selected
-                        ? 'ring-2 ring-primary/60 border-primary/40'
-                        : 'border-border/60 hover:border-primary/30'
-                    }`}
-                    onClick={() => {
-                      setCategory(categoryItem.name);
-                      setTimeout(() => fetchServices(), 0);
-                    }}
-                  >
-                    <div className={`pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl transition-opacity duration-200 ${
-                      selected ? 'bg-primary/20 opacity-100' : 'bg-primary/10 group-hover:opacity-100'
-                    }`} />
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-5">
-                      <div className={`rounded-full p-4 ring-1 transition-colors duration-200 ${
-                        selected ? 'bg-primary/20 ring-primary/40' : 'bg-primary/10 ring-primary/20 group-hover:bg-primary/15'
-                      }`}>
-                        <categoryItem.icon className="h-10 w-10 text-primary" />
-                      </div>
-                      <span className={`text-sm font-medium ${selected ? 'text-foreground' : 'text-foreground/90'}`}>
-                        {tr(locale, `categories.${categoryItem.name}`)}
-                      </span>
-                    </div>
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+        
 
         <section className="bg-secondary py-16">
           <div className="container">

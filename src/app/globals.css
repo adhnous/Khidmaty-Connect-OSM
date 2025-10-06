@@ -15,8 +15,9 @@ body {
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 226 72% 40%;            /* #1E40AF (blue-800) */
-    --primary-foreground: 0 0% 100%;   /* white */
+    /* Primary → Copper */
+    --primary: 33 100% 43%;            /* #D97800 */
+    --primary-foreground: 0 0% 5%;     /* near-black for text on copper */
     --secondary: 220 14% 96%;          /* #F3F4F6 (gray-100) */
     --secondary-foreground: 222 47% 11%;
     --muted: 220 12% 94%;              /* near gray-100 */
@@ -42,6 +43,16 @@ body {
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Brand (ad) palette tokens */
+    --ink: #0A0A0A;
+    --copper: #D97800;
+    --copper-dark: #B86300;
+    --copper-light: #FFC178;
+    --power: #E52117;
+    --power-dark: #C01610;
+    --snow: #FFFFFF;
+    --steel: #9CA3AF;
   }
   .dark {
     --background: 222 47% 11%;         /* #111827 */
@@ -50,14 +61,13 @@ body {
     --card-foreground: 0 0% 100%;
     --popover: 222 47% 11%;
     --popover-foreground: 0 0% 100%;
-    --primary: 226 72% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 33 100% 43%;
+    --primary-foreground: 0 0% 5%;
     --secondary: 220 10% 15%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 10% 20%;
     --muted-foreground: 220 15% 70%;
     --accent: 24 94% 55%;
-    --accent-foreground: 222 47% 11%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 10% 25%;
@@ -95,6 +105,9 @@ body {
   }
   .hero-gradient {
     background: linear-gradient(135deg, #3498db, #9b59b6);
+  }
+  .copper-gradient {
+    background: linear-gradient(135deg, var(--copper-dark) 0%, var(--copper) 45%, var(--copper-light) 100%);
   }
   .texture-waves {
     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="%23ffffff" opacity="0.1"><polygon points="1000,100 1000,0 0,100"></polygon></svg>');

@@ -28,7 +28,7 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0ea5e9" />
+        <meta name="theme-color" content="#0A0A0A" />
       </head>
       <body className="font-body antialiased">
         <AuthProvider>

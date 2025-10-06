@@ -26,6 +26,7 @@ import { listReviewsByService, getUserReviewForService, upsertReview, deleteMyRe
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { getClientLocale, tr } from '@/lib/i18n';
+import { getAuth } from 'firebase/auth';
 
 export default function ServiceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -119,6 +120,7 @@ export default function ServiceDetailPage() {
   }, [service]);
 
   const [startingChat, setStartingChat] = useState(false);
+  const [requesting, setRequesting] = useState(false);
 
   async function handleChat() {
     if (!service) return;
@@ -140,6 +142,33 @@ export default function ServiceDetailPage() {
       toast({ variant: 'destructive', title: 'Could not start chat' });
     } finally {
       setStartingChat(false);
+    }
+  }
+
+  async function handleRequestService() {
+    if (!service) return;
+    if (service.providerId === 'demo') return;
+    if (!user) {
+      toast({ variant: 'destructive', title: tr(locale, 'form.toasts.pleaseSignInTitle'), description: tr(locale, 'form.toasts.pleaseSignInDesc') });
+      router.push('/login');
+      return;
+    }
+    try {
+      setRequesting(true);
+      const idToken = await getAuth().currentUser?.getIdToken();
+      if (!idToken) throw new Error('auth');
+      const res = await fetch('/api/request/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ serviceId: service.id }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.ok) throw new Error(json?.error || 'request_failed');
+      toast({ title: tr(locale, 'details.requestSent') });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: tr(locale, 'details.requestFailed') });
+    } finally {
+      setRequesting(false);
     }
   }
 
@@ -565,6 +594,17 @@ export default function ServiceDetailPage() {
                 </p>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
+                {service.providerId !== 'demo' && !isOwner && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-12 w-full text-lg"
+                    onClick={handleRequestService}
+                    disabled={requesting}
+                  >
+                    {tr(locale, 'details.requestService')}
+                  </Button>
+                )}
                 {subservicesList.length > 0 && (
                   <div className="rounded border bg-background p-3">
                     <div className="mb-2 text-sm font-medium text-muted-foreground">Sub-services</div>

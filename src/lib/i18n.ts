@@ -113,6 +113,9 @@ const dict = {
       callProvider: 'Call Provider',
       noContact: 'Contact details not provided.',
       chatInApp: 'Chat with Provider',
+      requestService: 'Request Service',
+      requestSent: 'Request sent',
+      requestFailed: 'Could not send request',
       reviews: 'Reviews & Ratings',
     },
     chat: {
@@ -432,6 +435,9 @@ const dict = {
       callProvider: 'اتصل بالمقدم',
       noContact: 'لا توجد بيانات تواصل.',
       chatInApp: 'دردشة داخل التطبيق',
+      requestService: 'طلب الخدمة',
+      requestSent: 'تم إرسال الطلب',
+      requestFailed: 'تعذر إرسال الطلب',
       reviews: 'التقييمات والمراجعات',
     },
     chat: {
