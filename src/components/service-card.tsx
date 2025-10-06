@@ -1,3 +1,5 @@
+"use client";
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
@@ -6,6 +8,10 @@ import { MapPin } from 'lucide-react';
 import { transformCloudinary } from '@/lib/images';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { cityLabel } from '@/lib/cities';
+import { useEffect, useMemo, useState } from 'react';
+import StarRating from '@/components/star-rating';
+import { listReviewsByService, type Review } from '@/lib/reviews';
+import { useRouter } from 'next/navigation';
 
 type ServiceCardProps = {
   id?: string;
@@ -31,6 +37,38 @@ export function ServiceCard({
   const displayUrl = transformCloudinary(imageUrl, { w: 500, q: 'auto' });
   const blur = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2U5ZTplZSIvPjwvc3ZnPg==';
   const locale = getClientLocale();
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const router = useRouter();
+  const detailHref = href ?? (id ? `/services/${id}` : undefined);
+
+  function goToReviews(e: React.MouseEvent) {
+    if (!detailHref) return;
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`${detailHref}#reviews`);
+  }
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        if (!id) return;
+        const list = await listReviewsByService(id, 20);
+        if (alive) setReviews(list);
+      } catch {
+        if (alive) setReviews([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
+  const reviewsCount = reviews.length;
+  const avgRating = useMemo(() => {
+    if (!reviewsCount) return 0;
+    return reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsCount;
+  }, [reviews, reviewsCount]);
   const content = (
     <Card className="group h-full w-full overflow-hidden rounded-xl border bg-background/60 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
       <div className="relative aspect-[16/9] w-full overflow-hidden">
@@ -53,6 +91,25 @@ export function ServiceCard({
         <CardTitle className="line-clamp-2 font-headline text-base">
           {title}
         </CardTitle>
+        <div className="mt-1">
+          <div
+            role="link"
+            tabIndex={0}
+            onClick={goToReviews}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                goToReviews(e as any);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 text-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/40 rounded cursor-pointer"
+            aria-label="View reviews"
+            data-reviews-link
+          >
+            <StarRating value={Math.round(avgRating)} readOnly size="sm" />
+            <span className="text-xs text-muted-foreground">({reviewsCount})</span>
+          </div>
+        </div>
       </CardContent>
       <CardFooter className="flex items-center justify-between p-3 pt-0">
         <div className="flex items-center text-xs text-muted-foreground">

@@ -179,50 +179,44 @@ export default function Home() {
                     <Search className="mr-2" />
                     {tr(locale, 'home.search')}
                   </Button>
-                  </div>
-                  {!(searchFocused || q.trim().length > 0) && (
+                </div>
+                {!(searchFocused || q.trim().length > 0) && (
                   <div className="mt-4 border-t pt-4">
                     <h3 className="mb-3 text-sm font-semibold text-foreground/70">
                       {tr(locale, 'home.featuredCategories')}
                     </h3>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
-                      {mockCategories.map((categoryItem) => {
-                        const selected = category === categoryItem.name;
-                        return (
-                          <Button
-                            key={categoryItem.name}
-                            variant="ghost"
-                            aria-label={tr(locale, `categories.${categoryItem.name}`)}
-                            aria-pressed={selected}
-                            className={`group h-24 w-full overflow-hidden rounded-xl border bg-gradient-to-br from-background to-secondary/50 p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                              selected
-                                ? 'ring-2 ring-primary/50 border-primary/40'
-                                : 'border-border/60 hover:border-primary/30'
-                            }`}
-                            onClick={() => {
-                              setCategory(categoryItem.name);
-                              setTimeout(() => fetchServices(), 0);
-                            }}
-                          >
-                            <div className="flex h-full w-full items-center justify-center gap-3 p-5">
-                              <div className={`rounded-full p-3 ring-1 ${
-                                selected ? 'bg-primary/10 ring-primary/40' : 'bg-primary/5 ring-primary/20 group-hover:bg-primary/10'
-                              }`}>
-                                <categoryItem.icon className="h-6 w-6 text-primary" />
-                              </div>
-                              <span className={`text-sm font-medium ${selected ? 'text-foreground' : 'text-foreground/90'}`}>
-                                {tr(locale, `categories.${categoryItem.name}`)}
-                              </span>
+                      {mockCategories.map((categoryItem) => (
+                        <Button
+                          key={categoryItem.name}
+                          variant="ghost"
+                          aria-label={tr(locale, `categories.${categoryItem.name}`)}
+                          aria-pressed={category === categoryItem.name}
+                          className={`group h-24 w-full overflow-hidden rounded-xl border bg-gradient-to-br from-background to-secondary/50 p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                            category === categoryItem.name
+                              ? 'ring-2 ring-primary/50 border-primary/40'
+                              : 'border-border/60 hover:border-primary/30'
+                          }`}
+                          onClick={() => setCategory(categoryItem.name)}
+                        >
+                          <div className="flex h-full w-full items-center justify-center gap-3 p-5">
+                            <div className={`rounded-full p-3 ring-1 ${
+                              category === categoryItem.name ? 'bg-primary/10 ring-primary/40' : 'bg-primary/5 ring-primary/20 group-hover:bg-primary/10'
+                            }`}>
+                              <categoryItem.icon className="h-6 w-6 text-primary" />
                             </div>
-                          </Button>
-                        );
-                      })}
+                            <span className={`text-sm font-medium ${category === categoryItem.name ? 'text-foreground' : 'text-foreground/90'}`}>
+                              {tr(locale, `categories.${categoryItem.name}`)}
+                            </span>
+                          </div>
+                        </Button>
+                      ))}
                     </div>
                   </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
+          </div>
           </div>
         </section>
 
