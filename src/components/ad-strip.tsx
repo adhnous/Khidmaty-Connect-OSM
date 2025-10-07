@@ -18,12 +18,7 @@ export type AdItem = {
 
 export default function AdStrip() {
   const [ads, setAds] = useState<AdItem[]>([]);
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    // Persist dismissal per session
-    setHidden(sessionStorage.getItem("ad_strip_hidden") === "1");
-  }, []);
+  
 
   useEffect(() => {
     const q = query(
@@ -70,7 +65,7 @@ export default function AdStrip() {
     ];
   }, [ads]);
 
-  if (hidden || items.length === 0) return null;
+  if (items.length === 0) return null;
 
   function bg(c?: AdItem["color"]) {
     if (c === "power") return "bg-red-600 text-white";
@@ -79,30 +74,26 @@ export default function AdStrip() {
     return "bg-amber-500 text-black"; // copper-ish
   }
 
+  const isSingle = items.length === 1;
+
   return (
-    <div className={`ad-marquee ${bg(items[0]?.color)} select-none`}> 
+    <div className={`ad-marquee ${bg(items[0]?.color)} select-none`}>
       <div className="container mx-auto flex items-center gap-3 py-2">
-        <div className="ad-track">
+        <div className={`ad-track`}>
           {/* Duplicate sequence to ensure seamless scroll */}
           <div className="ad-seq">
             {items.map((ad) => (
               <AdBadge key={`a1-${ad.id}`} ad={ad} />
             ))}
           </div>
+          {isSingle && <div className="ad-spacer" aria-hidden="true" />}
           <div className="ad-seq">
             {items.map((ad) => (
               <AdBadge key={`a2-${ad.id}`} ad={ad} />
             ))}
           </div>
         </div>
-        <button
-          className="ml-auto rounded px-2 py-1 text-xs opacity-70 hover:opacity-100 border"
-          onClick={() => { setHidden(true); sessionStorage.setItem("ad_strip_hidden", "1"); }}
-          aria-label="Dismiss ads"
-        >
-          ✕
-        </button>
-        <Link href="/dashboard" className="rounded px-2 py-1 text-xs bg-black text-white hover:opacity-90">
+        <Link href="/dashboard" className="ml-auto rounded px-2 py-1 text-xs bg-black text-white hover:opacity-90">
           Advertise with us
         </Link>
       </div>

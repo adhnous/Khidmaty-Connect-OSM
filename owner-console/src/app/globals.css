@@ -41,3 +41,18 @@ body {
 .oc-badge.pending { background: #fffbeb; color: #92400e; border-color: #fde68a; }
 .oc-badge.rejected { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
 .oc-subtle { color: var(--oc-muted); font-size: 12px; }
+
+/* Shell layout */
+.oc-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.oc-sidebar { background: #fff; border-right: 1px solid var(--oc-border); padding: 20px 16px; position: sticky; top: 0; height: 100vh; }
+.oc-main { padding: 24px; }
+.oc-brand { font-weight: 700; font-size: 16px; margin-bottom: 16px; }
+.oc-nav { display: grid; gap: 6px; }
+.oc-navlink { display: block; padding: 8px 10px; border-radius: 8px; color: inherit; text-decoration: none; border: 1px solid transparent; }
+.oc-navlink:hover { background: #f9fafb; border-color: var(--oc-border); }
+.oc-navlink.active { background: #111827; color: #fff; border-color: #111827; }
+
+@media (max-width: 900px) {
+  .oc-shell { grid-template-columns: 1fr; }
+  .oc-sidebar { position: static; height: auto; display: flex; gap: 8px; align-items: center; border-right: none; border-bottom: 1px solid var(--oc-border); }
+}

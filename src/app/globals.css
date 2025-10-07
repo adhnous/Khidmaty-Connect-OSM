@@ -128,9 +128,16 @@ body {
     width: max-content;
     animation: ad-scroll 28s linear infinite;
   }
+  /* When only one ad, don't animate (no duplication) */
+  .ad-track.single {
+    animation: none;
+  }
   .ad-seq {
     display: flex;
     align-items: center;
+  }
+  .ad-spacer {
+    width: clamp(200px, 40vw, 600px);
   }
   @keyframes ad-scroll {
     from { transform: translateX(0); }
