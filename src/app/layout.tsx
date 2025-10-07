@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/use-auth';
 import { cookies } from 'next/headers';
 import SwRegister from '@/components/sw-register';
+import AdStrip from '@/components/ad-strip';
 
 export const metadata: Metadata = {
   title: 'Khidmaty Connect',
@@ -32,6 +33,7 @@ export default async function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
+          <AdStrip />
           {children}
         </AuthProvider>
         <Toaster />

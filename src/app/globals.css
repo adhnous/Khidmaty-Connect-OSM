@@ -114,4 +114,34 @@ body {
     background-size: cover;
     background-position: center;
   }
+
+  /* Ad marquee strip */
+  .ad-marquee {
+    @apply w-full shadow-sm;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    overflow: hidden;
+  }
+  .ad-track {
+    display: flex;
+    width: max-content;
+    animation: ad-scroll 28s linear infinite;
+  }
+  .ad-seq {
+    display: flex;
+    align-items: center;
+  }
+  @keyframes ad-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  /* RTL: reverse direction */
+  [dir="rtl"] .ad-track {
+    animation-name: ad-scroll-rtl;
+  }
+  @keyframes ad-scroll-rtl {
+    from { transform: translateX(0); }
+    to { transform: translateX(50%); }
+  }
 }

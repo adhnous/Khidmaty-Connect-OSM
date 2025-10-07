@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getIdTokenOrThrow } from '@/lib/auth-client';
+ 
 
 type Row = {
   id: string;
@@ -83,11 +84,13 @@ export default function ServicesModerationPage() {
     <div className="oc-grid">
       <div className="oc-toolbar">
         <h1 className="oc-h1">Services Moderation</h1>
-        <select className="oc-select" value={status} onChange={(e) => setStatus(e.target.value as Status)}>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select className="oc-select" value={status} onChange={(e) => setStatus(e.target.value as Status)}>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
       </div>
 
       {error && <div className="oc-card" style={{ borderColor: '#fecaca', background: '#fef2f2', color: '#991b1b' }}>{error}</div>}
