@@ -401,6 +401,36 @@ const dict = {
       terms: { title: 'Terms of Service' },
       privacy: { title: 'Privacy Policy' },
       contact: { title: 'Contact' },
+      pricing: {
+        nav: 'Pricing',
+        title: 'Simple pricing that grows with you',
+        subtitle: 'Choose a plan that fits your needs. Upgrade anytime.',
+        perMonth: 'per month',
+        choosePlan: 'Choose Plan',
+        plans: {
+          basic: { name: 'Basic' },
+          pro: { name: 'Pro' },
+          enterprise: { name: 'Enterprise' },
+        },
+        features: {
+          basic: {
+            l1: 'List services and get contacted',
+            l2: 'Basic analytics',
+          },
+          pro: {
+            l1: 'Priority listing boost',
+            l2: 'Advanced analytics & insights',
+            l3: 'Multiple contact methods',
+            l4: 'Email/WhatsApp support',
+          },
+          enterprise: {
+            l1: 'Featured placement across categories',
+            l2: 'Team accounts and roles',
+            l3: 'Custom onboarding & training',
+            l4: 'Dedicated success manager',
+          },
+        },
+      },
     },
   },
   ar: {
@@ -799,24 +829,57 @@ const dict = {
       rights: 'جميع الحقوق محفوظة.',
     },
     pages: {
-      about: { title: 'عن خدمتي كونكت' },
+      about: { title: 'حول خدماتي كونكت' },
       terms: { title: 'شروط الخدمة' },
       privacy: { title: 'سياسة الخصوصية' },
-      contact: { title: 'تواصل معنا' },
+      contact: { title: 'اتصال' },
+      pricing: {
+        nav: 'الأسعار',
+        title: 'أسعار بسيطة تنمو معك',
+        subtitle: 'اختر الخطة المناسبة لاحتياجاتك. يمكنك الترقية في أي وقت.',
+        perMonth: 'شهريًا',
+        choosePlan: 'اختيار الخطة',
+        plans: {
+          basic: { name: 'أساسي' },
+          pro: { name: 'محترف' },
+          enterprise: { name: 'مؤسسات' },
+        },
+        features: {
+          basic: {
+            l1: 'أضف خدماتك وتلقَّى تواصلًا',
+            l2: 'تحليلات أساسية',
+          },
+          pro: {
+            l1: 'تعزيز أولوية الظهور',
+            l2: 'تحليلات متقدمة ورؤى',
+            l3: 'طرق تواصل متعددة',
+            l4: 'دعم عبر البريد/واتساب',
+          },
+          enterprise: {
+            l1: 'تمييز بارز عبر الفئات',
+            l2: 'حسابات فريق وصلاحيات',
+            l3: 'إعداد مخصص وتدريب',
+            l4: 'مدير نجاح مخصص',
+          },
+        },
+      },
     },
   },
 } as const;
 
-function get(obj: any, path: string): string | undefined {
-  return path.split('.').reduce((acc, k) => (acc && acc[k] != null ? acc[k] : undefined), obj);
+function get(obj: any, path: string): any {
+  try {
+    return path.split('.').reduce((acc: any, key: string) => (acc && typeof acc === 'object' ? acc[key] : undefined), obj);
+  } catch {
+    return undefined;
+  }
 }
 
 export function tr(locale: Locale, key: string): string {
-  const d = dict[locale] ?? dict.en;
+  const d = (dict as any)[locale] ?? (dict as any).en;
   const v = get(d, key);
   if (typeof v === 'string') return v;
-  // fallback to en
-  const ve = get(dict.en, key);
+  const ve = get((dict as any).en, key);
   return typeof ve === 'string' ? ve : key;
 }
 

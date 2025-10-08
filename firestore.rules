@@ -73,6 +73,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Global app settings (e.g., feature flags)
+    match /settings/{docId} {
+      // Everyone can read settings to enable client-side gating
+      allow read: if true;
+      // Only admins/owners can create/update/delete settings
+      allow write: if isAdmin();
+    }
+
     // Raw events are server-only
     match /events/{id} {
       allow read: if false;

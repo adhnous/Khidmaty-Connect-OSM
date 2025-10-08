@@ -10,7 +10,7 @@ import {
   User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getClientLocale, tr } from '@/lib/i18n';
 
 import {
@@ -24,6 +24,7 @@ import {
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { useAuth } from '@/hooks/use-auth';
+import { getFeatures } from '@/lib/settings';
 
 export default function DashboardLayout({
   children,
@@ -33,6 +34,7 @@ export default function DashboardLayout({
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
   const locale = getClientLocale();
+  const [showPricingBanner, setShowPricingBanner] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -51,6 +53,38 @@ export default function DashboardLayout({
       router.push('/');
     }
   }, [user, userProfile, loading, router]);
+
+  // Pricing enforcement: if force_show and plan is free, redirect to /pricing.
+  // Otherwise, show a banner CTA when pricing is visible for this provider but plan is still free.
+  useEffect(() => {
+    if (loading) return;
+    if (!user || userProfile?.role !== 'provider') return;
+    (async () => {
+      try {
+        const f = await getFeatures();
+        const pg: any = (userProfile as any)?.pricingGate || {};
+        if (pg?.mode === 'force_hide') { setShowPricingBanner(false); return; }
+        if (pg?.mode === 'force_show') {
+          if ((userProfile?.plan ?? 'free') === 'free') {
+            router.replace('/pricing');
+          }
+          setShowPricingBanner(false);
+          return;
+        }
+        const createdAtMs =
+          (userProfile as any)?.createdAt?.toMillis?.() ??
+          (user?.metadata?.creationTime ? new Date(user.metadata.creationTime).getTime() : 0);
+        const monthsSince = createdAtMs > 0 ? (Date.now() - createdAtMs) / (1000 * 60 * 60 * 24 * 30) : 0;
+        const monthsLimit = (typeof pg?.enforceAfterMonths === 'number') ? pg.enforceAfterMonths : (f.enforceAfterMonths ?? 3);
+        const byRole = f.showForProviders === true;
+        const byAge = monthsSince >= monthsLimit;
+        const allowed = !!(f.pricingEnabled && (byRole || byAge));
+        setShowPricingBanner(allowed && ((userProfile?.plan ?? 'free') === 'free'));
+      } catch {
+        setShowPricingBanner(false);
+      }
+    })();
+  }, [loading, user?.uid, userProfile?.role, userProfile?.plan, router]);
   
   if (loading || !user) {
     return null; // Or a loading spinner
@@ -122,7 +156,18 @@ export default function DashboardLayout({
               </SidebarMenu>
             </SidebarContent>
           </Sidebar>
-          <main className="flex-1 p-4 md:p-8">{children}</main>
+          <main className="flex-1 p-4 md:p-8">
+            {showPricingBanner && (
+              <div className="mb-4 rounded-md border border-yellow-500/30 bg-yellow-50 p-4 text-yellow-900">
+                <div className="mb-2 font-semibold">Upgrade your plan</div>
+                <div className="mb-3 text-sm">Unlock more features and visibility. Choose a plan to continue.</div>
+                <Link href="/pricing" className="inline-flex items-center rounded bg-copper px-3 py-1.5 text-sm font-semibold text-ink hover:bg-copperDark">
+                  View plans
+                </Link>
+              </div>
+            )}
+            {children}
+          </main>
         </div>
         <Footer />
       </div>

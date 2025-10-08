@@ -7,6 +7,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { cookies } from 'next/headers';
 import SwRegister from '@/components/sw-register';
 import AdStrip from '@/components/ad-strip';
+import AppGate from '@/components/app-gate';
 
 export const metadata: Metadata = {
   title: 'Khidmaty Connect',
@@ -34,7 +35,9 @@ export default async function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <AdStrip />
-          {children}
+          <AppGate>
+            {children}
+          </AppGate>
         </AuthProvider>
         <Toaster />
         <SwRegister />

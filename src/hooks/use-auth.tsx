@@ -9,7 +9,8 @@ import {
   ReactNode,
 } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { UserProfile, getUserProfile } from '@/lib/user';
 
@@ -31,20 +32,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
       if (user) {
         setUser(user);
-        const profile = await getUserProfile(user.uid);
-        setUserProfile(profile);
+        // Real-time subscribe to user profile for immediate updates (e.g., pricingGate)
+        const userRef = doc(db, 'users', user.uid);
+        const unsubscribeDoc = onSnapshot(userRef, (snap) => {
+          setUserProfile((snap.exists() ? (snap.data() as UserProfile) : null));
+          setLoading(false);
+        }, () => {
+          setUserProfile(null);
+          setLoading(false);
+        });
+        // Ensure we clean up the doc listener when auth state changes again
+        return () => unsubscribeDoc();
       } else {
         setUser(null);
         setUserProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+    };
   }, []);
 
   if (loading) {

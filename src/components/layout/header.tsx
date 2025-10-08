@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { signOut } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { getFcmToken, saveFcmToken } from '@/lib/messaging';
+import { getFeatures } from '@/lib/settings';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ export function Header() {
   const { user, userProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [showPricing, setShowPricing] = useState(false);
   const [locale, setLocale] = useState<'en' | 'ar'>(() => {
     try {
       if (typeof document === 'undefined') return 'en';
@@ -67,6 +69,41 @@ export function Header() {
       setLocale(l);
     } catch {}
   }, []);
+
+  // Feature gating: Pricing visibility (owner-controlled + default after N months)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const f = await getFeatures();
+        if (!alive) return;
+        const role = userProfile?.role;
+        const createdAtMs =
+          (userProfile as any)?.createdAt?.toMillis?.() ??
+          (user?.metadata?.creationTime ? new Date(user.metadata.creationTime).getTime() : 0);
+        const monthsSince = createdAtMs > 0 ? (Date.now() - createdAtMs) / (1000 * 60 * 60 * 24 * 30) : 0;
+        // Global/role lock always shows Pricing link
+        const lockedByRole = !!(f.lockAllToPricing || (role === 'provider' && f.lockProvidersToPricing) || (role === 'seeker' && f.lockSeekersToPricing));
+        if (lockedByRole) { setShowPricing(true); return; }
+
+        // Per-user overrides
+        const pg = (userProfile as any)?.pricingGate || {};
+        if (pg?.mode === 'force_show') { setShowPricing(true); return; }
+        if (pg?.mode === 'force_hide') { setShowPricing(false); return; }
+        const showAtObj = pg?.showAt;
+        const showAtMs = (showAtObj?.toMillis?.() ?? (showAtObj ? Date.parse(showAtObj) : 0)) || 0;
+        if (showAtMs && Date.now() >= showAtMs) { setShowPricing(true); return; }
+        const monthsLimit = (typeof pg?.enforceAfterMonths === 'number') ? pg.enforceAfterMonths : (f.enforceAfterMonths ?? 3);
+        const byRole = (role === 'provider' && f.showForProviders) || (role === 'seeker' && f.showForSeekers);
+        const byAge = monthsSince >= monthsLimit;
+        const visible = !!(f.pricingEnabled && (byRole || byAge));
+        setShowPricing(visible);
+      } catch {
+        setShowPricing(false);
+      }
+    })();
+    return () => { alive = false };
+  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate]);
 
   const toggleLocale = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
@@ -109,6 +146,11 @@ export function Header() {
             <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
               <Link href="/">{tr(locale, 'header.browse')}</Link>
             </Button>
+            { showPricing && (
+              <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
+                <Link href="/pricing">{tr(locale, 'pages.pricing.nav')}</Link>
+              </Button>
+            )}
             { userProfile?.role === 'provider' && (
               <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
                 <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>

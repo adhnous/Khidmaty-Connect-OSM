@@ -1,6 +1,6 @@
 
 import { db } from './firebase';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export type UserRole = 'seeker' | 'provider' | 'admin' | 'owner';
 
@@ -10,6 +10,13 @@ export interface UserProfile {
   role: UserRole;
   displayName?: string;
   photoURL?: string;
+  createdAt?: unknown; // Firestore Timestamp
+  plan?: 'free' | 'basic' | 'pro' | 'enterprise';
+  pricingGate?: {
+    mode?: 'force_show' | 'force_hide' | null;
+    showAt?: any; // Firestore Timestamp or ISO
+    enforceAfterMonths?: number | null;
+  } | null;
 }
 
 export async function createUserProfile(
@@ -23,6 +30,8 @@ export async function createUserProfile(
     email,
     role,
     displayName: email.split('@')[0],
+    createdAt: serverTimestamp(),
+    plan: 'free',
   };
   await setDoc(userRef, data);
 }
