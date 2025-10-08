@@ -116,20 +116,21 @@ import { getIdTokenOrThrow } from "@/lib/auth-client";
         <h3 className="oc-title" style={{ marginBottom: 8 }}>Create new ad</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label className="oc-subtle">Text (English)</label>
-            <input className="w-full rounded border p-2" value={fText} onChange={(e) => setFText(e.target.value)} placeholder="Advertise your service…" />
+            <label className="oc-label">Text (English)</label>
+            <input className="oc-input" value={fText} onChange={(e) => setFText(e.target.value)} placeholder="Advertise your service…" />
           </div>
           <div>
-            <label className="oc-subtle">النص (عربي)</label>
-            <input className="w-full rounded border p-2" value={fTextAr} onChange={(e) => setFTextAr(e.target.value)} placeholder="أعلن عن خدمتك…" />
+            <label className="oc-label">النص (عربي)</label>
+            <input className="oc-input" value={fTextAr} onChange={(e) => setFTextAr(e.target.value)} placeholder="أعلن عن خدمتك…" />
           </div>
           <div>
-            <label className="oc-subtle">Link (optional)</label>
-            <input className="w-full rounded border p-2" value={fHref} onChange={(e) => setFHref(e.target.value)} placeholder="https://…" />
+            <label className="oc-label">Link (optional)</label>
+            <input className="oc-input" value={fHref} onChange={(e) => setFHref(e.target.value)} placeholder="https://…" />
+            <div className="oc-help" style={{ marginTop: 6 }}>Internal or external link opened when users click the ad.</div>
           </div>
           <div>
-            <label className="oc-subtle">Color</label>
-            <select className="w-full rounded border p-2" value={fColor} onChange={(e) => setFColor(e.target.value as Color)}>
+            <label className="oc-label">Color</label>
+            <select className="oc-input" value={fColor} onChange={(e) => setFColor(e.target.value as Color)}>
               <option value="copper">Copper</option>
               <option value="power">Red</option>
               <option value="dark">Dark</option>
@@ -137,67 +138,85 @@ import { getIdTokenOrThrow } from "@/lib/auth-client";
             </select>
           </div>
           <div>
-            <label className="oc-subtle">Priority</label>
-            <input type="number" className="w-full rounded border p-2" value={fPriority} onChange={(e) => setFPriority(Number(e.target.value)||0)} />
+            <label className="oc-label">Priority</label>
+            <input type="number" className="oc-input" value={fPriority} onChange={(e) => setFPriority(Number(e.target.value)||0)} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input id="ad-active" type="checkbox" checked={fActive} onChange={(e) => setFActive(e.target.checked)} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 22 }}>
+            <input id="ad-active" className="oc-switch" type="checkbox" checked={fActive} onChange={(e) => setFActive(e.target.checked)} />
             <label htmlFor="ad-active">Active</label>
           </div>
         </div>
-        <div style={{ marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+          <div className="oc-ad-badge">
+            <span className="label">Ad</span>
+            <span>{(fTextAr || fText) || 'Preview'}</span>
+          </div>
           <button className="oc-btn oc-btn-primary" onClick={createAd} disabled={creating}>Create</button>
         </div>
       </div>
 
-      <div className="oc-grid">
-        {loading ? (
-          <div className="oc-card">Loading…</div>
-        ) : rows.length === 0 ? (
-          <div className="oc-card">No ads.</div>
-        ) : (
-          rows.map((r) => (
-            <div key={r.id} className="oc-card" style={{ display: 'grid', gap: 8 }}>
-              <div className="oc-meta">ID: {r.id}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label className="oc-subtle">Text (English)</label>
-                  <input className="w-full rounded border p-2" value={r.text} onChange={(e) => setField(r.id, 'text', e.target.value)} />
-                </div>
-                <div>
-                  <label className="oc-subtle">النص (عربي)</label>
-                  <input className="w-full rounded border p-2" value={r.textAr} onChange={(e) => setField(r.id, 'textAr', e.target.value)} />
-                </div>
-                <div>
-                  <label className="oc-subtle">Link</label>
-                  <input className="w-full rounded border p-2" value={r.href} onChange={(e) => setField(r.id, 'href', e.target.value)} />
-                </div>
-                <div>
-                  <label className="oc-subtle">Color</label>
-                  <select className="w-full rounded border p-2" value={r.color} onChange={(e) => setField(r.id, 'color', e.target.value as Color)}>
-                    <option value="copper">Copper</option>
-                    <option value="power">Red</option>
-                    <option value="dark">Dark</option>
-                    <option value="light">Light</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="oc-subtle">Priority</label>
-                  <input type="number" className="w-full rounded border p-2" value={r.priority} onChange={(e) => setField(r.id, 'priority', Number(e.target.value)||0)} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input id={`active-${r.id}`} type="checkbox" checked={r.active} onChange={(e) => setField(r.id, 'active', e.target.checked)} />
-                  <label htmlFor={`active-${r.id}`}>Active</label>
-                </div>
-              </div>
-              <div className="oc-actions">
-                <button className="oc-btn oc-btn-primary" onClick={() => saveRow(r)}>Save</button>
-                <button className="oc-btn oc-btn-red" onClick={() => deleteRow(r.id)}>Delete</button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      {loading ? (
+        <div className="oc-card">Loading…</div>
+      ) : rows.length === 0 ? (
+        <div className="oc-card">No ads.</div>
+      ) : (
+        <div className="oc-table-wrap">
+          <table className="oc-table">
+            <thead>
+              <tr>
+                <th style={{ minWidth: 220 }}>Text (EN)</th>
+                <th style={{ minWidth: 220 }}>النص (AR)</th>
+                <th style={{ minWidth: 180 }}>Link</th>
+                <th style={{ width: 140 }}>Color</th>
+                <th style={{ width: 120 }}>Priority</th>
+                <th style={{ width: 100 }}>Active</th>
+                <th style={{ width: 160 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td>
+                    <input className="oc-input" value={r.text} onChange={(e) => setField(r.id, 'text', e.target.value)} />
+                    <div className="oc-help">ID: {r.id}</div>
+                  </td>
+                  <td>
+                    <input className="oc-input" value={r.textAr} onChange={(e) => setField(r.id, 'textAr', e.target.value)} />
+                  </td>
+                  <td>
+                    <input className="oc-input" value={r.href} onChange={(e) => setField(r.id, 'href', e.target.value)} />
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className={`oc-chip ${r.color}`}><span className="dot" />{r.color}</span>
+                      <select className="oc-input" value={r.color} onChange={(e) => setField(r.id, 'color', e.target.value as Color)}>
+                        <option value="copper">Copper</option>
+                        <option value="power">Red</option>
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                      </select>
+                    </div>
+                  </td>
+                  <td>
+                    <input type="number" className="oc-input" value={r.priority} onChange={(e) => setField(r.id, 'priority', Number(e.target.value)||0)} />
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <input id={`active-${r.id}`} className="oc-switch" type="checkbox" checked={r.active} onChange={(e) => setField(r.id, 'active', e.target.checked)} />
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="oc-btn oc-btn-primary" onClick={() => saveRow(r)}>Save</button>
+                      <button className="oc-btn oc-btn-red" onClick={() => deleteRow(r.id)}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
  }

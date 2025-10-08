@@ -165,6 +165,7 @@ export function ServiceForm() {
   const [newVideoUrl, setNewVideoUrl] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [mapMounted, setMapMounted] = useState(false);
+  const [useCustomCategory, setUseCustomCategory] = useState(false);
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -609,24 +610,61 @@ export function ServiceForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.category')}</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={tr(locale, 'form.labels.category')} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {tr(locale, `categories.${cat}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {useCustomCategory ? (
+                  <>
+                    <FormControl>
+                      <Input
+                        placeholder={locale === 'ar' ? 'اكتب فئة مخصصة' : 'Type a custom category'}
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {locale === 'ar' ? 'سيتم حفظ الفئة المخصصة مع خدمتك.' : 'Your custom category will be saved with your service.'}
+                    </FormDescription>
+                    <div className="pt-1">
+                      <Button type="button" variant="link" className="p-0" onClick={() => setUseCustomCategory(false)}>
+                        {locale === 'ar' ? 'الرجوع إلى قائمة الفئات' : 'Back to category list'}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Select
+                      onValueChange={(v) => {
+                        if (v === '__CUSTOM__') {
+                          setUseCustomCategory(true);
+                          form.setValue('category', '', { shouldValidate: true });
+                          return;
+                        }
+                        field.onChange(v);
+                      }}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={tr(locale, 'form.labels.category')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {tr(locale, `categories.${cat}`)}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="__CUSTOM__">
+                          {locale === 'ar' ? 'إضافة فئة جديدة…' : 'Add new category…'}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="pt-1">
+                      <Button type="button" variant="link" className="p-0" onClick={() => setUseCustomCategory(true)}>
+                        {locale === 'ar' ? 'لم تجد فئتك؟ اكتب فئة مخصصة' : "Can't find yours? Type a custom category"}
+                      </Button>
+                    </div>
+                  </>
+                )}
                 {categorySuggestions.length > 0 && (
                   <div className="space-y-2 pt-2">
                     <p className="flex items-center gap-2 text-sm text-muted-foreground">

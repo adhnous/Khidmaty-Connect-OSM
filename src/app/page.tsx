@@ -16,6 +16,10 @@ import {
   Home as HomeIcon,
   Search,
   Wrench,
+  Megaphone,
+  ShoppingBag,
+  Store,
+  ShoppingCart,
 } from 'lucide-react';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
@@ -25,14 +29,17 @@ import { useEffect, useState } from 'react';
 import { listServicesFiltered, type Service, type ListFilters } from '@/lib/services';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { libyanCities, cityLabel } from '@/lib/cities';
+import { categories as allCategories } from '@/lib/categories';
+import CategoryCombobox from '@/components/category-combobox';
 
 
-const mockCategories = [
+const featuredCategories = [
   { name: 'Plumbing', icon: Wrench },
   { name: 'Home Services', icon: HomeIcon },
   { name: 'Automotive', icon: Car },
-  { name: 'Education', icon: Briefcase },
   { name: 'Electrical', icon: Hammer },
+  { name: 'Digital Marketing', icon: Megaphone },
+  { name: 'Sales', icon: ShoppingCart },
 ];
 // Stable sentinel values so labels can be localized while values remain constant
 const ALL_CATEGORIES = 'ALL_CATEGORIES';
@@ -141,19 +148,15 @@ export default function Home() {
                       onBlur={() => setSearchFocused(false)}
                     />
                   </div>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="h-12 text-base text-foreground">
-                      <SelectValue className="text-foreground" placeholder={tr(locale, 'home.categoryPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={ALL_CATEGORIES}>{tr(locale, 'home.allCategories')}</SelectItem>
-                      {mockCategories.map((c) => (
-                        <SelectItem key={c.name} value={c.name}>
-                          {tr(locale, `categories.${c.name}`)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CategoryCombobox
+                    value={category}
+                    onChange={setCategory}
+                    allowAll
+                    allValue={ALL_CATEGORIES}
+                    allLabel={tr(locale, 'home.allCategories')}
+                    placeholder={tr(locale, 'home.categoryPlaceholder')}
+                    mergeCommunity
+                  />
                   <Select value={city} onValueChange={setCity}>
                     <SelectTrigger className="h-12 text-base text-foreground">
                       <SelectValue className="text-foreground" placeholder={tr(locale, 'home.cityPlaceholder')} />
@@ -195,7 +198,7 @@ export default function Home() {
                       {tr(locale, 'home.featuredCategories')}
                     </h3>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
-                      {mockCategories.map((categoryItem) => (
+                      {featuredCategories.map((categoryItem) => (
                         <Button
                           key={categoryItem.name}
                           variant="ghost"

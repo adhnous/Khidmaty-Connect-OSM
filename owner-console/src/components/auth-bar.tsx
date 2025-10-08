@@ -25,11 +25,7 @@ export default function AuthBar() {
 
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 16px 0" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div className="oc-subtle">Owner Console</div>
-        <Link href="/services" className="oc-btn">Services</Link>
-        <Link href="/ads" className="oc-btn">Ads Manager</Link>
-      </div>
+      <div className="oc-subtle">Owner Console</div>
       {email ? (
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <span className="oc-subtle" title={email} style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</span>

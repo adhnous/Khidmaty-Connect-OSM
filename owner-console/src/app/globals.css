@@ -56,3 +56,37 @@ body {
   .oc-shell { grid-template-columns: 1fr; }
   .oc-sidebar { position: static; height: auto; display: flex; gap: 8px; align-items: center; border-right: none; border-bottom: 1px solid var(--oc-border); }
 }
+
+/* Inputs */
+.oc-label { display: block; font-size: 12px; color: var(--oc-muted); margin-bottom: 6px; }
+.oc-input { width: 100%; padding: 10px 12px; border: 1px solid var(--oc-border); border-radius: 8px; background: #fff; outline: none; transition: border-color .2s, box-shadow .2s; }
+.oc-input:focus { border-color: #94a3b8; box-shadow: 0 0 0 3px rgba(17,24,39,.08); }
+
+/* Switch */
+input.oc-switch { appearance: none; width: 36px; height: 22px; border-radius: 999px; background: #e5e7eb; position: relative; outline: none; cursor: pointer; transition: background .2s; border: 1px solid var(--oc-border); }
+input.oc-switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.15); transition: transform .2s; }
+input.oc-switch:checked { background: #16a34a; border-color: #16a34a; }
+input.oc-switch:checked::before { transform: translateX(14px); }
+
+/* Table */
+.oc-table-wrap { overflow: auto; border: 1px solid var(--oc-border); border-radius: 12px; background: #fff; }
+.oc-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.oc-table th, .oc-table td { padding: 10px 12px; border-bottom: 1px solid var(--oc-border); vertical-align: middle; }
+.oc-table thead th { position: sticky; top: 0; background: #f9fafb; text-align: left; font-weight: 600; color: #374151; }
+.oc-table tbody tr:hover { background: #fafafa; }
+.oc-table tbody tr:nth-child(even) { background: #fcfcfc; }
+
+/* Chips */
+.oc-chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--oc-border); background:#fff; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+.oc-chip .dot { width:10px; height:10px; border-radius: 999px; background: #d1d5db; }
+.oc-chip.copper .dot { background: #D97800; }
+.oc-chip.power .dot { background: #E52117; }
+.oc-chip.dark .dot { background: #000; }
+.oc-chip.light .dot { background: #fff; border:1px solid #e5e7eb; }
+
+/* Preview ad badge */
+.oc-ad-badge { display:inline-flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--oc-border); border-radius:999px; padding:6px 12px; font-size:13px; color:#111827; }
+.oc-ad-badge .label { font-weight: 700; font-size: 12px; color:#111827; }
+
+/* Help text */
+.oc-help { font-size: 12px; color: var(--oc-muted); }

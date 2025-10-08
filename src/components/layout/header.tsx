@@ -118,6 +118,18 @@ export function Header() {
           {user && userProfile?.role === 'provider' && (
             <Button
               size="sm"
+              className="h-8 rounded-full bg-copper hover:bg-copperDark text-ink font-semibold border-0"
+              asChild
+            >
+              <Link href="/dashboard/services/new">
+                <Briefcase className="mr-1 h-4 w-4" />
+                {tr(locale, 'header.addService')}
+              </Link>
+            </Button>
+          )}
+          {user && userProfile?.role === 'provider' && (
+            <Button
+              size="sm"
               variant="ghost"
               className="h-8 rounded-full text-snow hover:bg-white/10 border-0"
               onClick={enableNotifications}
