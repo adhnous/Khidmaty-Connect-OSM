@@ -15,10 +15,7 @@ import {
   Hammer,
   Home as HomeIcon,
   Search,
-  Wrench,
   Megaphone,
-  ShoppingBag,
-  Store,
   ShoppingCart,
 } from 'lucide-react';
 import { Footer } from '@/components/layout/footer';
@@ -34,7 +31,7 @@ import CategoryCombobox from '@/components/category-combobox';
 
 
 const featuredCategories = [
-  { name: 'Plumbing', icon: Wrench },
+  { name: 'Education', icon: Briefcase },
   { name: 'Home Services', icon: HomeIcon },
   { name: 'Automotive', icon: Car },
   { name: 'Electrical', icon: Hammer },
