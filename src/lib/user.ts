@@ -10,6 +10,9 @@ export interface UserProfile {
   role: UserRole;
   displayName?: string;
   photoURL?: string;
+  phone?: string | null;
+  whatsapp?: string | null;
+  city?: string | null;
   createdAt?: unknown; // Firestore Timestamp
   plan?: 'free' | 'basic' | 'pro' | 'enterprise';
   status?: 'active' | 'disabled';
@@ -39,7 +42,12 @@ export async function createUserProfile(
 
 export async function updateUserProfile(uid: string, data: Partial<UserProfile>) {
   const userRef = doc(db, 'users', uid);
-  await updateDoc(userRef, data);
+  try {
+    await updateDoc(userRef, data);
+  } catch (e: any) {
+    // If the doc does not exist yet, create it and merge
+    await setDoc(userRef, { uid, ...data }, { merge: true } as any);
+  }
 }
 
 

@@ -817,6 +817,20 @@ const dict = {
         goServices: 'اذهب إلى خدماتي',
         addService: 'إضافة خدمة جديدة',
       },
+      profile: {
+        title: 'ملفك الشخصي',
+        subtitle: 'حدّث معلوماتك الشخصية وبيانات التواصل.',
+        labels: {
+          name: 'الاسم الكامل',
+          phone: 'رقم الهاتف',
+          whatsapp: 'رقم واتساب',
+          city: 'المدينة',
+        },
+        actions: {
+          save: 'حفظ التغييرات',
+          saving: 'جارٍ الحفظ…',
+        },
+      },
     },
     map: {
       usingOSMBadge: 'يتم استخدام خرائط OpenStreetMap (مجاني)'

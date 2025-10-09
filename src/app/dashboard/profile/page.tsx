@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Card,
   CardContent,
@@ -8,34 +10,79 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { updateUserProfile } from '@/lib/user';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { tr, getClientLocale } from '@/lib/i18n';
 
 export default function ProfilePage() {
+  const { user, userProfile } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
+  const locale = getClientLocale();
+
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [city, setCity] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setName(String(userProfile?.displayName || ''));
+    setPhone(String((userProfile as any)?.phone || ''));
+    setWhatsapp(String((userProfile as any)?.whatsapp || ''));
+    setCity(String((userProfile as any)?.city || ''));
+  }, [userProfile?.displayName, (userProfile as any)?.phone, (userProfile as any)?.whatsapp, (userProfile as any)?.city]);
+
+  const onSave = async () => {
+    if (!user) { router.push('/login'); return; }
+    try {
+      setSaving(true);
+      await updateUserProfile(user.uid, {
+        displayName: name?.trim() || undefined,
+        // Store empty values as nulls so Firestore fields are cleaned up
+        ...(phone.trim() !== '' ? { phone: phone.trim() } : { phone: null }),
+        ...(whatsapp.trim() !== '' ? { whatsapp: whatsapp.trim() } : { whatsapp: null }),
+        ...(city.trim() !== '' ? { city: city.trim() } : { city: null }),
+      });
+      toast({ title: 'Saved', description: 'Your profile has been updated.' });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Save failed', description: e?.message || 'Could not update profile.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Profile</CardTitle>
+        <CardTitle>{tr(locale, 'header.profile')}</CardTitle>
         <CardDescription>
-          Update your personal and contact information.
+          {locale === 'ar' ? 'حدّث معلوماتك الشخصية وبيانات التواصل.' : 'Update your personal and contact information.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
-          <Input id="name" defaultValue="Ahmed Khalifa" />
+          <Label htmlFor="name">{locale === 'ar' ? 'الاسم الكامل' : 'Full Name'}</Label>
+          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input id="phone" defaultValue="+218911234567" />
+          <Label htmlFor="phone">{tr(locale, 'form.labels.contactPhone')}</Label>
+          <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="whatsapp">WhatsApp Number</Label>
-          <Input id="whatsapp" defaultValue="+218911234567" />
+          <Label htmlFor="whatsapp">{tr(locale, 'form.labels.contactWhatsapp')}</Label>
+          <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="city">City</Label>
-          <Input id="city" defaultValue="Tripoli" />
+          <Label htmlFor="city">{tr(locale, 'form.labels.city')}</Label>
+          <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
         </div>
-        <Button>Save Changes</Button>
+        <Button onClick={onSave} disabled={saving}>
+          {saving ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}
+        </Button>
       </CardContent>
     </Card>
   );
