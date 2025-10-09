@@ -37,6 +37,7 @@ export async function POST(req: Request) {
       role: data.role || null,
       displayName: data.displayName || null,
       plan: data.plan || 'free',
+      status: data.status || 'active',
       createdAt: createdAtISO,
       pricingGate: data.pricingGate || null,
     };

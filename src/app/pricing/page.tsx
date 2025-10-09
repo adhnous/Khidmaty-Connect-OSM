@@ -10,7 +10,7 @@ import { plans } from "@/lib/plans";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import { getFeatures } from "@/lib/settings";
-import { updateUserProfile } from "@/lib/user";
+import { getIdTokenOrThrow } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
 export default function PricingPage() {
@@ -119,11 +119,17 @@ export default function PricingPage() {
                             if (!user) { window.location.href = '/login'; return; }
                             try {
                               setSavingId(p.id);
-                              await updateUserProfile(user.uid, { plan: p.id as any });
-                              // If provider, route back to dashboard; else stay
-                              if (userProfile?.role === 'provider') {
-                                router.replace('/dashboard');
-                              }
+                              // Create a payment transaction through backend
+                              const token = await getIdTokenOrThrow();
+                              const res = await fetch('/api/payments/create', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                body: JSON.stringify({ planId: p.id, provider: 'mock' }),
+                              });
+                              const json = await res.json();
+                              if (!res.ok) throw new Error(json?.error || 'payment_create_failed');
+                              // Navigate to checkout page (can host QR / wallet instructions)
+                              router.push(`/checkout/${json.id}`);
                             } catch (e) {
                               alert('Failed to set plan');
                             } finally {

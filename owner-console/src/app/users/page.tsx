@@ -14,6 +14,7 @@ export default function UsersOverridesPage() {
   const [mode, setMode] = useState<"" | "force_show" | "force_hide">("");
   const [showAt, setShowAt] = useState<string>("");
   const [enforceAfterMonths, setEnforceAfterMonths] = useState<number | "">("");
+  const [status, setStatus] = useState<'active' | 'disabled'>('active');
 
   async function search() {
     setLoading(true); setError(null); setUser(null);
@@ -32,12 +33,35 @@ export default function UsersOverridesPage() {
       const showAtISO = pg?.showAt?._seconds ? new Date(pg.showAt._seconds * 1000).toISOString().slice(0,16) : (pg?.showAt ? new Date(pg.showAt).toISOString().slice(0,16) : "");
       setShowAt(showAtISO);
       setEnforceAfterMonths(pg?.enforceAfterMonths ?? "");
+      setStatus(json.user?.status === 'disabled' ? 'disabled' : 'active');
     } catch (e: any) {
       setError(e?.message || 'Search failed');
     } finally {
       setLoading(false);
     }
   }
+
+  async function toggleStatus(next: 'active' | 'disabled') {
+    if (!user?.uid) return;
+    setSaving(true); setError(null);
+    try {
+      const token = await getIdTokenOrThrow();
+      const res = await fetch('/api/users/set-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ uid: user.uid, status: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || res.statusText);
+      setStatus(json.status === 'disabled' ? 'disabled' : 'active');
+      alert('Status updated');
+    } catch (e: any) {
+      setError(e?.message || 'Update status failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+  
 
   async function save() {
     if (!user?.uid) return;
@@ -98,7 +122,16 @@ export default function UsersOverridesPage() {
             <div><span className="k">Email</span><span className="v">{user.email || '-'}</span></div>
             <div><span className="k">Role</span><span className="v">{user.role || '-'}</span></div>
             <div><span className="k">Plan</span><span className="v">{user.plan || '-'}</span></div>
+            <div><span className="k">Status</span><span className="v">{status}</span></div>
             <div><span className="k">Created</span><span className="v">{user.createdAt || '-'}</span></div>
+          </div>
+
+          <div style={{ margin: '10px 0 18px' }}>
+            {status === 'active' ? (
+              <button className="oc-btn" onClick={() => toggleStatus('disabled')} disabled={saving}>Disable account</button>
+            ) : (
+              <button className="oc-btn oc-btn-primary" onClick={() => toggleStatus('active')} disabled={saving}>Enable account</button>
+            )}
           </div>
 
           <h4 className="oc-title" style={{ margin: '12px 0 8px' }}>Pricing Overrides</h4>

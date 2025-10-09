@@ -8,11 +8,18 @@ export default function Sidebar() {
   const isActive = (href: string) => (pathname === href ? "active" : "");
   return (
     <aside className="oc-sidebar">
-      <div className="oc-brand">Owner Console</div>
+      <div className="oc-brand">
+        <div className="oc-brandmark">KC</div>
+        <div>
+          <div className="oc-brand-title">Khidmaty Console</div>
+          <div className="oc-brand-sub">Owner & Admin</div>
+        </div>
+      </div>
       <nav className="oc-nav">
         <Link href="/users" className={`oc-navlink ${isActive('/users')}`}>Users</Link>
         <Link href="/services" className={`oc-navlink ${isActive('/services')}`}>Services</Link>
         <Link href="/ads" className={`oc-navlink ${isActive('/ads')}`}>Ads Manager</Link>
+        <Link href="/transactions" className={`oc-navlink ${isActive('/transactions')}`}>Transactions</Link>
         <Link href="/settings" className={`oc-navlink ${isActive('/settings')}`}>Settings</Link>
       </nav>
     </aside>

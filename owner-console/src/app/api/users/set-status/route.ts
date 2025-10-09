@@ -11,46 +11,22 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const uid = (body?.uid || '').trim();
+  const status = (body?.status || '').trim();
   if (!uid) return NextResponse.json({ error: 'uid_required' }, { status: 400 });
-
-  const { db } = await getAdmin();
-
-  const pg: any = {};
-  // mode
-  if (body?.mode === 'force_show' || body?.mode === 'force_hide') {
-    pg.mode = body.mode;
-  } else if (body?.mode === null) {
-    pg.mode = null;
-  }
-  // showAt
-  if (body?.showAt) {
-    const v = new Date(body.showAt);
-    if (!isNaN(v.getTime())) pg.showAt = v;
-  } else if (body?.showAt === null) {
-    pg.showAt = null;
-  }
-  // months
-  if (body?.enforceAfterMonths != null) {
-    const n = Math.max(0, Math.floor(Number(body.enforceAfterMonths)));
-    if (Number.isFinite(n)) pg.enforceAfterMonths = n; else pg.enforceAfterMonths = null;
-  }
+  if (!['active', 'disabled'].includes(status)) return NextResponse.json({ error: 'invalid_status' }, { status: 400 });
 
   try {
+    const { db } = await getAdmin();
     const ref = db.collection('users').doc(uid);
     const prevSnap = await ref.get();
     const prevData = prevSnap.data() || {};
-    const prevLocked = prevData?.pricingGate?.mode === 'force_show';
-
-    await ref.set({ pricingGate: pg }, { merge: true });
+    const prevStatus = prevData?.status || 'active';
+    await ref.set({ status }, { merge: true });
     const snap = await ref.get();
     const data = snap.data() || {};
 
-    // If the user is a provider and the override changed, adjust services accordingly.
-    const isProvider = (data?.role === 'provider');
-    const nextLocked = (pg?.mode === 'force_show');
     let updatedServices = 0;
-    if (isProvider && nextLocked && !prevLocked) {
-      // Lock turned ON: demote approved to pending with demotedForLock flag
+    if (status === 'disabled' && data?.role === 'provider') {
       const svcSnap = await db.collection('services').where('providerId', '==', uid).limit(1000).get();
       let batch = db.batch();
       let ops = 0;
@@ -64,8 +40,8 @@ export async function POST(req: Request) {
         }
       }
       if (ops > 0) { await batch.commit(); }
-    } else if (isProvider && !nextLocked && prevLocked) {
-      // Lock turned OFF: reapprove those that were demoted by lock
+    } else if (prevStatus === 'disabled' && status === 'active' && data?.role === 'provider') {
+      // Re-enable: reapprove services that were demoted by lock
       const svcSnap = await db.collection('services').where('providerId', '==', uid).where('status', '==', 'pending').limit(1000).get();
       let batch = db.batch();
       let ops = 0;
@@ -81,8 +57,8 @@ export async function POST(req: Request) {
       if (ops > 0) { await batch.commit(); }
     }
 
-    return NextResponse.json({ ok: true, pricingGate: data.pricingGate || null, updatedServices });
+    return NextResponse.json({ ok: true, status: data.status || 'active', updatedServices });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'update_failed' }, { status: 500 });
+    return NextResponse.json({ error: e?.message || 'set_status_failed' }, { status: 500 });
   }
 }

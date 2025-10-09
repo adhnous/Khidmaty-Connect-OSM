@@ -24,11 +24,14 @@ export default function AuthBar() {
   }
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 16px 0" }}>
+    <div className="oc-topbar">
       <div className="oc-subtle">Owner Console</div>
       {email ? (
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span className="oc-subtle" title={email} style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</span>
+        <div className="oc-topbar-actions">
+          <div className="oc-avatar" aria-hidden>
+            {(email || 'A').slice(0,1).toUpperCase()}
+          </div>
+          <span className="oc-subtle oc-ellips" title={email}>{email}</span>
           <button className="oc-btn" onClick={handleSignOut}>Sign out</button>
         </div>
       ) : (

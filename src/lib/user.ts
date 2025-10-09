@@ -12,6 +12,7 @@ export interface UserProfile {
   photoURL?: string;
   createdAt?: unknown; // Firestore Timestamp
   plan?: 'free' | 'basic' | 'pro' | 'enterprise';
+  status?: 'active' | 'disabled';
   pricingGate?: {
     mode?: 'force_show' | 'force_hide' | null;
     showAt?: any; // Firestore Timestamp or ISO

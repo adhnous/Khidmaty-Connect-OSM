@@ -39,6 +39,10 @@ export async function POST(req: Request) {
   if (!authz.ok) return NextResponse.json({ error: authz.error }, { status: authz.code });
 
   const body = await req.json().catch(() => ({}));
+  const { db } = await getAdmin();
+  const settingsRef = db.collection('settings').doc('features');
+  const prevSnap = await settingsRef.get();
+  const prev = prevSnap.exists ? prevSnap.data() || {} : {};
   const next = {
     pricingEnabled: !!body.pricingEnabled,
     showForProviders: !!body.showForProviders,
@@ -49,8 +53,42 @@ export async function POST(req: Request) {
     lockSeekersToPricing: !!body.lockSeekersToPricing,
   };
 
-  const { db } = await getAdmin();
-  await db.collection('settings').doc('features').set(next, { merge: true });
+  await settingsRef.set(next, { merge: true });
 
-  return NextResponse.json({ ok: true, features: next });
+  // Determine provider lock state transitions
+  const prevProvidersLocked = !!(prev.lockAllToPricing || prev.lockProvidersToPricing);
+  const nextProvidersLocked = !!(next.lockAllToPricing || next.lockProvidersToPricing);
+  let updatedDemoted = 0;
+  let updatedReapproved = 0;
+
+  if (!prevProvidersLocked && nextProvidersLocked) {
+    // Providers just became locked: demote all approved services
+    const svcSnap = await db.collection('services').where('status', '==', 'approved').limit(5000).get();
+    let batch = db.batch();
+    let ops = 0;
+    for (const d of svcSnap.docs) {
+      batch.update(d.ref, { status: 'pending', approvedAt: null, approvedBy: null, demotedForLock: true });
+      ops++;
+      updatedDemoted++;
+      if (ops >= 400) { await batch.commit(); batch = db.batch(); ops = 0; }
+    }
+    if (ops > 0) { await batch.commit(); }
+  } else if (prevProvidersLocked && !nextProvidersLocked) {
+    // Providers just became unlocked: reapprove any services we demoted for lock
+    const svcSnap = await db.collection('services').where('status', '==', 'pending').limit(5000).get();
+    let batch = db.batch();
+    let ops = 0;
+    for (const d of svcSnap.docs) {
+      const s = d.data() || {};
+      if (s.demotedForLock === true) {
+        batch.update(d.ref, { status: 'approved', demotedForLock: null, approvedAt: new Date(), approvedBy: authz.uid });
+        ops++;
+        updatedReapproved++;
+        if (ops >= 400) { await batch.commit(); batch = db.batch(); ops = 0; }
+      }
+    }
+    if (ops > 0) { await batch.commit(); }
+  }
+
+  return NextResponse.json({ ok: true, features: next, updatedDemoted, updatedReapproved });
 }

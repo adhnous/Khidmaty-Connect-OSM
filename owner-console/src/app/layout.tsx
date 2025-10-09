@@ -13,10 +13,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="oc-shell">
           <Sidebar />
           <main className="oc-main">
-            <AuthBar />
-            <OwnerGate>
-              {children}
-            </OwnerGate>
+            <div className="oc-container">
+              <AuthBar />
+              <OwnerGate>
+                {children}
+              </OwnerGate>
+            </div>
           </main>
         </div>
       </body>
