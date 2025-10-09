@@ -8,15 +8,60 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getClientLocale } from "@/lib/i18n";
 
 export default function CheckoutPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, userProfile } = useAuth();
+  const locale = getClientLocale();
+  const txt = useMemo(() => {
+    if (locale === 'ar') {
+      return {
+        title: 'إتمام الدفع',
+        subtitle: 'أكمل الدفع لتفعيل اشتراكك.',
+        loading: 'جارٍ التحميل…',
+        txId: 'معرّف العملية',
+        plan: 'الخطة',
+        amount: 'المبلغ',
+        status: 'الحالة',
+        statusLabels: { pending: 'قيد الانتظار', success: 'تم الدفع', failed: 'فشل', cancelled: 'أُلغيت' } as Record<string, string>,
+        scanHelp: 'امسح باستخدام تطبيق المحفظة',
+        openWallet: 'فتح في تطبيق المحفظة',
+        copyCode: 'نسخ رمز الدفع',
+        refresh: 'لقد دفعت، تحديث',
+        openWeb: 'فتح المحفظة (ويب)',
+        openFail: 'تعذر فتح تطبيق المحفظة. إذا لم يكن مثبتًا، امسح رمز QR أو انسخ رمز الدفع.',
+        desktopHint: 'على الجوال، اضغط "فتح في تطبيق المحفظة". على الحاسوب، امسح رمز QR. ستتحدّث هذه الصفحة تلقائيًا بعد تأكيد الدفع.',
+        failedNotice: 'فشلت عملية الدفع. الرجاء العودة إلى صفحة الأسعار والمحاولة مرة أخرى.',
+        cancelledNotice: 'تم إلغاء عملية الدفع. يمكنك المحاولة مرة أخرى من صفحة الأسعار.',
+      };
+    }
+    return {
+      title: 'Checkout',
+      subtitle: 'Complete your payment to activate your subscription.',
+      loading: 'Loading…',
+      txId: 'Transaction ID',
+      plan: 'Plan',
+      amount: 'Amount',
+      status: 'Status',
+      statusLabels: { pending: 'Pending', success: 'Paid', failed: 'Failed', cancelled: 'Cancelled' } as Record<string, string>,
+      scanHelp: 'Scan with your wallet app',
+      openWallet: 'Open in Wallet app',
+      copyCode: 'Copy payment code',
+      refresh: "I've paid, refresh",
+      openWeb: 'Open Wallet (web)',
+      openFail: 'Could not open a wallet app. If not installed, scan the QR or copy the payment code.',
+      desktopHint: 'On mobile, tap “Open in Wallet app”. On desktop, scan the QR. This page will update automatically after payment is confirmed.',
+      failedNotice: 'Payment failed. Please go back to Pricing and try again.',
+      cancelledNotice: 'Payment was cancelled. You can try again from Pricing.',
+    };
+  }, [locale]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tx, setTx] = useState<any | null>(null);
+  const [openMsg, setOpenMsg] = useState<string | null>(null);
 
   const isProvider = (userProfile?.role === 'provider');
 
@@ -63,6 +108,43 @@ export default function CheckoutPage() {
     return url;
   }, [tx, id]);
 
+  // Platform-aware open link: prefer provider checkoutUrl; else Android intent deep link; else custom scheme
+  const openHref = useMemo(() => {
+    if (!tx) return '';
+    if (typeof tx.checkoutUrl === 'string' && tx.checkoutUrl) return String(tx.checkoutUrl);
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isAndroid = /Android/i.test(ua);
+    if (isAndroid) {
+      const fallback = typeof window !== 'undefined' ? window.location.origin + `/checkout/${id}` : '';
+      // Android intent format with mock package; falls back to this page/help
+      const intent = `intent://pay?tx=${encodeURIComponent(String(id))}&amt=${encodeURIComponent(String(tx.amount || ''))}&cur=${encodeURIComponent(String(tx.currency || 'LYD'))}&p=${encodeURIComponent(String(tx.provider || 'mock'))}#Intent;scheme=khidmaty-mock;package=com.khidmaty.mockwallet;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+      return intent;
+    }
+    // iOS and others: use the custom scheme (will show chooser or no-op if not installed)
+    return qrPayload;
+  }, [tx, id, qrPayload]);
+
+  const showWebWallet = useMemo(() => {
+    const u = String(tx?.checkoutUrl || '');
+    return !!u && !u.includes('/checkout/');
+  }, [tx?.checkoutUrl]);
+
+  function tryOpenWallet() {
+    if (!openHref) return;
+    setOpenMsg(null);
+    const start = Date.now();
+    try {
+      // Prefer setting location to avoid popup blockers.
+      window.location.href = openHref;
+    } catch {}
+    // If nothing handled it within ~1.2s, show guidance.
+    setTimeout(() => {
+      if (Date.now() - start < 1200) {
+        setOpenMsg('Could not open a wallet app. If you do not have a compatible wallet installed, scan the QR from another device or copy the payment code.');
+      }
+    }, 1200);
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-ink text-snow">
       <Header />
@@ -71,67 +153,69 @@ export default function CheckoutPage() {
           <div className="container">
             <Card className="mx-auto max-w-2xl bg-background text-foreground border-white/10">
               <CardHeader>
-                <CardTitle>Checkout</CardTitle>
+                <CardTitle>{txt.title}</CardTitle>
                 <CardDescription>
-                  Complete your payment to activate your subscription.
+                  {txt.subtitle}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent dir={locale === 'ar' ? 'rtl' : 'ltr'}>
                 {loading ? (
-                  <div>Loading…</div>
+                  <div>{txt.loading}</div>
                 ) : error ? (
                   <div className="text-red-500">{error}</div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="text-sm text-muted-foreground">Transaction ID: {id}</div>
+                    <div className="text-sm text-muted-foreground">{txt.txId}: {id}</div>
                     <div className="flex items-center justify-between">
-                      <div>Plan</div>
+                      <div>{txt.plan}</div>
                       <div className="font-semibold uppercase">{tx?.planId}</div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div>Amount</div>
+                      <div>{txt.amount}</div>
                       <div className="font-semibold">{tx?.amount} {tx?.currency || 'LYD'}</div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div>Status</div>
-                      <div className="font-semibold capitalize">{tx?.status}</div>
+                      <div>{txt.status}</div>
+                      <div className="font-semibold">{txt.statusLabels[String(tx?.status)] || String(tx?.status)}</div>
                     </div>
 
                     {tx?.status === 'pending' && (
                       <div className="space-y-4">
-                        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
                           <img
                             alt="Payment QR"
-                            width={220}
-                            height={220}
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrPayload)}`}
-                            style={{ borderRadius: 12, border: '1px solid var(--oc-border)' }}
+                            width={224}
+                            height={224}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=224x224&data=${encodeURIComponent(qrPayload)}`}
+                            className="rounded-xl border w-56 h-56 sm:w-60 sm:h-60"
                           />
-                          <div>
-                            <div className="oc-subtle" style={{ marginBottom: 8 }}>Scan with your wallet app</div>
-                            <div style={{ fontSize: 12, wordBreak: 'break-all', background: '#f9fafb', border: '1px solid var(--oc-border)', padding: 10, borderRadius: 10 }}>
+                          <div className="w-full sm:max-w-sm">
+                            <div className="text-sm text-muted-foreground mb-2">{txt.scanHelp}</div>
+                            <div className="text-xs break-all bg-muted/20 border rounded-lg p-2">
                               {qrPayload}
                             </div>
-                            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                              <Button className="bg-copper text-ink" onClick={() => load()}>I’ve paid, refresh</Button>
-                              <Button variant="secondary" onClick={() => { navigator.clipboard?.writeText(qrPayload); }}>Copy payment code</Button>
-                              {tx?.checkoutUrl && (
-                                <Button variant="secondary" onClick={() => { window.open(String(tx.checkoutUrl), '_blank'); }}>Open Wallet</Button>
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              <Button className="bg-copper text-ink hover:bg-copperDark" onClick={tryOpenWallet}>{txt.openWallet}</Button>
+                              <Button variant="secondary" onClick={() => { navigator.clipboard?.writeText(qrPayload); }}>{txt.copyCode}</Button>
+                              <Button variant="secondary" onClick={() => load()}>{txt.refresh}</Button>
+                              {showWebWallet && (
+                                <Button variant="secondary" onClick={() => { window.open(String(tx?.checkoutUrl), '_blank'); }}>{txt.openWeb}</Button>
                               )}
                             </div>
+                            {openMsg && (
+                              <p className="text-xs text-yellow-600 mt-2">{txt.openFail}</p>
+                            )}
                           </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Please complete the payment in your wallet app. This page will update automatically every few seconds after payment is confirmed.
-                        </p>
+                        <p className="text-sm text-muted-foreground">{txt.desktopHint}</p>
                       </div>
                     )}
 
                     {tx?.status === 'failed' && (
-                      <div className="text-red-600">Payment failed. Please go back to Pricing and try again.</div>
+                      <div className="text-red-600">{txt.failedNotice}</div>
                     )}
                     {tx?.status === 'cancelled' && (
-                      <div className="text-yellow-600">Payment was cancelled. You can try again from Pricing.</div>
+                      <div className="text-yellow-600">{txt.cancelledNotice}</div>
                     )}
                   </div>
                 )}
