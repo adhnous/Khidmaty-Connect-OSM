@@ -128,6 +128,9 @@ body {
     width: max-content; /* intrinsic content width for seamless 50% loop */
     animation: ad-scroll 28s linear infinite;
   }
+  /* Pause marquee on hover */
+  .ad-marquee:hover .ad-track { animation-play-state: paused; }
+  .ad-marquee:hover .ad-track.single { animation-play-state: paused; }
   /* For 1–2 ads, use a gentle bounce animation (no visible duplicates) */
   .ad-track.single {
     animation: ad-bounce 12s ease-in-out infinite alternate;

@@ -1,10 +1,9 @@
-
 'use client';
 
 import { LogIn, User, LogOut, Briefcase, Bell } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { tr } from '@/lib/i18n';
 
 import { Logo } from '@/components/logo';
@@ -27,8 +26,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 export function Header() {
   const { user, userProfile } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const [showPricing, setShowPricing] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+  const [lockActive, setLockActive] = useState(false);
   const [locale, setLocale] = useState<'en' | 'ar'>(() => {
     try {
       if (typeof document === 'undefined') return 'en';
@@ -39,20 +41,23 @@ export function Header() {
     }
   });
 
+  const onLockPages = useMemo(() => {
+    try {
+      const p = pathname || (typeof window !== 'undefined' ? window.location.pathname : '') || '';
+      const lower = p.toLowerCase();
+      return lower.includes('/pricing') || lower.includes('/checkout');
+    } catch {
+      return false;
+    }
+  }, [pathname]);
+
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: 'Signed Out',
-        description: 'You have been successfully signed out.',
-      });
+      toast({ title: 'Signed Out', description: 'You have been successfully signed out.' });
       router.push('/');
     } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign Out Failed',
-        description: 'There was an error signing out.',
-      });
+      toast({ variant: 'destructive', title: 'Sign Out Failed', description: 'There was an error signing out.' });
     }
   };
 
@@ -70,6 +75,32 @@ export function Header() {
     } catch {}
   }, []);
 
+  // Hide interactive header items when the page is not visible (e.g., device lock, tab background)
+  useEffect(() => {
+    const update = () => {
+      try {
+        setIsPageVisible(!document.hidden);
+      } catch {
+        setIsPageVisible(true);
+      }
+    };
+    const hide = () => setIsPageVisible(false);
+    update();
+    document.addEventListener('visibilitychange', update);
+    window.addEventListener('pageshow', update);
+    window.addEventListener('pagehide', hide);
+    // Also react to focus/blur so UI hides immediately when app loses focus
+    window.addEventListener('focus', update);
+    window.addEventListener('blur', hide);
+    return () => {
+      document.removeEventListener('visibilitychange', update);
+      window.removeEventListener('pageshow', update);
+      window.removeEventListener('pagehide', hide);
+      window.removeEventListener('focus', update);
+      window.removeEventListener('blur', hide);
+    };
+  }, []);
+
   // Feature gating: Pricing visibility (owner-controlled + default after N months)
   useEffect(() => {
     let alive = true;
@@ -82,28 +113,35 @@ export function Header() {
           (userProfile as any)?.createdAt?.toMillis?.() ??
           (user?.metadata?.creationTime ? new Date(user.metadata.creationTime).getTime() : 0);
         const monthsSince = createdAtMs > 0 ? (Date.now() - createdAtMs) / (1000 * 60 * 60 * 24 * 30) : 0;
-        // Global/role lock always shows Pricing link
-        const lockedByRole = !!(f.lockAllToPricing || (role === 'provider' && f.lockProvidersToPricing) || (role === 'seeker' && f.lockSeekersToPricing));
-        if (lockedByRole) { setShowPricing(true); return; }
 
-        // Per-user overrides
         const pg = (userProfile as any)?.pricingGate || {};
-        if (pg?.mode === 'force_show') { setShowPricing(true); return; }
-        if (pg?.mode === 'force_hide') { setShowPricing(false); return; }
+        const forcedShow = pg?.mode === 'force_show';
+        const forcedHide = pg?.mode === 'force_hide';
         const showAtObj = pg?.showAt;
         const showAtMs = (showAtObj?.toMillis?.() ?? (showAtObj ? Date.parse(showAtObj) : 0)) || 0;
-        if (showAtMs && Date.now() >= showAtMs) { setShowPricing(true); return; }
+
+        const lockedByRole = !!(f.lockAllToPricing || (role === 'provider' && f.lockProvidersToPricing) || (role === 'seeker' && f.lockSeekersToPricing));
+        const plan = (userProfile?.plan ?? 'free') as string;
+        const lockNow = forcedShow || (lockedByRole && plan === 'free');
+        setLockActive(lockNow);
+
         const monthsLimit = (typeof pg?.enforceAfterMonths === 'number') ? pg.enforceAfterMonths : (f.enforceAfterMonths ?? 3);
         const byRole = (role === 'provider' && f.showForProviders) || (role === 'seeker' && f.showForSeekers);
         const byAge = monthsSince >= monthsLimit;
-        const visible = !!(f.pricingEnabled && (byRole || byAge));
-        setShowPricing(visible);
+        let show = false;
+        if (forcedShow) show = true;
+        else if (forcedHide) show = false;
+        else if (showAtMs && Date.now() >= showAtMs) show = true;
+        else if (lockedByRole) show = true; // show Pricing link when globally/role locked
+        else show = !!(f.pricingEnabled && (byRole || byAge));
+        setShowPricing(show);
       } catch {
         setShowPricing(false);
+        setLockActive(false);
       }
     })();
     return () => { alive = false };
-  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate]);
+  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate, userProfile?.plan]);
 
   const toggleLocale = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
@@ -142,123 +180,127 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2 md:gap-4">
-          <nav className="hidden items-center gap-2 md:flex">
-            <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
-              <Link href="/">{tr(locale, 'header.browse')}</Link>
-            </Button>
-            { showPricing && (
-              <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
-                <Link href="/pricing">{tr(locale, 'pages.pricing.nav')}</Link>
-              </Button>
-            )}
-            { userProfile?.role === 'provider' && (
-              <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
-                <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>
-              </Button>
-            )}
-          </nav>
-          {user && userProfile?.role === 'provider' && (
-            <Button
-              size="sm"
-              className="h-8 rounded-full bg-copper hover:bg-copperDark text-ink font-semibold border-0"
-              asChild
-            >
-              <Link href="/dashboard/services/new">
-                <Briefcase className="mr-1 h-4 w-4" />
-                {tr(locale, 'header.addService')}
-              </Link>
-            </Button>
-          )}
-          {user && userProfile?.role === 'provider' && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 rounded-full text-snow hover:bg-white/10 border-0"
-              onClick={enableNotifications}
-              disabled={notifLoading}
-              title="Enable notifications"
-              aria-label="Enable notifications"
-            >
-              <Bell className="mr-1 h-4 w-4" />
-              Notifications
-            </Button>
-          )}
-          <Button
-            size="sm"
-            className="h-8 rounded-full bg-snow px-3 text-ink hover:bg-snow/90 border-0 shadow-sm"
-            onClick={toggleLocale}
-            title={tr(locale, 'header.switch')}
-            aria-label={tr(locale, 'header.switch')}
-          >
-            {locale === 'ar' ? 'EN' : 'AR'}
-          </Button>
-          {user ? (
-             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full text-primary-foreground">
-                  <Avatar className="h-9 w-9 ring-1 ring-white/30">
-                    <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-                    <AvatarFallback className="bg-snow text-ink font-semibold">
-                      {getInitials(user.email)}
-                    </AvatarFallback>
-                  </Avatar>
+          {(!lockActive && !onLockPages && isPageVisible) && (
+            <>
+              <nav className="hidden items-center gap-2 md:flex">
+                <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
+                  <Link href="/">{tr(locale, 'header.browse')}</Link>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.displayName ?? 'User'}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                 {userProfile?.role === 'provider' && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard">
-                      <Briefcase className="mr-2" />
-                      {tr(locale, 'header.providerDashboard')}
-                    </Link>
-                  </DropdownMenuItem>
+                { showPricing && (
+                  <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
+                    <Link href="/pricing">{tr(locale, 'pages.pricing.nav')}</Link>
+                  </Button>
                 )}
-                {userProfile?.role === 'provider' && (
-                  <>
+                { userProfile?.role === 'provider' && (
+                  <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
+                    <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>
+                  </Button>
+                )}
+              </nav>
+              {user && userProfile?.role === 'provider' && (
+                <Button
+                  size="sm"
+                  className="h-8 rounded-full bg-copper hover:bg-copperDark text-ink font-semibold border-0"
+                  asChild
+                >
+                  <Link href="/dashboard/services/new">
+                    <Briefcase className="mr-1 h-4 w-4" />
+                    {tr(locale, 'header.addService')}
+                  </Link>
+                </Button>
+              )}
+              {user && userProfile?.role === 'provider' && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 rounded-full text-snow hover:bg-white/10 border-0"
+                  onClick={enableNotifications}
+                  disabled={notifLoading}
+                  title="Enable notifications"
+                  aria-label="Enable notifications"
+                >
+                  <Bell className="mr-1 h-4 w-4" />
+                  Notifications
+                </Button>
+              )}
+              <Button
+                size="sm"
+                className="h-8 rounded-full bg-snow px-3 text-ink hover:bg-snow/90 border-0 shadow-sm"
+                onClick={toggleLocale}
+                title={tr(locale, 'header.switch')}
+                aria-label={tr(locale, 'header.switch')}
+              >
+                {locale === 'ar' ? 'EN' : 'AR'}
+              </Button>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full text-primary-foreground">
+                      <Avatar className="h-9 w-9 ring-1 ring-white/30">
+                        <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
+                        <AvatarFallback className="bg-snow text-ink font-semibold">
+                          {getInitials(user.email)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user.displayName ?? 'User'}</p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {userProfile?.role === 'provider' && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard">
+                          <Briefcase className="mr-2" />
+                          {tr(locale, 'header.providerDashboard')}
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {userProfile?.role === 'provider' && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard/services">
+                            <Briefcase className="mr-2" />
+                            {tr(locale, 'header.myServices')}
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard/services/new">
+                            <Briefcase className="mr-2" />
+                            {tr(locale, 'header.addService')}
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard/services">
-                        <Briefcase className="mr-2" />
-                        {tr(locale, 'header.myServices')}
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/services/new">
-                        <Briefcase className="mr-2" />
-                        {tr(locale, 'header.addService')}
+                      <Link href="/dashboard/profile">
+                        <User className="mr-2" />
+                        {tr(locale, 'header.profile')}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                  </>
-                )}
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile">
-                    <User className="mr-2" />
-                    {tr(locale, 'header.profile')}
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2" />
+                      {tr(locale, 'header.signOut')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button asChild>
+                  <Link href="/login">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    {tr(locale, 'header.login')}
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="mr-2" />
-                  {tr(locale, 'header.signOut')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button asChild>
-              <Link href="/login">
-                <LogIn className="mr-2 h-4 w-4" />
-                {tr(locale, 'header.login')}
-              </Link>
-            </Button>
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>
