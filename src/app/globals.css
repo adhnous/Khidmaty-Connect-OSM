@@ -125,16 +125,19 @@ body {
   }
   .ad-track {
     display: flex;
-    width: max-content;
+    width: max-content; /* intrinsic content width for seamless 50% loop */
     animation: ad-scroll 28s linear infinite;
   }
-  /* When only one ad, don't animate (no duplication) */
+  /* For 1–2 ads, use a gentle bounce animation (no visible duplicates) */
   .ad-track.single {
-    animation: none;
+    animation: ad-bounce 12s ease-in-out infinite alternate;
   }
   .ad-seq {
     display: flex;
     align-items: center;
+    flex: 0 0 100%;
+    min-width: 100%; /* each half spans the viewport width */
+    justify-content: flex-start;
   }
   .ad-spacer {
     width: clamp(200px, 40vw, 600px);
@@ -150,5 +153,17 @@ body {
   @keyframes ad-scroll-rtl {
     from { transform: translateX(0); }
     to { transform: translateX(50%); }
+  }
+  /* Bounce motion for 1–2 ads */
+  @keyframes ad-bounce {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-35%); }
+  }
+  [dir="rtl"] .ad-track.single {
+    animation-name: ad-bounce-rtl;
+  }
+  @keyframes ad-bounce-rtl {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(35%); }
   }
 }

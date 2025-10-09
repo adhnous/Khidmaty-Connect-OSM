@@ -65,6 +65,15 @@ export default function AdStrip() {
     ];
   }, [ads]);
 
+  // Build a base sequence long enough for a smoother loop
+  const base = useMemo(() => {
+    const MIN_BADGES = 10;
+    const repeats = Math.max(2, Math.ceil(MIN_BADGES / Math.max(items.length, 1)));
+    const out: AdItem[] = [];
+    for (let i = 0; i < repeats; i++) out.push(...items);
+    return out;
+  }, [items]);
+
   if (items.length === 0) return null;
 
   function bg(c?: AdItem["color"]) {
@@ -74,22 +83,22 @@ export default function AdStrip() {
     return "bg-amber-500 text-black"; // copper-ish
   }
 
-  const isSingle = items.length === 1;
+  // Duplicate sequences must be identical width for a perfect 50% loop.
 
   return (
     <div className={`ad-marquee ${bg(items[0]?.color)} select-none`}>
       <div className="container mx-auto flex items-center gap-3 py-2">
         <div className={`ad-track`}>
-          {/* Duplicate sequence to ensure seamless scroll */}
+          {/* Sequence A */}
           <div className="ad-seq">
-            {items.map((ad) => (
-              <AdBadge key={`a1-${ad.id}`} ad={ad} />
+            {base.map((ad, idx) => (
+              <AdBadge key={`a1-${ad.id}-${idx}`} ad={ad} />
             ))}
           </div>
-          {isSingle && <div className="ad-spacer" aria-hidden="true" />}
-          <div className="ad-seq">
-            {items.map((ad) => (
-              <AdBadge key={`a2-${ad.id}`} ad={ad} />
+          {/* Sequence B (clone) */}
+          <div className="ad-seq" aria-hidden="true">
+            {base.map((ad, idx) => (
+              <AdBadge key={`a2-${ad.id}-${idx}`} ad={ad} />
             ))}
           </div>
         </div>

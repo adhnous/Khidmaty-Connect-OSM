@@ -35,6 +35,9 @@ export default function CheckoutPage() {
         desktopHint: 'على الجوال، اضغط "فتح في تطبيق المحفظة". على الحاسوب، امسح رمز QR. ستتحدّث هذه الصفحة تلقائيًا بعد تأكيد الدفع.',
         failedNotice: 'فشلت عملية الدفع. الرجاء العودة إلى صفحة الأسعار والمحاولة مرة أخرى.',
         cancelledNotice: 'تم إلغاء عملية الدفع. يمكنك المحاولة مرة أخرى من صفحة الأسعار.',
+        paymentDetails: 'تفاصيل الدفع',
+        copyId: 'نسخ المعرّف',
+        copied: 'تم النسخ!'
       };
     }
     return {
@@ -55,6 +58,9 @@ export default function CheckoutPage() {
       desktopHint: 'On mobile, tap “Open in Wallet app”. On desktop, scan the QR. This page will update automatically after payment is confirmed.',
       failedNotice: 'Payment failed. Please go back to Pricing and try again.',
       cancelledNotice: 'Payment was cancelled. You can try again from Pricing.',
+      paymentDetails: 'Payment details',
+      copyId: 'Copy ID',
+      copied: 'Copied!'
     };
   }, [locale]);
 
@@ -62,6 +68,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [tx, setTx] = useState<any | null>(null);
   const [openMsg, setOpenMsg] = useState<string | null>(null);
+  const [copyIdMsg, setCopyIdMsg] = useState<string | null>(null);
 
   const isProvider = (userProfile?.role === 'provider');
 
@@ -129,6 +136,12 @@ export default function CheckoutPage() {
     return !!u && !u.includes('/checkout/');
   }, [tx?.checkoutUrl]);
 
+  const shortId = useMemo(() => {
+    const s = String(id || '');
+    if (s.length <= 14) return s;
+    return `${s.slice(0, 6)}…${s.slice(-6)}`;
+  }, [id]);
+
   function tryOpenWallet() {
     if (!openHref) return;
     setOpenMsg(null);
@@ -165,7 +178,6 @@ export default function CheckoutPage() {
                   <div className="text-red-500">{error}</div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="text-sm text-muted-foreground">{txt.txId}: {id}</div>
                     <div className="flex items-center justify-between">
                       <div>{txt.plan}</div>
                       <div className="font-semibold uppercase">{tx?.planId}</div>
@@ -177,6 +189,32 @@ export default function CheckoutPage() {
                     <div className="flex items-center justify-between">
                       <div>{txt.status}</div>
                       <div className="font-semibold">{txt.statusLabels[String(tx?.status)] || String(tx?.status)}</div>
+                    </div>
+
+                    <div>
+                      <details className="group rounded-lg border border-white/10 bg-muted/10 open:bg-muted/10">
+                        <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium flex items-center justify-between">
+                          <span>{txt.paymentDetails}</span>
+                          <span className="transition-transform group-open:rotate-90">›</span>
+                        </summary>
+                        <div className="px-3 pb-3 text-sm">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-muted-foreground">{txt.txId}:</span>
+                            <code className="bg-muted/30 text-foreground/80 px-1.5 py-0.5 rounded break-all">{String(id)}</code>
+                            <Button
+                              variant="secondary"
+                              className="h-7 px-2"
+                              onClick={() => {
+                                navigator.clipboard?.writeText(String(id));
+                                setCopyIdMsg(txt.copied);
+                                setTimeout(() => setCopyIdMsg(null), 1200);
+                              }}
+                            >
+                              {copyIdMsg || txt.copyId}
+                            </Button>
+                          </div>
+                        </div>
+                      </details>
                     </div>
 
                     {tx?.status === 'pending' && (
