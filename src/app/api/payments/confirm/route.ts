@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await markTransactionPaid(id, authz.uid);
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json(result);
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'confirm_failed' }, { status: 500 });
   }
