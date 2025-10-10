@@ -9,6 +9,7 @@ import SwRegister from '@/components/sw-register';
 import AdStrip from '@/components/ad-strip';
 import AppGate from '@/components/app-gate';
 import BottomNav from '@/components/layout/bottom-nav';
+import PwaInstall from '@/components/pwa-install';
 
 export const metadata: Metadata = {
   title: 'Khidmaty Connect',
@@ -43,6 +44,7 @@ export default async function RootLayout({
           <AppGate>
             {children}
           </AppGate>
+          <PwaInstall />
           <BottomNav />
         </AuthProvider>
         <Toaster />
