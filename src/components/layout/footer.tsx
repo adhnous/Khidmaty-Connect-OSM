@@ -18,7 +18,7 @@ export function Footer() {
     } catch {}
   }, []);
   return (
-    <footer className="border-t bg-background">
+    <footer className="border-t bg-background pb-safe">
       <div className="container py-8">
         <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
           <Logo />

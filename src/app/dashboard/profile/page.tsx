@@ -66,19 +66,37 @@ export default function ProfilePage() {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">{locale === 'ar' ? 'الاسم الكامل' : 'Full Name'}</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="phone">{tr(locale, 'form.labels.contactPhone')}</Label>
-          <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Input
+            id="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            dir="ltr"
+            placeholder={locale === 'ar' ? 'مثال: 091 234 5678' : 'e.g., 091 234 5678'}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="whatsapp">{tr(locale, 'form.labels.contactWhatsapp')}</Label>
-          <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+          <Input
+            id="whatsapp"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            dir="ltr"
+            placeholder={locale === 'ar' ? 'مثال: +218 91 234 5678' : 'e.g., +218 91 234 5678'}
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="city">{tr(locale, 'form.labels.city')}</Label>
-          <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
+          <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} autoComplete="address-level2" />
         </div>
         <Button onClick={onSave} disabled={saving}>
           {saving ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}

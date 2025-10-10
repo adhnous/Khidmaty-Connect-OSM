@@ -1,6 +1,6 @@
 'use client';
 
-import { LogIn, User, LogOut, Briefcase, Bell } from 'lucide-react';
+import { LogIn, User, LogOut, Briefcase, Bell, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,6 +13,7 @@ import { signOut } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { getFcmToken, saveFcmToken } from '@/lib/messaging';
 import { getFeatures } from '@/lib/settings';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -178,10 +179,71 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-ink text-snow border-white/10">
+    <header className="sticky top-0 z-50 w-full border-b bg-ink text-snow border-white/10 pt-safe">
       <div className="container flex h-16 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2 md:gap-4">
+          {/* Mobile menu */}
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" className="h-10 w-10 rounded-full text-snow hover:bg-white/10" aria-label={locale === 'ar' ? 'القائمة' : 'Menu'}>
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side={locale === 'ar' ? 'right' : 'left'} className="w-80">
+                <SheetHeader>
+                  <SheetTitle>{locale === 'ar' ? 'القائمة' : 'Menu'}</SheetTitle>
+                </SheetHeader>
+                <nav className="mt-4 grid gap-2">
+                  <Button variant="ghost" className="justify-start" asChild>
+                    <Link href="/">{tr(locale, 'header.browse')}</Link>
+                  </Button>
+                  {showPricing && (
+                    <Button variant="ghost" className="justify-start" asChild>
+                      <Link href="/pricing">{tr(locale, 'pages.pricing.nav')}</Link>
+                    </Button>
+                  )}
+                  {userProfile?.role === 'provider' && (
+                    <>
+                      <Button variant="ghost" className="justify-start" asChild>
+                        <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>
+                      </Button>
+                      <Button variant="ghost" className="justify-start" asChild>
+                        <Link href="/dashboard/services/new">{tr(locale, 'header.addService')}</Link>
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={toggleLocale}
+                    aria-label={tr(locale, 'header.switch')}
+                    title={tr(locale, 'header.switch')}
+                  >
+                    {locale === 'ar' ? 'English' : 'العربية'}
+                  </Button>
+                  {user ? (
+                    <>
+                      <Button variant="ghost" className="justify-start" asChild>
+                        <Link href="/dashboard/profile">{tr(locale, 'header.profile')}</Link>
+                      </Button>
+                      <Button variant="destructive" className="justify-start" onClick={handleSignOut}>
+                        {tr(locale, 'header.signOut')}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button className="justify-start" asChild>
+                      <Link href="/login">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        {tr(locale, 'header.login')}
+                      </Link>
+                    </Button>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
           {(!lockActive && !onLockPages && isPageVisible) && (
             <>
               <nav className="hidden items-center gap-2 md:flex">
@@ -215,7 +277,7 @@ export function Header() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 rounded-full text-snow hover:bg-white/10 border-0"
+                  className="h-10 md:h-8 rounded-full text-snow hover:bg-white/10 border-0"
                   onClick={enableNotifications}
                   disabled={notifLoading}
                   title={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
@@ -227,7 +289,7 @@ export function Header() {
               )}
               <Button
                 size="sm"
-                className="h-8 rounded-full bg-snow px-3 text-ink hover:bg-snow/90 border-0 shadow-sm"
+                className="h-10 md:h-8 rounded-full bg-snow px-4 md:px-3 text-ink hover:bg-snow/90 border-0 shadow-sm"
                 onClick={toggleLocale}
                 title={tr(locale, 'header.switch')}
                 aria-label={tr(locale, 'header.switch')}

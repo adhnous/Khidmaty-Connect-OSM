@@ -137,6 +137,8 @@ export default function Home() {
                   <div className="md:col-span-2">
                     <Input
                       type="text"
+                      inputMode="search"
+                      autoComplete="off"
                       placeholder={tr(locale, 'home.searchPlaceholder')}
                       className="h-12 text-base text-foreground placeholder:text-muted-foreground"
                       value={q}
@@ -169,6 +171,8 @@ export default function Home() {
                   </Select>
                   <Input
                     type="number"
+                    inputMode="numeric"
+                    dir="ltr"
                     placeholder={tr(locale, 'home.maxPricePlaceholder')}
                     className="h-12 text-base text-foreground placeholder:text-muted-foreground"
                     value={maxPrice}
