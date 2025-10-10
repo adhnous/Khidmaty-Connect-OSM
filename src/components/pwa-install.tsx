@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Download } from "lucide-react";
+import { X, Download, Share } from "lucide-react";
 
 // Lightweight i18n using the html[lang] attribute
 function useLocale() {
@@ -32,6 +32,7 @@ export default function PwaInstall() {
   const [canInstall, setCanInstall] = useState(false);
   const [show, setShow] = useState(false);
   const deferredPromptRef = useRef<any>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   const l10n = useMemo(() => {
     if (locale === 'ar') {
@@ -55,18 +56,9 @@ export default function PwaInstall() {
   }, [locale]);
 
   // Do not show again for a while after dismiss
-  const dismissedRecently = () => {
-    try {
-      const ts = Number(localStorage.getItem('pwa_install_dismissed_at') || '0');
-      if (!ts) return false;
-      const days = (Date.now() - ts) / (1000 * 60 * 60 * 24);
-      return days < 3; // 3 days cooldown
-    } catch { return false; }
-  };
-
-  const markDismissed = () => {
-    try { localStorage.setItem('pwa_install_dismissed_at', String(Date.now())); } catch {}
-  };
+  // Persistence behavior: always re-show until installed (no cooldown)
+  const dismissedRecently = () => false;
+  const markDismissed = () => {};
 
   useEffect(() => {
     // Already installed? Don't show
@@ -122,40 +114,84 @@ export default function PwaInstall() {
       if (choice?.outcome === 'accepted') {
         setShow(false);
       } else {
-        markDismissed();
         setShow(false);
       }
     } catch {
-      markDismissed();
       setShow(false);
     }
   };
 
   const handleClose = () => {
-    markDismissed();
     setShow(false);
   };
 
   const isIphone = isIOS();
 
   return (
-    <div className="fixed inset-x-0 bottom-20 z-[60] px-3 md:bottom-6">
-      <div className="mx-auto max-w-md rounded-xl border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 shadow-lg p-3 flex items-center gap-3">
-        <div className="flex-1">
-          <div className="font-semibold">{l10n.title}</div>
-          <div className="text-sm text-muted-foreground">
-            {isIphone ? l10n.desciOS : l10n.descAndroid}
+    <>
+      {/* Bottom bar (prominent) */}
+      <div className="fixed inset-x-0 bottom-0 z-[60] pb-safe">
+        <div className="mx-auto max-w-xl px-3">
+          <div className="mb-2 rounded-t-xl border-x border-t border-ink/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 shadow-2xl">
+            <div className="flex items-center gap-3 p-3">
+              <div className="flex-1">
+                <div className="font-semibold text-base">{l10n.title}</div>
+                <div className="text-sm text-muted-foreground">
+                  {isIphone ? l10n.desciOS : (canInstall ? l10n.descAndroid : l10n.descAndroid)}
+                </div>
+              </div>
+              {!isIphone && canInstall ? (
+                <Button onClick={handleInstall} className="h-10 px-4 text-base">
+                  <Download className="mr-2 h-5 w-5" /> {l10n.install}
+                </Button>
+              ) : (
+                <Button onClick={() => setShowGuide(true)} variant="default" className="h-10 px-4 text-base">
+                  <Share className="mr-2 h-5 w-5" /> {l10n.how}
+                </Button>
+              )}
+              <Button variant="ghost" className="h-9 w-9 p-0" onClick={handleClose} aria-label={l10n.close}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
-        {!isIphone && canInstall && (
-          <Button onClick={handleInstall} className="h-9 px-3">
-            <Download className="mr-2 h-4 w-4" /> {l10n.install}
-          </Button>
-        )}
-        <Button variant="ghost" className="h-9 w-9 p-0" onClick={handleClose} aria-label={l10n.close}>
-          <X className="h-5 w-5" />
-        </Button>
+        {/* Spacer to avoid overlap with bottom nav */}
+        <div className="h-16 md:h-0" />
       </div>
-    </div>
+
+      {/* Simple overlay guide */}
+      {showGuide && (
+        <div className="fixed inset-0 z-[70] bg-black/50">
+          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-xl rounded-t-2xl bg-background p-4 pb-safe shadow-2xl">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">{l10n.how}</div>
+              <Button variant="ghost" className="h-9 w-9 p-0" onClick={() => setShowGuide(false)} aria-label={l10n.close}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            {isIphone ? (
+              <ol className="list-decimal space-y-2 pl-5 text-sm text-foreground/80">
+                <li>اضغط زر المشاركة أسفل Safari.</li>
+                <li>اختر "إضافة إلى الشاشة الرئيسية".</li>
+                <li>اضغط "إضافة" لتثبيت التطبيق.</li>
+              </ol>
+            ) : (
+              <ol className="list-decimal space-y-2 pl-5 text-sm text-foreground/80">
+                <li>افتح قائمة ⋮ في Chrome.</li>
+                <li>اختر "تثبيت التطبيق" أو "Add to Home screen".</li>
+                <li>أكد التثبيت لإضافة الأيقونة.</li>
+              </ol>
+            )}
+            <div className="mt-4">
+              {!isIphone && canInstall && (
+                <Button onClick={handleInstall} className="w-full h-11 text-base">
+                  <Download className="mr-2 h-5 w-5" /> {l10n.install}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
