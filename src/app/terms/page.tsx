@@ -1,13 +1,19 @@
-"use client";
-
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { getClientLocale, tr } from '@/lib/i18n';
+import { tr } from '@/lib/i18n';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
+export const metadata: Metadata = {
+  title: 'Terms of Service — Khidmaty Connect',
+  description: 'The terms and conditions for using Khidmaty Connect.',
+};
 
-export default function TermsPage() {
-  const locale = getClientLocale();
+export default async function TermsPage() {
+  const cookieStore = await cookies();
+  const cookieLocale = (cookieStore.get('locale')?.value || 'en').toLowerCase();
+  const locale = (cookieLocale.startsWith('ar') ? 'ar' : 'en') as 'en' | 'ar';
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Header />

@@ -103,7 +103,7 @@ export default function AdStrip() {
           </div>
         </div>
         <Link href="/dashboard" className="ml-auto rounded px-2 py-1 text-xs bg-black text-white hover:opacity-90">
-          Advertise with us
+          {locale === 'ar' ? 'أعلن معنا' : 'Advertise with us'}
         </Link>
       </div>
     </div>

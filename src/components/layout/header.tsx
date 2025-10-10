@@ -161,15 +161,17 @@ export function Header() {
       if (!token) {
         const granted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
         const description = granted
-          ? 'Missing or invalid Web Push VAPID key. Set NEXT_PUBLIC_FIREBASE_VAPID_KEY to the PUBLIC key from Firebase Console.'
-          : 'Permission denied or unsupported.';
-        toast({ variant: 'destructive', title: 'Notifications not enabled', description });
+          ? (locale === 'ar'
+              ? 'مفتاح VAPID لإشعارات الويب مفقود أو غير صالح. عيّن NEXT_PUBLIC_FIREBASE_VAPID_KEY إلى المفتاح العام من Firebase.'
+              : 'Missing or invalid Web Push VAPID key. Set NEXT_PUBLIC_FIREBASE_VAPID_KEY to the PUBLIC key from Firebase Console.')
+          : (locale === 'ar' ? 'تم رفض الإذن أو غير مدعوم.' : 'Permission denied or unsupported.');
+        toast({ variant: 'destructive', title: (locale === 'ar' ? 'لم يتم تفعيل الإشعارات' : 'Notifications not enabled'), description });
         return;
       }
       await saveFcmToken(user.uid, token);
-      toast({ title: 'Notifications enabled', description: 'You will receive alerts for new activity.' });
+      toast({ title: (locale === 'ar' ? 'تم تفعيل الإشعارات' : 'Notifications enabled'), description: (locale === 'ar' ? 'ستتلقى تنبيهات عند وجود نشاط جديد.' : 'You will receive alerts for new activity.') });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'Enable failed', description: 'Could not enable notifications.' });
+      toast({ variant: 'destructive', title: (locale === 'ar' ? 'فشل التفعيل' : 'Enable failed'), description: (locale === 'ar' ? 'تعذر تفعيل الإشعارات.' : 'Could not enable notifications.') });
     } finally {
       setNotifLoading(false);
     }
@@ -216,11 +218,11 @@ export function Header() {
                   className="h-8 rounded-full text-snow hover:bg-white/10 border-0"
                   onClick={enableNotifications}
                   disabled={notifLoading}
-                  title="Enable notifications"
-                  aria-label="Enable notifications"
+                  title={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
+                  aria-label={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
                 >
                   <Bell className="mr-1 h-4 w-4" />
-                  Notifications
+                  {locale === 'ar' ? 'الإشعارات' : 'Notifications'}
                 </Button>
               )}
               <Button

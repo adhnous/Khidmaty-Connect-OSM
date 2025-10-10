@@ -73,6 +73,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Contact messages submitted via API (admin SDK). Client access only for admins/owners.
+    match /contact_messages/{msgId} {
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+      allow create: if false; // creation is server-only via Admin SDK
+    }
+
     // Global app settings (e.g., feature flags)
     match /settings/{docId} {
       // Everyone can read settings to enable client-side gating

@@ -1,10 +1,22 @@
 "use client";
+import { useEffect, useState } from 'react';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
-import { getClientLocale, tr } from '@/lib/i18n';
+import { tr } from '@/lib/i18n';
 
 export function Footer() {
-  const locale = getClientLocale();
+  const [locale, setLocale] = useState<'en' | 'ar'>(() => {
+    try {
+      const fromHtml = (typeof document !== 'undefined' ? (document.documentElement.getAttribute('lang') || 'en') : 'en').toLowerCase();
+      return fromHtml.startsWith('ar') ? 'ar' : 'en';
+    } catch { return 'en'; }
+  });
+  useEffect(() => {
+    try {
+      const fromHtml = (document.documentElement.getAttribute('lang') || 'en').toLowerCase();
+      setLocale(fromHtml.startsWith('ar') ? 'ar' : 'en');
+    } catch {}
+  }, []);
   return (
     <footer className="border-t bg-background">
       <div className="container py-8">
