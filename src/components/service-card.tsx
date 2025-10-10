@@ -11,7 +11,7 @@ import { cityLabel } from '@/lib/cities';
 import { useEffect, useMemo, useState } from 'react';
 import StarRating from '@/components/star-rating';
 import { listReviewsByService, type Review } from '@/lib/reviews';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type ServiceCardProps = {
   id?: string;
@@ -39,6 +39,7 @@ export function ServiceCard({
   const locale = getClientLocale();
   const [reviews, setReviews] = useState<Review[]>([]);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const detailHref = href ?? (id ? `/services/${id}` : undefined);
 
   function goToReviews(e: React.MouseEvent) {
@@ -69,6 +70,15 @@ export function ServiceCard({
     if (!reviewsCount) return 0;
     return reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsCount;
   }, [reviews, reviewsCount]);
+  const hidePrice = useMemo(() => {
+    try {
+      const requested = !!(searchParams?.get('hidePrice') || searchParams?.get('noPrice'));
+      if (requested) return true;
+      const ref = typeof document !== 'undefined' ? (document.referrer || '').toLowerCase() : '';
+      if (ref.includes(':3000')) return true; // owner-console default port
+    } catch {}
+    return false;
+  }, [searchParams]);
   const content = (
     <Card className="group h-full w-full overflow-hidden rounded-xl border bg-background/60 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
       <div className="relative aspect-[16/9] w-full overflow-hidden">
@@ -116,7 +126,9 @@ export function ServiceCard({
           <MapPin className="mr-1 h-3.5 w-3.5" />
           <span>{cityLabel(locale, city)}</span>
         </div>
-        <p className="text-base font-semibold text-primary">LYD {price}</p>
+        {!hidePrice && (
+          <p className="text-base font-semibold text-primary">LYD {price}</p>
+        )}
       </CardFooter>
     </Card>
   );

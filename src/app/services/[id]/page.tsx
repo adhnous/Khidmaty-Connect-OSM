@@ -19,7 +19,7 @@ import StarRating from '@/components/star-rating';
 import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getServiceById, updateService, type Service } from '@/lib/services';
 import { findOrCreateConversation } from '@/lib/chat';
 import ServiceMap from '@/components/service-map';
@@ -32,6 +32,7 @@ import { getAuth } from 'firebase/auth';
 export default function ServiceDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -253,6 +254,19 @@ export default function ServiceDetailPage() {
   const isOwner = useMemo(() => {
     return !!(user && service && service.providerId === user.uid);
   }, [user?.uid, service?.providerId]);
+
+  // Determine whether to hide price on this page
+  const hidePrice = useMemo(() => {
+    try {
+      if (isOwner) return true; // owner shouldn't see public price card
+      const requested = !!(searchParams?.get('hidePrice') || searchParams?.get('noPrice'));
+      if (requested) return true;
+      const ref = typeof document !== 'undefined' ? (document.referrer || '').toLowerCase() : '';
+      // Hide if navigated from owner-console (commonly running on :3000)
+      if (ref.includes(':3000')) return true;
+    } catch {}
+    return false;
+  }, [isOwner, searchParams]);
 
   // DEBUG: log owner check when service/user changes
   useEffect(() => {
@@ -506,14 +520,18 @@ export default function ServiceDetailPage() {
                             <div className="text-muted-foreground">{s.description}</div>
                           ) : null}
                         </div>
-                        <div className="whitespace-nowrap font-semibold">LYD {Number(s.price ?? 0)}</div>
+                        {!hidePrice && (
+                          <div className="whitespace-nowrap font-semibold">LYD {Number(s.price ?? 0)}</div>
+                        )}
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-3 flex items-center justify-end text-sm">
-                    <span className="text-muted-foreground mr-2">Total</span>
-                    <span className="font-semibold">LYD {subservicesTotal}</span>
-                  </div>
+                  {!hidePrice && (
+                    <div className="mt-3 flex items-center justify-end text-sm">
+                      <span className="text-muted-foreground mr-2">Total</span>
+                      <span className="font-semibold">LYD {subservicesTotal}</span>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -621,14 +639,16 @@ export default function ServiceDetailPage() {
 
           <div className="md:col-span-1">
             <Card className="sticky top-24">
-              <CardHeader>
-                <CardTitle className="text-center text-muted-foreground">
-                  {tr(locale, 'details.servicePrice')}
-                </CardTitle>
-                <p className="text-center text-4xl font-bold text-primary">
-                  {service.price} LYD
-                </p>
-              </CardHeader>
+              {!hidePrice && (
+                <CardHeader>
+                  <CardTitle className="text-center text-muted-foreground">
+                    {tr(locale, 'details.servicePrice')}
+                  </CardTitle>
+                  <p className="text-center text-4xl font-bold text-primary">
+                    {service.price} LYD
+                  </p>
+                </CardHeader>
+              )}
               <CardContent className="flex flex-col gap-3">
                 <Button
                   size="lg"
@@ -659,7 +679,9 @@ export default function ServiceDetailPage() {
                             {s.title}
                             {s.unit ? <span className="text-muted-foreground"> ({s.unit})</span> : null}
                           </span>
-                          <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
+                          {!hidePrice && (
+                            <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -675,7 +697,9 @@ export default function ServiceDetailPage() {
                                     {s.title}
                                     {s.unit ? <span className="text-muted-foreground"> ({s.unit})</span> : null}
                                   </span>
-                                  <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
+                                  {!hidePrice && (
+                                    <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
+                                  )}
                                 </li>
                               ))}
                             </ul>
@@ -683,10 +707,12 @@ export default function ServiceDetailPage() {
                         </AccordionItem>
                       </Accordion>
                     )}
-                    <div className="mt-2 flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Total</span>
-                      <span className="font-semibold">LYD {subservicesTotal}</span>
-                    </div>
+                    {!hidePrice && (
+                      <div className="mt-2 flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Total</span>
+                        <span className="font-semibold">LYD {subservicesTotal}</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 {/* Social links */}

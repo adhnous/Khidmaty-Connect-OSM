@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Home, Briefcase, User, LogIn, Tag } from "lucide-react";
 import { tr } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,6 +11,7 @@ import { getFeatures } from "@/lib/settings";
 export default function BottomNav() {
   const { user, userProfile } = useAuth();
   const pathname = usePathname() || "/";
+  const searchParams = useSearchParams();
   const [locale, setLocale] = useState<'en' | 'ar'>(() => {
     try {
       const fromHtml = (typeof document !== 'undefined' ? (document.documentElement.getAttribute('lang') || 'en') : 'en').toLowerCase();
@@ -30,21 +31,29 @@ export default function BottomNav() {
     let alive = true;
     (async () => {
       try {
+        // Local override: hide via URL or cookie
+        const urlHide = !!(searchParams?.get('hidePricing') || searchParams?.get('noPricing'));
+        const cookieHide = typeof document !== 'undefined' ? /(?:^|; )hidePricing=1/.test(document.cookie) : false;
+        if (urlHide) {
+          try { document.cookie = 'hidePricing=1; path=/; max-age=86400'; } catch {}
+        }
+        if (urlHide || cookieHide) {
+          setShowPricing(false);
+          return;
+        }
+
         const f = await getFeatures();
         if (!alive) return;
-        const role = userProfile?.role;
-        const plan = (userProfile?.plan ?? 'free') as string;
-        const lockedByRole = !!(f.lockAllToPricing || (role === 'provider' && f.lockProvidersToPricing) || (role === 'seeker' && f.lockSeekersToPricing));
         const pg: any = (userProfile as any)?.pricingGate || {};
         const forcedShow = pg?.mode === 'force_show';
-        const show = forcedShow || lockedByRole || !!f.pricingEnabled;
+        const show = !!forcedShow; // show only when explicitly forced for this user
         setShowPricing(show);
       } catch {
         setShowPricing(false);
       }
     })();
     return () => { alive = false };
-  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate, userProfile?.plan]);
+  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate, userProfile?.plan, searchParams]);
 
   const isActive = (href: string) => {
     try {

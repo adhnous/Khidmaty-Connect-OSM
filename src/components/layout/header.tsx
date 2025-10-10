@@ -2,7 +2,7 @@
 
 import { LogIn, User, LogOut, Briefcase, Bell, Menu } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { tr } from '@/lib/i18n';
 
@@ -28,6 +28,7 @@ export function Header() {
   const { user, userProfile } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [showPricing, setShowPricing] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
@@ -107,6 +108,18 @@ export function Header() {
     let alive = true;
     (async () => {
       try {
+        // Local override: hide via URL or cookie
+        const urlHide = !!(searchParams?.get('hidePricing') || searchParams?.get('noPricing'));
+        const cookieHide = typeof document !== 'undefined' ? /(?:^|; )hidePricing=1/.test(document.cookie) : false;
+        if (urlHide) {
+          try { document.cookie = 'hidePricing=1; path=/; max-age=86400'; } catch {}
+        }
+        if (urlHide || cookieHide) {
+          setShowPricing(false);
+          setLockActive(false);
+          return;
+        }
+
         const f = await getFeatures();
         if (!alive) return;
         const role = userProfile?.role;
@@ -128,13 +141,10 @@ export function Header() {
 
         const monthsLimit = (typeof pg?.enforceAfterMonths === 'number') ? pg.enforceAfterMonths : (f.enforceAfterMonths ?? 3);
         const byRole = (role === 'provider' && f.showForProviders) || (role === 'seeker' && f.showForSeekers);
-        const byAge = monthsSince >= monthsLimit;
         let show = false;
         if (forcedShow) show = true;
         else if (forcedHide) show = false;
-        else if (showAtMs && Date.now() >= showAtMs) show = true;
-        else if (lockedByRole) show = true; // show Pricing link when globally/role locked
-        else show = !!(f.pricingEnabled && (byRole || byAge));
+        else show = false; // hide by default unless explicitly forced_show
         setShowPricing(show);
       } catch {
         setShowPricing(false);
@@ -142,7 +152,7 @@ export function Header() {
       }
     })();
     return () => { alive = false };
-  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate, userProfile?.plan]);
+  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate, userProfile?.plan, searchParams]);
 
   const toggleLocale = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
