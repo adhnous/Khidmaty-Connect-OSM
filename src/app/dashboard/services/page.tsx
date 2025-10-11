@@ -49,8 +49,9 @@ export default function MyServicesPage() {
     const ok = window.confirm(tr(locale, 'dashboard.services.confirmDelete'));
     if (!ok) return;
     try {
-      await requestServiceDelete(id);
-      setServices(prev => prev.map(s => s.id === id ? { ...s, status: 'pending' as any } : s));
+      const reason = window.prompt(locale === 'ar' ? 'سبب الحذف (اختياري):' : 'Reason for deletion (optional):') || undefined;
+      await requestServiceDelete(id, reason);
+      setServices(prev => prev.map(s => s.id === id ? { ...s, status: 'pending' as any, pendingDelete: true as any } : s));
       toast({ title: locale === 'ar' ? 'تم إرسال طلب الحذف للمراجعة' : 'Delete request submitted for review' });
     } catch (err: any) {
       const msg = String(err?.message || '');
@@ -162,7 +163,14 @@ export default function MyServicesPage() {
             <TableBody>
               {services.map((service) => (
                 <TableRow key={service.id}>
-                  <TableCell className="font-medium">{service.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <span>{service.title}</span>
+                      {(((service as any).pendingDelete === true) || service.status === 'pending') && (
+                        <Badge variant="destructive">{locale === 'ar' ? 'قيد الحذف' : 'Pending deletion'}</Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{service.category}</Badge>
                   </TableCell>
@@ -175,7 +183,12 @@ export default function MyServicesPage() {
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/dashboard/services/${service.id}/edit`}>{tr(locale, 'dashboard.services.actions.edit')}</Link>
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDelete(service.id)}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(service.id)}
+                      disabled={((service as any).pendingDelete === true) || service.status === 'pending'}
+                    >
                       {tr(locale, 'dashboard.services.actions.delete')}
                     </Button>
                   </TableCell>

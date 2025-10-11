@@ -28,8 +28,8 @@ service cloud.firestore {
         (isProviderOwner() && request.resource.data.providerId == resource.data.providerId && request.resource.data.status == resource.data.status && priceNonNegative())
         || isAdmin()
       );
-      // Allow deletion by provider owner or admin
-      allow delete: if isProviderOwner() || isAdmin();
+      // Deletion is admin-only; providers must submit a moderated deletion request
+      allow delete: if isAdmin();
 
       // Reviews subcollection: one review per user (doc id = authorId)
       match /reviews/{authorId} {

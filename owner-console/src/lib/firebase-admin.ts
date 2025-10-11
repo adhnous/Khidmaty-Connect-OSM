@@ -3,9 +3,11 @@ export async function getAdmin() {
   const appMod = await import('firebase-admin/app');
   const fsMod = await import('firebase-admin/firestore');
   const authMod = await import('firebase-admin/auth');
+  const storageMod = await import('firebase-admin/storage');
   const { getApps, initializeApp, cert, applicationDefault } = appMod as any;
   const { getFirestore, FieldValue } = fsMod as any;
   const { getAuth } = authMod as any;
+  const { getStorage } = storageMod as any;
 
   if (!getApps().length) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -21,5 +23,6 @@ export async function getAdmin() {
 
   const db = getFirestore();
   const auth = getAuth();
-  return { db, auth, FieldValue } as { db: any; auth: any; FieldValue: any };
+  const bucket = getStorage().bucket();
+  return { db, auth, FieldValue, bucket } as { db: any; auth: any; FieldValue: any; bucket: any };
 }

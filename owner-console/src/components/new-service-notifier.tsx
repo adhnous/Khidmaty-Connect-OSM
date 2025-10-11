@@ -7,13 +7,14 @@ import { onAuthStateChanged } from "firebase/auth";
 import { collection, onSnapshot, query, where, doc, getDoc } from "firebase/firestore";
 
 export default function NewServiceNotifier() {
-  const [toast, setToast] = useState<{ id: string; title: string } | null>(null);
+  const [toasts, setToasts] = useState<Array<{ key: string; title: string; href: string; cta: string }>>([]);
   const [notifSupported, setNotifSupported] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null);
   const [roleInfo, setRoleInfo] = useState<{ role: string | null; error?: string } | null>(null);
-  const initialized = useRef(false);
-  const hideTimer = useRef<number | null>(null);
-  const unsubRef = useRef<null | (() => void)>(null);
+  const initializedServices = useRef(false);
+  const initializedSlots = useRef(false);
+  const initializedDeletions = useRef(false);
+  const unsubsRef = useRef<null | Array<() => void>>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -24,12 +25,14 @@ export default function NewServiceNotifier() {
     const off = onAuthStateChanged(auth, async (u) => {
       // Only listen when signed in
       // Tear down any previous listener
-      if (unsubRef.current) {
-        unsubRef.current?.();
-        unsubRef.current = null;
+      if (unsubsRef.current) {
+        for (const f of unsubsRef.current) { try { f(); } catch {} }
+        unsubsRef.current = null;
       }
       if (!u) {
-        initialized.current = false;
+        initializedServices.current = false;
+        initializedSlots.current = false;
+        initializedDeletions.current = false;
         setRoleInfo(null);
         return;
       }
@@ -48,58 +51,65 @@ export default function NewServiceNotifier() {
         return;
       }
 
-      // Listen for new pending services. We skip the initial batch.
-      const q = query(collection(db, "services"), where("status", "==", "pending"));
-      const unsub: () => void = onSnapshot(
-        q,
-        (snap) => {
-          if (!initialized.current) {
-            initialized.current = true;
-            return; // ignore initial load
-          }
-          const added = snap
-            .docChanges()
-            .filter((c) => c.type === "added" && !c.doc.metadata.hasPendingWrites);
-          if (added.length > 0) {
-            const first = added[0].doc;
-            const id = first.id;
-            const title = (first.get("title") as string) || id;
+      function pushToast(t: { key: string; title: string; href: string; cta: string }) {
+        setToasts((prev) => [...prev, t]);
+        window.setTimeout(() => {
+          setToasts((prev) => prev.filter((x) => x.key !== t.key));
+        }, 6000);
+      }
 
-            // Show in-app toast
-            setToast({ id, title });
+      const unsubs: Array<() => void> = [];
 
-            // Optional browser notification
-            if (typeof window !== "undefined" && "Notification" in window) {
-              if (window.Notification.permission === "granted") {
-                try {
-                  new window.Notification("New service submitted", { body: title });
-                } catch {}
-              }
-            }
-
-            // Auto-hide after 6s
-            if (hideTimer.current) window.clearTimeout(hideTimer.current);
-            hideTimer.current = window.setTimeout(() => setToast(null), 6000);
+      // Listen for new pending services (skip initial batch)
+      const q1 = query(collection(db, "services"), where("status", "==", "pending"));
+      unsubs.push(onSnapshot(q1, (snap) => {
+        if (!initializedServices.current) { initializedServices.current = true; return; }
+        const added = snap.docChanges().filter((c) => c.type === 'added' && !c.doc.metadata.hasPendingWrites);
+        if (added.length > 0) {
+          const d = added[0].doc;
+          const id = d.id;
+          const title = (d.get('title') as string) || id;
+          pushToast({ key: `svc_${id}_${Date.now()}` , title: `New service submitted: ${title}`, href: '/services', cta: 'Review' });
+          if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'granted') {
+            try { new window.Notification('New service submitted', { body: title }); } catch {}
           }
-        },
-        (err) => {
-          // Surface permission errors and stop the listener
-          if ((err as any)?.code === "permission-denied") {
-            setRoleInfo((prev) => ({ role: prev?.role ?? null, error: "permission-denied" }));
-          }
-          unsubRef.current?.();
-          unsubRef.current = null;
         }
-      );
-      unsubRef.current = unsub;
+      }, (err) => {
+        if ((err as any)?.code === 'permission-denied') setRoleInfo((prev) => ({ role: prev?.role ?? null, error: 'permission-denied' }));
+      }));
+
+      // Listen for pending extra slot requests
+      const q2 = query(collection(db, 'service_slot_requests'), where('status', '==', 'pending'));
+      unsubs.push(onSnapshot(q2, (snap) => {
+        if (!initializedSlots.current) { initializedSlots.current = true; return; }
+        const added = snap.docChanges().filter((c) => c.type === 'added' && !c.doc.metadata.hasPendingWrites);
+        if (added.length > 0) {
+          const d = added[0].doc;
+          const email = (d.get('email') as string) || (d.get('uid') as string) || 'Provider';
+          pushToast({ key: `slot_${d.id}_${Date.now()}`, title: `Extra slot request from ${email}`, href: '/service-slots', cta: 'Open' });
+        }
+      }));
+
+      // Listen for pending deletion requests
+      const q3 = query(collection(db, 'service_deletion_requests'), where('status', '==', 'pending'));
+      unsubs.push(onSnapshot(q3, (snap) => {
+        if (!initializedDeletions.current) { initializedDeletions.current = true; return; }
+        const added = snap.docChanges().filter((c) => c.type === 'added' && !c.doc.metadata.hasPendingWrites);
+        if (added.length > 0) {
+          const d = added[0].doc;
+          const title = (d.get('serviceTitle') as string) || (d.get('serviceId') as string) || 'Service';
+          pushToast({ key: `del_${d.id}_${Date.now()}`, title: `Deletion request: ${title}`, href: '/service-deletions', cta: 'Review' });
+        }
+      }));
+
+      unsubsRef.current = unsubs;
     });
     return () => {
       off();
-      if (unsubRef.current) {
-        unsubRef.current?.();
-        unsubRef.current = null;
+      if (unsubsRef.current) {
+        for (const f of unsubsRef.current) { try { f(); } catch {} }
+        unsubsRef.current = null;
       }
-      if (hideTimer.current) window.clearTimeout(hideTimer.current);
     };
   }, []);
 
@@ -134,18 +144,15 @@ export default function NewServiceNotifier() {
         </div>
       )}
 
-      {toast && (
-        <div className="oc-card" style={{ minWidth: 280 }}>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>New service submitted</div>
-          <div style={{ color: "var(--oc-muted)", marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {toast?.title}
-          </div>
+      {toasts.map((t) => (
+        <div key={t.key} className="oc-card" style={{ minWidth: 280 }}>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>{t.title}</div>
           <div className="oc-actions">
-            <Link href="/services" className="oc-btn oc-btn-primary">View</Link>
-            <button className="oc-btn" onClick={() => setToast(null)}>Dismiss</button>
+            <Link href={t.href} className="oc-btn oc-btn-primary">{t.cta}</Link>
+            <button className="oc-btn" onClick={() => setToasts((prev) => prev.filter((x) => x.key !== t.key))}>Dismiss</button>
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
