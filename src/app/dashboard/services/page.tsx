@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { listServicesByProvider, deleteService, createService, type Service } from '@/lib/services';
+import { listServicesByProvider, requestServiceDelete, createService, type Service } from '@/lib/services';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { getClientLocale, tr } from '@/lib/i18n';
@@ -49,11 +49,16 @@ export default function MyServicesPage() {
     const ok = window.confirm(tr(locale, 'dashboard.services.confirmDelete'));
     if (!ok) return;
     try {
-      await deleteService(id);
-      setServices(prev => prev.filter(s => s.id !== id));
-      toast({ title: tr(locale, 'dashboard.services.toast.deleted') });
+      await requestServiceDelete(id);
+      setServices(prev => prev.map(s => s.id === id ? { ...s, status: 'pending' as any } : s));
+      toast({ title: locale === 'ar' ? 'تم إرسال طلب الحذف للمراجعة' : 'Delete request submitted for review' });
     } catch (err: any) {
-      toast({ variant: 'destructive', title: tr(locale, 'dashboard.services.toast.deleteFailed'), description: err?.message || '' });
+      const msg = String(err?.message || '');
+      if (msg.includes('already_requested')) {
+        toast({ title: locale === 'ar' ? 'طلب الحذف قيد المراجعة' : 'Delete request already pending' });
+      } else {
+        toast({ variant: 'destructive', title: tr(locale, 'dashboard.services.toast.deleteFailed'), description: err?.message || '' });
+      }
     }
   };
 

@@ -1,4 +1,4 @@
-import { db, storage } from './firebase';
+import { auth, db, storage } from './firebase';
 import {
   addDoc,
   collection,
@@ -78,7 +78,8 @@ export async function uploadServiceImages(
   return Promise.all(uploads);
 }
 
-export async function createService(data: Omit<Service, 'id' | 'createdAt'>) {
+// Internal fallback used when API is not available
+export async function createServiceDirect(data: Omit<Service, 'id' | 'createdAt'>) {
   const colRef = collection(db, 'services');
   const payload = {
     ...data,
@@ -90,6 +91,32 @@ export async function createService(data: Omit<Service, 'id' | 'createdAt'>) {
   };
   const docRef = await addDoc(colRef, payload);
   return docRef.id;
+}
+
+// Default creation path: call server API to enforce provider limits
+export async function createService(data: Omit<Service, 'id' | 'createdAt'>) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not_signed_in');
+  let res: Response;
+  try {
+    const token = await user.getIdToken(/* forceRefresh */ true);
+    res = await fetch('/api/services/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  } catch {
+    // Network/route unavailable: allow dev fallback
+    return await createServiceDirect(data);
+  }
+  let json: any = {};
+  try { json = await res.json(); } catch {}
+  if (!res.ok) {
+    // Do NOT fallback on server-declared errors (e.g., limit_exceeded)
+    const msg = json?.error || res.statusText || 'create_failed';
+    throw new Error(msg);
+  }
+  return String(json.id);
 }
 
 export async function getServiceById(id: string): Promise<Service | null> {
@@ -132,9 +159,23 @@ export async function updateService(
   await updateDoc(docRef, data as any);
 }
 
-export async function deleteService(id: string) {
-  const docRef = doc(db, 'services', id);
-  await deleteDoc(docRef);
+export async function deleteService(id: string, reason?: string) {
+  // Route all client-side deletes through the moderated request flow
+  return requestServiceDelete(id, reason);
+}
+
+// Provider-side delete: create a deletion request instead of direct delete
+export async function requestServiceDelete(id: string, reason?: string) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not_signed_in');
+  const token = await user.getIdToken(true);
+  const res = await fetch('/api/services/request-delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ id, reason }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error || res.statusText || 'request_failed');
 }
 
 export type ListFilters = {

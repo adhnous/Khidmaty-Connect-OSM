@@ -28,6 +28,8 @@ service cloud.firestore {
         (isProviderOwner() && request.resource.data.providerId == resource.data.providerId && request.resource.data.status == resource.data.status && priceNonNegative())
         || isAdmin()
       );
+      // Allow deletion by provider owner or admin
+      allow delete: if isProviderOwner() || isAdmin();
 
       // Reviews subcollection: one review per user (doc id = authorId)
       match /reviews/{authorId} {
@@ -92,6 +94,26 @@ service cloud.firestore {
     match /events/{id} {
       allow read: if false;
       allow write: if false;
+    }
+
+    // Providers can request additional service slots (fees apply)
+    match /service_slot_requests/{reqId} {
+      // Anyone signed in can read their own request; admins can read all
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid) || isAdmin();
+      // Provider creates requests for themselves only
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      // Only admins/owners can update or delete
+      allow update, delete: if isAdmin();
+    }
+
+    // Providers can request service deletion; admins approve/reject
+    match /service_deletion_requests/{reqId} {
+      // Creator can read their own requests; admins can read all
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid) || isAdmin();
+      // Provider creates deletion request for a service they own (validated server-side too)
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      // Only admins/owners can update or delete requests
+      allow update, delete: if isAdmin();
     }
 
     // Conversations and messages (in-app chat)
