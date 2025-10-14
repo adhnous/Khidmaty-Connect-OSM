@@ -42,10 +42,12 @@ export async function createTransaction(opts: {
   return { id: ref.id, checkoutUrl };
 }
 
-export async function getTransaction(id: string) {
+export async function getTransaction(id: string): Promise<Transaction | null> {
   const { db } = await getAdmin();
   const snap = await db.collection('transactions').doc(id).get();
-  return snap.exists ? { id: snap.id, ...(snap.data() || {}) } : null;
+  if (!snap.exists) return null;
+  const data = snap.data() || {};
+  return { id: snap.id, ...(data as any) } as Transaction;
 }
 
 export async function markTransactionPaid(id: string, approverUid?: string) {
