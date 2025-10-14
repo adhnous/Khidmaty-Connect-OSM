@@ -190,18 +190,18 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-ink text-snow border-white/10 pt-safe">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-14 md:h-16 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2 md:gap-4">
           {/* Mobile menu */}
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" className="h-10 w-10 rounded-full text-snow hover:bg-white/10" aria-label={locale === 'ar' ? 'القائمة' : 'Menu'}>
+                <Button variant="ghost" className="h-9 w-9 md:h-10 md:w-10 rounded-full text-snow hover:bg-white/10" aria-label={locale === 'ar' ? 'القائمة' : 'Menu'}>
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side={locale === 'ar' ? 'right' : 'left'} className="w-80">
+              <SheetContent side={locale === 'ar' ? 'right' : 'left'} className="w-72 max-w-[85vw]">
                 <SheetHeader>
                   <SheetTitle>{locale === 'ar' ? 'القائمة' : 'Menu'}</SheetTitle>
                 </SheetHeader>
@@ -287,7 +287,7 @@ export function Header() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-10 md:h-8 rounded-full text-snow hover:bg-white/10 border-0"
+                  className="h-9 rounded-full text-snow hover:bg-white/10 border-0"
                   onClick={enableNotifications}
                   disabled={notifLoading}
                   title={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
@@ -299,7 +299,7 @@ export function Header() {
               )}
               <Button
                 size="sm"
-                className="h-10 md:h-8 rounded-full bg-snow px-4 md:px-3 text-ink hover:bg-snow/90 border-0 shadow-sm"
+                className="h-9 rounded-full bg-snow px-4 md:px-3 text-ink hover:bg-snow/90 border-0 shadow-sm"
                 onClick={toggleLocale}
                 title={tr(locale, 'header.switch')}
                 aria-label={tr(locale, 'header.switch')}

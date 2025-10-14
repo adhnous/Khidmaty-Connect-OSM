@@ -5,10 +5,11 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function OwnerGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [state, setState] = useState<
     | { kind: "checking" }
     | { kind: "redirecting" }
@@ -17,6 +18,11 @@ export default function OwnerGate({ children }: { children: React.ReactNode }) {
   >({ kind: "checking" });
 
   useEffect(() => {
+    // Allow the login page to render without gating
+    if (pathname === "/login") {
+      setState({ kind: "ok" });
+      return;
+    }
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) {
         setState({ kind: "redirecting" });
@@ -36,7 +42,7 @@ export default function OwnerGate({ children }: { children: React.ReactNode }) {
       }
     });
     return () => unsub();
-  }, [router]);
+  }, [router, pathname]);
 
   if (state.kind === "checking" || state.kind === "redirecting") {
     return (

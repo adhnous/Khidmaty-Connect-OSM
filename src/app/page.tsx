@@ -110,29 +110,29 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-ink">
       <Header />
       <main className="flex-1">
-        <section className="relative bg-gradient-to-b from-ink via-copperDark to-copper text-snow overflow-hidden py-16 md:py-24">
+        <section className="relative bg-gradient-to-b from-ink via-copperDark to-copper text-snow overflow-hidden py-12 md:py-24">
           <div className="container relative text-center">
-            <h1 className="text-5xl md:text-6xl font-extrabold leading-tight font-headline">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight font-headline">
               {tr(locale, 'home.heroTitle')}
             </h1>
-            <p className="mt-4 text-lg text-snow/80">
+            <p className="mt-3 text-base md:text-lg text-snow/80">
               {tr(locale, 'home.heroSubtitle')}
             </p>
-            <div className="mt-8 mb-6 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-6 mb-5 flex flex-wrap items-center justify-center gap-2 md:gap-3">
               <Link href="/dashboard/services">
-                <Button size="sm" className="h-10 bg-copper hover:bg-copperDark text-ink font-semibold">
+                <Button size="sm" className="h-9 md:h-10 bg-copper hover:bg-copperDark text-ink font-semibold">
                   {tr(locale, 'home.providerCta')}
                 </Button>
               </Link>
               <Link href="#search">
-                <Button size="sm" className="h-10 bg-power hover:bg-powerDark text-snow font-semibold">
+                <Button size="sm" className="h-9 md:h-10 bg-power hover:bg-powerDark text-snow font-semibold">
                   {tr(locale, 'home.seekerCta')}
                 </Button>
               </Link>
             </div>
             <div id="search" className="mx-auto max-w-6xl mt-6">
               <div className="rounded-2xl copper-gradient p-[2px]">
-                <div className="rounded-[1rem] bg-background text-foreground p-4 shadow-lg">
+                <div className="rounded-[1rem] bg-background text-foreground p-3 md:p-4 shadow-lg">
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
                   <div className="md:col-span-2">
                     <Input
@@ -140,7 +140,7 @@ export default function Home() {
                       inputMode="search"
                       autoComplete="off"
                       placeholder={tr(locale, 'home.searchPlaceholder')}
-                      className="h-12 text-base text-foreground placeholder:text-muted-foreground"
+                      className="h-11 text-sm md:text-base text-foreground placeholder:text-muted-foreground"
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
                       onFocus={() => setSearchFocused(true)}
@@ -157,7 +157,7 @@ export default function Home() {
                     mergeCommunity
                   />
                   <Select value={city} onValueChange={setCity}>
-                    <SelectTrigger className="h-12 text-base text-foreground">
+                    <SelectTrigger className="h-11 text-sm md:text-base text-foreground">
                       <SelectValue className="text-foreground" placeholder={tr(locale, 'home.cityPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -174,12 +174,12 @@ export default function Home() {
                     inputMode="numeric"
                     dir="ltr"
                     placeholder={tr(locale, 'home.maxPricePlaceholder')}
-                    className="h-12 text-base text-foreground placeholder:text-muted-foreground"
+                    className="h-11 text-sm md:text-base text-foreground placeholder:text-muted-foreground"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
                   />
                   <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-                    <SelectTrigger className="h-12 text-base text-foreground">
+                    <SelectTrigger className="h-11 text-sm md:text-base text-foreground">
                       <SelectValue className="text-foreground" placeholder={tr(locale, 'home.sortBy')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -188,7 +188,7 @@ export default function Home() {
                       <SelectItem value="priceHigh">{tr(locale, 'home.sortPriceHigh')}</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button size="lg" className="h-12 text-base" onClick={fetchServices}>
+                  <Button size="lg" className="h-11 md:h-12 text-base" onClick={fetchServices}>
                     <Search className="mr-2" />
                     {tr(locale, 'home.search')}
                   </Button>
@@ -198,25 +198,25 @@ export default function Home() {
                     <h3 className="mb-3 text-sm font-semibold text-foreground/70">
                       {tr(locale, 'home.featuredCategories')}
                     </h3>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
                       {featuredCategories.map((categoryItem) => (
                         <Button
                           key={categoryItem.name}
                           variant="ghost"
                           aria-label={tr(locale, `categories.${categoryItem.name}`)}
                           aria-pressed={category === categoryItem.name}
-                          className={`group h-24 w-full overflow-hidden rounded-xl border bg-gradient-to-br from-background to-secondary/50 p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                          className={`group h-20 md:h-24 w-full overflow-hidden rounded-xl border bg-gradient-to-br from-background to-secondary/50 p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                             category === categoryItem.name
                               ? 'ring-2 ring-primary/50 border-primary/40'
                               : 'border-border/60 hover:border-primary/30'
                           }`}
                           onClick={() => setCategory(categoryItem.name)}
                         >
-                          <div className="flex h-full w-full items-center justify-center gap-3 p-5">
-                            <div className={`rounded-full p-3 ring-1 ${
+                          <div className="flex h-full w-full items-center justify-center gap-3 p-4 md:p-5">
+                            <div className={`rounded-full p-2.5 md:p-3 ring-1 ${
                               category === categoryItem.name ? 'bg-primary/10 ring-primary/40' : 'bg-primary/5 ring-primary/20 group-hover:bg-primary/10'
                             }`}>
-                              <categoryItem.icon className="h-6 w-6 text-primary" />
+                              <categoryItem.icon className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                             </div>
                             <span className={`text-sm font-medium ${category === categoryItem.name ? 'text-foreground' : 'text-foreground/90'}`}>
                               {tr(locale, `categories.${categoryItem.name}`)}
@@ -235,9 +235,9 @@ export default function Home() {
 
         
 
-        <section className="bg-secondary py-16">
+        <section className="bg-secondary py-12">
           <div className="container">
-            <h2 className="mb-8 text-3xl font-bold font-headline">
+            <h2 className="mb-8 text-2xl md:text-3xl font-bold font-headline">
               {tr(locale, 'home.popularServices')}
             </h2>
             {loading && (
@@ -249,7 +249,7 @@ export default function Home() {
                 <p>{tr(locale, 'home.empty2')}</p>
               </div>
             )}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {services.map((s) => (
                 <ServiceCard
                   key={s.id}

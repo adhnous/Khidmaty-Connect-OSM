@@ -66,17 +66,19 @@ export async function POST(req: Request) {
     if (svcSnap.exists) {
       const svcData = svcSnap.data() || {};
       const images: any[] = Array.isArray(svcData.images) ? svcData.images : [];
-      const bucketName = (bucket && (bucket as any).name) ? (bucket as any).name : '';
-      const deletions: Promise<any>[] = [];
-      for (const img of images) {
-        const url = typeof img?.url === 'string' ? img.url : '';
-        const parsed = parseGsPath(url);
-        if (parsed && parsed.bucket && parsed.object && (!bucketName || parsed.bucket === bucketName)) {
-          const f = bucket.file(parsed.object);
-          deletions.push(f.delete().catch(() => {}));
+      if (bucket) {
+        const bucketName = (bucket as any).name ? (bucket as any).name : '';
+        const deletions: Promise<any>[] = [];
+        for (const img of images) {
+          const url = typeof img?.url === 'string' ? img.url : '';
+          const parsed = parseGsPath(url);
+          if (parsed && parsed.bucket && parsed.object && (!bucketName || parsed.bucket === bucketName)) {
+            const f = bucket.file(parsed.object);
+            deletions.push(f.delete().catch(() => {}));
+          }
         }
+        await Promise.allSettled(deletions);
       }
-      await Promise.allSettled(deletions);
       await svcRef.delete();
     }
     await reqRef.set({ status: 'approved', approvedAt: now, approvedBy: authz.uid }, { merge: true });

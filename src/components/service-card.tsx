@@ -92,13 +92,13 @@ export function ServiceCard({
           placeholder="blur"
           blurDataURL={blur}
         />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 md:h-16 bg-gradient-to-t from-black/40 to-transparent" />
         <Badge variant="secondary" className="absolute left-3 bottom-3 bg-background/90 text-xs shadow-sm">
           {tr(locale, `categories.${category}`)}
         </Badge>
       </div>
-      <CardContent className="p-3">
-        <CardTitle className="line-clamp-2 font-headline text-base">
+      <CardContent className="p-2.5 md:p-3">
+        <CardTitle className="line-clamp-2 font-headline text-sm md:text-base">
           {title}
         </CardTitle>
         <div className="mt-1">
@@ -121,13 +121,13 @@ export function ServiceCard({
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex items-center justify-between p-3 pt-0">
+      <CardFooter className="flex items-center justify-between p-2.5 md:p-3 pt-0">
         <div className="flex items-center text-xs text-muted-foreground">
           <MapPin className="mr-1 h-3.5 w-3.5" />
           <span>{cityLabel(locale, city)}</span>
         </div>
         {!hidePrice && (
-          <p className="text-base font-semibold text-primary">LYD {price}</p>
+          <p className="text-sm md:text-base font-semibold text-primary">LYD {price}</p>
         )}
       </CardFooter>
     </Card>

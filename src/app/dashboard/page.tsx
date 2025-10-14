@@ -42,6 +42,16 @@ export default function DashboardPage() {
   const [topServices, setTopServices] = useState<Array<{ id: string; title: string; views: number; ctas: number; messages: number }>>([]);
   const [services, setServices] = useState<Array<any>>([]);
   const [suggestions, setSuggestions] = useState<Array<{ text: string; href?: string }>>([]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      try { setIsMobile(typeof window !== 'undefined' ? window.innerWidth < 768 : false); } catch { setIsMobile(false); }
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -178,7 +188,7 @@ export default function DashboardPage() {
 
         {/* Suggestions */}
         {suggestions.length > 0 && (
-          <div className="mt-6 rounded-md border p-4">
+          <div className="mt-6 rounded-md border p-3 md:p-4">
             <div className="mb-2 text-sm text-muted-foreground">{t('Suggestions', 'اقتراحات')}</div>
             <ul className="list-disc pl-5 space-y-1 text-sm">
               {suggestions.map((s, i) => (
@@ -191,48 +201,48 @@ export default function DashboardPage() {
         )}
 
         {/* Stats */}
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-md border p-4">
+        <div className="mb-6 grid grid-cols-1 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-md border p-3 md:p-4">
             <div className="text-sm text-muted-foreground">{t('My services', 'خدماتي')}</div>
-            <div className="text-2xl font-semibold">{loading ? '—' : serviceCount}</div>
+            <div className="text-xl md:text-2xl font-semibold">{loading ? '—' : serviceCount}</div>
           </div>
-          <div className="rounded-md border p-4">
+          <div className="rounded-md border p-3 md:p-4">
             <div className="text-sm text-muted-foreground">{t('Views (7 days)', 'المشاهدات (7 أيام)')}</div>
-            <div className="text-2xl font-semibold">{loading ? '—' : views7d}</div>
+            <div className="text-xl md:text-2xl font-semibold">{loading ? '—' : views7d}</div>
           </div>
-          <div className="rounded-md border p-4">
+          <div className="rounded-md border p-3 md:p-4">
             <div className="text-sm text-muted-foreground">{t('Contacts (7 days)', 'التواصل (7 أيام)')}</div>
-            <div className="text-2xl font-semibold">{loading ? '—' : ctas7d}</div>
+            <div className="text-xl md:text-2xl font-semibold">{loading ? '—' : ctas7d}</div>
           </div>
-          <div className="rounded-md border p-4">
+          <div className="rounded-md border p-3 md:p-4">
             <div className="text-sm text-muted-foreground">{t('Messages (7 days)', 'الرسائل (7 أيام)')}</div>
-            <div className="text-2xl font-semibold">{loading ? '—' : msgs7d}</div>
+            <div className="text-xl md:text-2xl font-semibold">{loading ? '—' : msgs7d}</div>
           </div>
         </div>
 
         {/* 30d KPIs */}
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {(() => {
             const totals = chartData.reduce((acc, r) => ({ views: acc.views + r.views, ctas: acc.ctas + r.ctas, messages: acc.messages + r.messages }), { views: 0, ctas: 0, messages: 0 });
             const ctr = totals.views > 0 ? (totals.ctas / totals.views) * 100 : 0;
             const msg = totals.views > 0 ? (totals.messages / totals.views) * 100 : 0;
             return (
               <>
-                <div className="rounded-md border p-4">
+                <div className="rounded-md border p-3 md:p-4">
                   <div className="text-sm text-muted-foreground">{t('Views (30 days)', 'المشاهدات (30 يوم)')}</div>
-                  <div className="text-2xl font-semibold">{totals.views.toLocaleString()}</div>
+                  <div className="text-xl md:text-2xl font-semibold">{totals.views.toLocaleString()}</div>
                 </div>
-                <div className="rounded-md border p-4">
+                <div className="rounded-md border p-3 md:p-4">
                   <div className="text-sm text-muted-foreground">{t('Contacts (30 days)', 'التواصل (30 يوم)')}</div>
-                  <div className="text-2xl font-semibold">{totals.ctas.toLocaleString()}</div>
+                  <div className="text-xl md:text-2xl font-semibold">{totals.ctas.toLocaleString()}</div>
                 </div>
-                <div className="rounded-md border p-4">
+                <div className="rounded-md border p-3 md:p-4">
                   <div className="text-sm text-muted-foreground">{t('Messages (30 days)', 'الرسائل (30 يوم)')}</div>
-                  <div className="text-2xl font-semibold">{totals.messages.toLocaleString()}</div>
+                  <div className="text-xl md:text-2xl font-semibold">{totals.messages.toLocaleString()}</div>
                 </div>
-                <div className="rounded-md border p-4">
+                <div className="rounded-md border p-3 md:p-4">
                   <div className="text-sm text-muted-foreground">{t('CTR', 'معدل النقر للتواصل')}</div>
-                  <div className="text-2xl font-semibold">{ctr.toFixed(1)}%</div>
+                  <div className="text-xl md:text-2xl font-semibold">{ctr.toFixed(1)}%</div>
                   <div className="text-xs text-muted-foreground">{t('Contact clicks / Views (30d)', 'نقرات التواصل / المشاهدات (30 يوم)')}</div>
                 </div>
               </>
@@ -244,14 +254,14 @@ export default function DashboardPage() {
         <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
           <div className="rounded-md border p-3 xl:col-span-2">
             <div className="mb-2 text-sm text-muted-foreground">{t('Last 30 days', 'آخر 30 يوم')}</div>
-            <div className="h-64">
+            <div className="h-48 md:h-64">
               <ResponsiveContainer>
                 <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day" />
                   <YAxis allowDecimals={false} />
                   <Tooltip />
-                  <Legend />
+                  <Legend wrapperStyle={{ display: isMobile ? 'none' : undefined }} />
                   <Line type="monotone" dataKey="views" stroke="#3b82f6" name={t('Views', 'المشاهدات')} dot={false} strokeWidth={2} />
                   <Line type="monotone" dataKey="ctas" stroke="#16a34a" name={t('Contacts', 'التواصل')} dot={false} strokeWidth={2} />
                   <Line type="monotone" dataKey="messages" stroke="#f59e0b" name={t('Messages', 'الرسائل')} dot={false} strokeWidth={2} />
@@ -268,19 +278,19 @@ export default function DashboardPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left border-b">
-                      <th className="py-2 pr-3">{t('Service', 'الخدمة')}</th>
-                      <th className="py-2 pr-3">{t('Views', 'المشاهدات')}</th>
-                      <th className="py-2 pr-3">{t('Contacts', 'التواصل')}</th>
-                      <th className="py-2 pr-3">{t('Messages', 'الرسائل')}</th>
+                      <th className="py-1.5 md:py-2 pr-3">{t('Service', 'الخدمة')}</th>
+                      <th className="py-1.5 md:py-2 pr-3">{t('Views', 'المشاهدات')}</th>
+                      <th className="py-1.5 md:py-2 pr-3">{t('Contacts', 'التواصل')}</th>
+                      <th className="py-1.5 md:py-2 pr-3">{t('Messages', 'الرسائل')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {topServices.map((r) => (
                       <tr key={r.id} className="border-b last:border-0">
-                        <td className="py-2 pr-3 max-w-[260px] truncate">{r.title}</td>
-                        <td className="py-2 pr-3">{r.views}</td>
-                        <td className="py-2 pr-3">{r.ctas}</td>
-                        <td className="py-2 pr-3">{r.messages}</td>
+                        <td className="py-1.5 md:py-2 pr-3 max-w-[200px] md:max-w-[260px] truncate">{r.title}</td>
+                        <td className="py-1.5 md:py-2 pr-3">{r.views}</td>
+                        <td className="py-1.5 md:py-2 pr-3">{r.ctas}</td>
+                        <td className="py-1.5 md:py-2 pr-3">{r.messages}</td>
                       </tr>
                     ))}
                   </tbody>

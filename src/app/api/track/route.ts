@@ -54,7 +54,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     const msg = (e as Error)?.message || 'server_error';
-    const code = msg.includes('firebase_admin_unavailable') ? 503 : 500;
-    return NextResponse.json({ error: msg }, { status: code });
+    const lower = String(msg || '').toLowerCase();
+    if (
+      lower.includes('application default credentials') ||
+      lower.includes('could not load the default credentials') ||
+      lower.includes('missing credentials') ||
+      lower.includes('permission denied') ||
+      lower.includes('unauthenticated')
+    ) {
+      return NextResponse.json({ ok: true, skipped: 'admin_unavailable' });
+    }
+    // Fail-open for analytics: do not break the page on unexpected errors.
+    return NextResponse.json({ ok: true, skipped: 'error', error: msg });
   }
 }
