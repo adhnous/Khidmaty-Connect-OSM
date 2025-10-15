@@ -123,19 +123,20 @@ body {
     padding-bottom: max(0px, env(safe-area-inset-bottom));
   }
 
-  /* Ad marquee strip */
+  /* Ad marquee strip - FIXED VERSION */
   .ad-marquee {
     @apply w-full shadow-sm;
     position: sticky;
     top: 0;
     z-index: 40;
-    overflow: hidden;
+    overflow: hidden; /* Keep overflow hidden */
     padding-top: max(0px, env(safe-area-inset-top));
   }
   .ad-track {
     display: flex;
-    width: max-content; /* intrinsic content width for seamless 50% loop */
+    width: max-content;
     animation: ad-scroll 36s linear infinite;
+    padding: 0 20px; /* Add padding to prevent edge cutting */
   }
   /* Pause marquee on hover */
   .ad-marquee:hover .ad-track { animation-play-state: paused; }
@@ -148,11 +149,11 @@ body {
     display: flex;
     align-items: center;
     flex: 0 0 100%;
-    min-width: 100%; /* each half spans the viewport width */
+    min-width: 100%;
     justify-content: flex-start;
   }
   .ad-spacer {
-    width: clamp(200px, 40vw, 600px);
+    width: clamp(100px, 20vw, 300px); /* Reduced spacing */
   }
   @keyframes ad-scroll {
     from { transform: translateX(0); }

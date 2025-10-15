@@ -18,7 +18,6 @@ export type AdItem = {
 
 export default function AdStrip() {
   const [ads, setAds] = useState<AdItem[]>([]);
-  
 
   useEffect(() => {
     const q = query(
@@ -48,7 +47,6 @@ export default function AdStrip() {
       next.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
       setAds(next);
     }, (err) => {
-      // On permission or index errors, show nothing silently but log for debugging
       console.warn('[AdStrip] ads snapshot error:', err);
       setAds([]);
     });
@@ -61,51 +59,73 @@ export default function AdStrip() {
     if (ads.length > 0) return ads;
     // Fallback demo when no ads exist
     return [
-      { id: "demo-1", text: "Advertise your service to thousands of users.", textAr: "أعلن عن خدمتك لآلاف المستخدمين.", href: "/dashboard/services", color: "copper" as const },
+      { 
+        id: "demo-1", 
+        text: "Advertise your service to thousands of users.", 
+        textAr: "أعلن عن خدمتك لآلاف المستخدمين.", 
+        href: "/dashboard/services", 
+        color: "copper" as const 
+      },
     ];
   }, [ads]);
 
-  // Build a base sequence long enough for a smoother loop
-  const base = useMemo(() => {
-    const MIN_BADGES = 10;
-    const repeats = Math.max(2, Math.ceil(MIN_BADGES / Math.max(items.length, 1)));
-    const out: AdItem[] = [];
-    for (let i = 0; i < repeats; i++) out.push(...items);
-    return out;
+  // Build sequences for seamless loop - FIXED: Use proper duplication for animation
+  const sequences = useMemo(() => {
+    if (items.length === 0) return [];
+    
+    // For smooth animation, we need enough content to loop
+    const MIN_ITEMS = 8;
+    const repeats = Math.ceil(MIN_ITEMS / Math.max(items.length, 1));
+    const baseSequence: AdItem[] = [];
+    
+    for (let i = 0; i < repeats; i++) {
+      baseSequence.push(...items);
+    }
+    
+    return baseSequence;
   }, [items]);
 
   if (items.length === 0) return null;
 
-  function bg(c?: AdItem["color"]) {
-    if (c === "power") return "bg-red-600 text-white";
-    if (c === "dark") return "bg-black text-white";
-    if (c === "light") return "bg-white text-black border-b";
-    return "bg-amber-500 text-black"; // copper-ish
+  function getBackgroundColor(color?: AdItem["color"]) {
+    switch (color) {
+      case "power": return "bg-power text-snow";
+      case "dark": return "bg-ink text-snow";
+      case "light": return "bg-snow text-ink border";
+      default: return "bg-copper text-ink"; // copper
+    }
   }
 
-  // Duplicate sequences must be identical width for a perfect 50% loop.
+  const shouldBounce = sequences.length <= 4; // Use bounce animation for fewer items
 
   return (
-    <div className={`ad-marquee ${bg(items[0]?.color)} select-none`}>
-      <div className="container mx-auto flex items-center gap-3 py-2">
-        <div className={`ad-track`}>
-          {/* Sequence A */}
-          <div className="ad-seq">
-            {base.map((ad, idx) => (
-              <AdBadge key={`a1-${ad.id}-${idx}`} ad={ad} />
-            ))}
-          </div>
-          {/* Sequence B (clone) */}
-          <div className="ad-seq" aria-hidden="true">
-            {base.map((ad, idx) => (
-              <AdBadge key={`a2-${ad.id}-${idx}`} ad={ad} />
-            ))}
-          </div>
+    <div className={`ad-marquee ${getBackgroundColor(items[0]?.color)}`}>
+      {/* Fixed: Removed container and fixed layout for animation */}
+      <div className={`ad-track ${shouldBounce ? 'single' : ''}`}>
+        {/* Sequence A - visible */}
+        <div className="ad-seq">
+          {sequences.map((ad, idx) => (
+            <AdBadge key={`seq-a-${ad.id}-${idx}`} ad={ad} />
+          ))}
         </div>
-        <Link href="/dashboard" className="ml-auto rounded px-2 py-1 text-xs bg-black text-white hover:opacity-90">
-          {locale === 'ar' ? 'أعلن معنا' : 'Advertise with us'}
-        </Link>
+        
+        {/* Sequence B - duplicate for seamless loop (only for scroll animation) */}
+        {!shouldBounce && (
+          <div className="ad-seq" aria-hidden="true">
+            {sequences.map((ad, idx) => (
+              <AdBadge key={`seq-b-${ad.id}-${idx}`} ad={ad} />
+            ))}
+          </div>
+        )}
       </div>
+      
+      {/* Fixed: Absolutely positioned advertise link */}
+      <Link 
+        href="/dashboard" 
+        className="absolute right-4 top-1/2 -translate-y-1/2 rounded px-3 py-1 text-xs bg-ink text-snow hover:opacity-90 z-10"
+      >
+        {locale === 'ar' ? 'أعلن معنا' : 'Advertise with us'}
+      </Link>
     </div>
   );
 }
@@ -113,18 +133,21 @@ export default function AdStrip() {
 function AdBadge({ ad }: { ad: AdItem }) {
   const locale = getClientLocale();
   const label = (locale === 'ar' ? (ad.textAr || ad.text) : ad.text) || '';
+  
   const content = (
-    <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1 text-sm text-black backdrop-blur">
-      <span className="font-semibold">{locale === 'ar' ? 'إعلان' : 'Ad'}</span>
-      <span className="truncate max-w-[60vw] sm:max-w-none">{label}</span>
+    <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-sm font-medium text-ink backdrop-blur-sm border border-ink/10 whitespace-nowrap">
+      <span className="text-xs font-bold shrink-0">{locale === 'ar' ? 'إعلان' : 'Ad'}</span>
+      <span className="whitespace-nowrap">{label}</span>
     </span>
   );
+
   if (ad.href) {
     return (
-      <Link href={ad.href} className="mx-3 inline-block">
+      <Link href={ad.href} className="mx-2 inline-block hover:opacity-80 transition-opacity">
         {content}
       </Link>
     );
   }
-  return <span className="mx-3 inline-block">{content}</span>;
+  
+  return <span className="mx-2 inline-block">{content}</span>;
 }

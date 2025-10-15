@@ -13,6 +13,7 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
   const [featuresLoaded, setFeaturesLoaded] = useState(false);
   const [features, setFeatures] = useState<any>(null);
 
+  // Load features
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -20,57 +21,90 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
         const f = await getFeatures();
         if (!alive) return;
         setFeatures(f);
+      } catch (error) {
+        console.error('Failed to load features:', error);
       } finally {
         if (alive) setFeaturesLoaded(true);
       }
     })();
-    return () => { alive = false };
+    return () => { alive = false; };
   }, []);
 
+  // Auth and routing logic
   useEffect(() => {
-    // Wait for auth/profile to finish loading to avoid false sign-outs
+    // Wait for auth to finish loading
     if (loading) return;
-    // If the user is authenticated but their profile doc is missing or disabled, sign them out and send to login
-    if (user && (!userProfile || (userProfile as any)?.status === 'disabled')) {
+
+    // Define allowed routes that bypass all checks
+    const isAllowedRoute = (path: string) => 
+      path.startsWith('/pricing') || 
+      path.startsWith('/checkout') || 
+      path.startsWith('/login') || 
+      path.startsWith('/verify') || 
+      path.startsWith('/_next') || 
+      path.startsWith('/api');
+
+    // If user is authenticated but profile is missing or disabled
+    if (user && (!userProfile || userProfile?.status === 'disabled')) {
+      console.log('User profile missing or disabled, signing out...');
       (async () => {
-        try { await signOut(); } finally { router.replace('/login'); }
+        try { 
+          await signOut(); 
+        } catch (error) {
+          console.error('Sign out error:', error);
+        } finally { 
+          router.replace('/login'); 
+        }
       })();
       return;
     }
 
-    if (!user) return; // apply lock only for signed-in users
+    // If no user, nothing to check
+    if (!user) return;
 
     const role = userProfile?.role || null;
     const plan = (userProfile?.plan ?? 'free') as string;
-    const pg: any = (userProfile as any)?.pricingGate || {};
+    const pricingGate = userProfile?.pricingGate || {};
 
-    // Allow these routes without redirect to avoid loop
-    const allow = (p: string) => p.startsWith('/pricing') || p.startsWith('/checkout') || p.startsWith('/login') || p.startsWith('/verify') || p.startsWith('/_next') || p.startsWith('/api');
-
-    // Global email verification enforcement: if the Firebase Auth user is not verified,
-    // force them to the /verify page regardless of role/locks.
-    if (!user.emailVerified && !allow(pathname)) {
+    // Email verification check
+    if (!user.emailVerified && !isAllowedRoute(pathname)) {
+      console.log('Email not verified, redirecting to verify page');
       router.replace('/verify');
       return;
     }
 
-    // Owner/admin bypass
+    // Wait for features to load before doing role-based checks
+    if (!featuresLoaded) return;
+
+    // Owner/admin bypass all restrictions
     if (role === 'owner' || role === 'admin') return;
 
-    // Per-user force_show should not depend on features loading
-    const forced = pg?.mode === 'force_show';
-    if (forced && !allow(pathname)) {
+    // Force show pricing gate
+    if (pricingGate.mode === 'force_show' && !isAllowedRoute(pathname)) {
+      console.log('Pricing gate forced show, redirecting to pricing');
       router.replace('/pricing');
       return;
     }
 
-    // Role locks depend on features
-    if (!featuresLoaded || !features) return;
-    const lockedByRole = !!(features.lockAllToPricing || (role === 'provider' && features.lockProvidersToPricing) || (role === 'seeker' && features.lockSeekersToPricing));
-    if (lockedByRole && plan === 'free' && !allow(pathname)) {
+    // Role-based pricing locks
+    const lockedByRole = 
+      features?.lockAllToPricing || 
+      (role === 'provider' && features?.lockProvidersToPricing) || 
+      (role === 'seeker' && features?.lockSeekersToPricing);
+
+    if (lockedByRole && plan === 'free' && !isAllowedRoute(pathname)) {
+      console.log('Role-based pricing lock active, redirecting to pricing');
       router.replace('/pricing');
     }
-  }, [featuresLoaded, features, pathname, user?.uid, userProfile?.role, userProfile?.plan, (userProfile as any)?.pricingGate, router]);
+  }, [
+    loading, 
+    user, 
+    userProfile, 
+    pathname, 
+    featuresLoaded, 
+    features, 
+    router
+  ]);
 
   return <>{children}</>;
 }
