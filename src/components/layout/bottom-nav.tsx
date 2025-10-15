@@ -12,101 +12,165 @@ export default function BottomNav() {
   const { user, userProfile } = useAuth();
   const pathname = usePathname() || "/";
   const searchParams = useSearchParams();
-  const [locale, setLocale] = useState<'en' | 'ar'>(() => {
-    try {
-      const fromHtml = (typeof document !== 'undefined' ? (document.documentElement.getAttribute('lang') || 'en') : 'en').toLowerCase();
-      return fromHtml.startsWith('ar') ? 'ar' : 'en';
-    } catch { return 'en'; }
-  });
+  const [locale, setLocale] = useState<'en' | 'ar'>('en');
   const [showPricing, setShowPricing] = useState(false);
 
+  // Set locale from document
   useEffect(() => {
     try {
-      const fromHtml = (document.documentElement.getAttribute('lang') || 'en').toLowerCase();
-      setLocale(fromHtml.startsWith('ar') ? 'ar' : 'en');
-    } catch {}
+      const fromHtml = document.documentElement.getAttribute('lang') || 'en';
+      setLocale(fromHtml.toLowerCase().startsWith('ar') ? 'ar' : 'en');
+    } catch (error) {
+      console.error('Error setting locale:', error);
+      setLocale('en');
+    }
   }, []);
 
+  // Handle pricing visibility
   useEffect(() => {
-    let alive = true;
-    (async () => {
+    let isMounted = true;
+
+    const checkPricingVisibility = async () => {
       try {
-        // Local override: hide via URL or cookie
-        const urlHide = !!(searchParams?.get('hidePricing') || searchParams?.get('noPricing'));
-        const cookieHide = typeof document !== 'undefined' ? /(?:^|; )hidePricing=1/.test(document.cookie) : false;
+        // Check for URL parameters or cookies that hide pricing
+        const urlHide = searchParams?.get('hidePricing') || searchParams?.get('noPricing');
+        const cookieHide = typeof document !== 'undefined' 
+          ? document.cookie.includes('hidePricing=1')
+          : false;
+
         if (urlHide) {
-          try { document.cookie = 'hidePricing=1; path=/; max-age=86400'; } catch {}
-        }
-        if (urlHide || cookieHide) {
-          setShowPricing(false);
+          // Set cookie if URL parameter is present
+          try {
+            document.cookie = 'hidePricing=1; path=/; max-age=86400';
+          } catch (cookieError) {
+            console.warn('Could not set cookie:', cookieError);
+          }
+          if (isMounted) setShowPricing(false);
           return;
         }
 
-        const f = await getFeatures();
-        if (!alive) return;
-        const pg: any = (userProfile as any)?.pricingGate || {};
-        const forcedShow = pg?.mode === 'force_show';
-        const show = !!forcedShow; // show only when explicitly forced for this user
-        setShowPricing(show);
-      } catch {
-        setShowPricing(false);
-      }
-    })();
-    return () => { alive = false };
-  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate, userProfile?.plan, searchParams]);
+        if (cookieHide) {
+          if (isMounted) setShowPricing(false);
+          return;
+        }
 
+        // Check features and user settings
+        const features = await getFeatures();
+        if (!isMounted) return;
+
+        const pricingGate = userProfile?.pricingGate || {};
+        const forcedShow = pricingGate.mode === 'force_show';
+        
+        if (isMounted) setShowPricing(!!forcedShow);
+      } catch (error) {
+        console.error('Error checking pricing visibility:', error);
+        if (isMounted) setShowPricing(false);
+      }
+    };
+
+    checkPricingVisibility();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.uid, userProfile, searchParams]);
+
+  // Calculate active state for navigation items
   const isActive = (href: string) => {
-    try {
-      if (href === "/") return pathname === "/";
-      return pathname.startsWith(href);
-    } catch { return false; }
+    if (!pathname) return false;
+    if (href === "/") return pathname === "/";
+    return pathname.startsWith(href);
   };
 
-  // Hide on md+ screens
+  // Calculate navigation items based on conditions
+  const navItems = useMemo(() => {
+    const items = [];
+
+    // Home - always shown
+    items.push({
+      href: "/",
+      icon: Home,
+      label: tr(locale, 'header.browse'),
+      active: isActive('/'),
+      enabled: true
+    });
+
+    // Pricing - conditionally shown
+    if (showPricing) {
+      items.push({
+        href: "/pricing",
+        icon: Tag,
+        label: tr(locale, 'pages.pricing.nav'),
+        active: isActive('/pricing'),
+        enabled: true
+      });
+    }
+
+    // Dashboard/Provider - conditionally enabled
+    items.push({
+      href: userProfile?.role === 'provider' ? "/dashboard" : "#",
+      icon: Briefcase,
+      label: tr(locale, 'header.providerDashboard'),
+      active: isActive('/dashboard'),
+      enabled: userProfile?.role === 'provider'
+    });
+
+    // Profile/Login
+    items.push({
+      href: user ? "/dashboard/profile" : "/login",
+      icon: user ? User : LogIn,
+      label: tr(locale, user ? 'header.profile' : 'header.login'),
+      active: user ? isActive('/dashboard/profile') : isActive('/login'),
+      enabled: true
+    });
+
+    return items;
+  }, [locale, showPricing, user, userProfile, pathname]);
+
+  // Don't render on larger screens
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 md:hidden pb-safe">
-      <ul className="grid grid-cols-4">
-        <li>
-          <Link href="/" className={`flex flex-col items-center justify-center py-2 text-sm ${isActive('/') ? 'text-primary font-semibold' : ''}`} aria-current={isActive('/') ? 'page' : undefined}>
-            <Home className={`h-5 w-5 ${isActive('/') ? 'text-primary' : ''}`} />
-            <span>{tr(locale, 'header.browse')}</span>
-          </Link>
-        </li>
-        {showPricing && (
-          <li>
-            <Link href="/pricing" className={`flex flex-col items-center justify-center py-2 text-sm ${isActive('/pricing') ? 'text-primary font-semibold' : ''}`} aria-current={isActive('/pricing') ? 'page' : undefined}>
-              <Tag className={`h-5 w-5 ${isActive('/pricing') ? 'text-primary' : ''}`} />
-              <span>{tr(locale, 'pages.pricing.nav')}</span>
-            </Link>
-          </li>
-        )}
-        <li>
-          {userProfile?.role === 'provider' ? (
-            <Link href="/dashboard" className={`flex flex-col items-center justify-center py-2 text-sm ${isActive('/dashboard') ? 'text-primary font-semibold' : ''}`} aria-current={isActive('/dashboard') ? 'page' : undefined}>
-              <Briefcase className={`h-5 w-5 ${isActive('/dashboard') ? 'text-primary' : ''}`} />
-              <span>{tr(locale, 'header.providerDashboard')}</span>
-            </Link>
-          ) : (
-            <span className="flex flex-col items-center justify-center py-2 text-sm opacity-50">
-              <Briefcase className="h-5 w-5" />
-              <span>{tr(locale, 'header.providerDashboard')}</span>
-            </span>
-          )}
-        </li>
-        <li>
-          {user ? (
-            <Link href="/dashboard/profile" className={`flex flex-col items-center justify-center py-2 text-sm ${isActive('/dashboard/profile') ? 'text-primary font-semibold' : ''}`} aria-current={isActive('/dashboard/profile') ? 'page' : undefined}>
-              <User className={`h-5 w-5 ${isActive('/dashboard/profile') ? 'text-primary' : ''}`} />
-              <span>{tr(locale, 'header.profile')}</span>
-            </Link>
-          ) : (
-            <Link href="/login" className="flex flex-col items-center justify-center py-2 text-sm">
-              <LogIn className="h-5 w-5" />
-              <span>{tr(locale, 'header.login')}</span>
-            </Link>
-          )}
-        </li>
-      </ul>
+      <div className="flex justify-around items-center">
+        {navItems.map((item, index) => {
+          const Icon = item.icon;
+          const isItemActive = item.active;
+          
+          const baseClasses = "flex flex-col items-center justify-center py-2 text-sm flex-1 min-w-0 px-1";
+          const activeClasses = isItemActive ? "text-primary font-semibold" : "";
+          
+          const content = (
+            <>
+              <Icon className={`h-5 w-5 ${isItemActive ? 'text-primary' : ''}`} />
+              <span className={`text-xs mt-1 truncate max-w-full ${activeClasses}`}>
+                {item.label}
+              </span>
+            </>
+          );
+
+          if (item.enabled) {
+            return (
+              <Link
+                key={index}
+                href={item.href}
+                className={baseClasses}
+                aria-current={isItemActive ? 'page' : undefined}
+              >
+                {content}
+              </Link>
+            );
+          } else {
+            return (
+              <span
+                key={index}
+                className={`${baseClasses} opacity-50 cursor-not-allowed`}
+                title={locale === 'ar' ? 'غير متاح' : 'Not available'}
+              >
+                {content}
+              </span>
+            );
+          }
+        })}
+      </div>
     </nav>
   );
 }
