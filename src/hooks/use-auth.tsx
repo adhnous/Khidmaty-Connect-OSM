@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -20,11 +19,7 @@ type AuthContextType = {
   loading: boolean;
 };
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  userProfile: null,
-  loading: true,
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -32,21 +27,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+    let unsubscribeDoc: (() => void) | undefined;
+    let isMounted = true;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!isMounted) return;
+
       setLoading(true);
-      if (user) {
-        setUser(user);
-        // Real-time subscribe to user profile for immediate updates (e.g., pricingGate)
-        const userRef = doc(db, 'users', user.uid);
-        const unsubscribeDoc = onSnapshot(userRef, (snap) => {
-          setUserProfile((snap.exists() ? (snap.data() as UserProfile) : null));
-          setLoading(false);
-        }, () => {
-          setUserProfile(null);
-          setLoading(false);
-        });
-        // Ensure we clean up the doc listener when auth state changes again
-        return () => unsubscribeDoc();
+      
+      // Clean up previous document listener
+      if (unsubscribeDoc) {
+        unsubscribeDoc();
+        unsubscribeDoc = undefined;
+      }
+
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        
+        try {
+          // Real-time subscribe to user profile
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          unsubscribeDoc = onSnapshot(
+            userRef, 
+            (snap) => {
+              if (!isMounted) return;
+              
+              if (snap.exists()) {
+                const profileData = snap.data() as UserProfile;
+                setUserProfile(profileData);
+              } else {
+                setUserProfile(null);
+              }
+              setLoading(false);
+            }, 
+            (error) => {
+              if (!isMounted) return;
+              console.error('Error fetching user profile:', error);
+              setUserProfile(null);
+              setLoading(false);
+            }
+          );
+        } catch (error) {
+          console.error('Error setting up profile listener:', error);
+          if (isMounted) {
+            setUserProfile(null);
+            setLoading(false);
+          }
+        }
       } else {
         setUser(null);
         setUserProfile(null);
@@ -55,9 +82,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => {
+      isMounted = false;
       unsubscribeAuth();
+      if (unsubscribeDoc) {
+        unsubscribeDoc();
+      }
     };
   }, []);
+
+  const value: AuthContextType = {
+    user,
+    userProfile,
+    loading,
+  };
 
   if (loading) {
     return (
@@ -68,12 +105,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
