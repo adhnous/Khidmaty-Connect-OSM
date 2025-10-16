@@ -8,6 +8,7 @@ import {
   Timestamp,
   DocumentData 
 } from 'firebase/firestore';
+import type { FieldValue } from 'firebase/firestore';
 
 export type UserRole = 'seeker' | 'provider' | 'admin' | 'owner';
 
@@ -20,7 +21,7 @@ export interface UserProfile {
   phone?: string | null;
   whatsapp?: string | null;
   city?: string | null;
-  createdAt?: Timestamp | null;
+  createdAt?: Timestamp | FieldValue | null;
   plan?: 'free' | 'basic' | 'pro' | 'enterprise';
   status?: 'active' | 'disabled' | 'pending';
   pricingGate?: {
