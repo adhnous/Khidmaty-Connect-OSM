@@ -1,4 +1,4 @@
-@layer components {
+/* design-system (component utilities) */
   .ds-container { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8; }
   .ds-page { @apply min-h-[100svh] bg-gradient-to-br from-secondary to-muted/40 py-8; }
 
@@ -43,4 +43,4 @@
   .ds-hero-content { @apply p-8 md:p-12; }
 
   .ds-link { @apply underline underline-offset-4 text-primary hover:opacity-90; }
-}
+ 
