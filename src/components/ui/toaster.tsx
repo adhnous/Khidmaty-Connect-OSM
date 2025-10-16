@@ -39,7 +39,7 @@ export function Toaster() {
           >
             <div className="flex gap-3 items-start">
               <div className="flex-shrink-0 mt-0.5">
-                {getToastIcon(variant)}
+{getToastIcon((variant ?? 'default') as string)}
               </div>
               <div className="grid gap-1 flex-1">
                 {title && <ToastTitle>{title}</ToastTitle>}

@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react';
 import { getIdTokenOrThrow } from '@/lib/auth-client';
  
+// In your services/page.tsx, temporarily add:
+//import AuthDebug from '@/components/auth-debug';
 
+// In the return section, add:
+//<AuthDebug />
 type Row = {
   id: string;
   title: string;

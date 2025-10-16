@@ -86,6 +86,51 @@ const dict = {
       sortPriceLow: 'Price: Low to High',
       sortPriceHigh: 'Price: High to Low',
     },
+    // NEW COMMON SECTION
+    common: {
+      loading: 'Loading...',
+      error: 'An error occurred',
+      retry: 'Retry',
+      save: 'Save',
+      cancel: 'Cancel',
+      delete: 'Delete',
+      confirm: 'Confirm',
+      search: 'Search',
+      noResults: 'No results found',
+      success: 'Success',
+      failed: 'Failed',
+      required: 'Required',
+      optional: 'Optional',
+      yes: 'Yes',
+      no: 'No',
+      close: 'Close',
+      next: 'Next',
+      previous: 'Previous',
+      submit: 'Submit',
+      processing: 'Processing...',
+      update: 'Update',
+      create: 'Create',
+      edit: 'Edit',
+      view: 'View',
+      back: 'Back',
+      continue: 'Continue',
+      done: 'Done',
+      skip: 'Skip',
+      more: 'More',
+      less: 'Less',
+      show: 'Show',
+      hide: 'Hide',
+      active: 'Active',
+      inactive: 'Inactive',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      connected: 'Connected',
+      disconnected: 'Disconnected',
+      online: 'Online',
+      offline: 'Offline',
+      readMore: 'Read More',
+      showLess: 'Show Less',
+    },
     categories: {
       Plumbing: 'Plumbing',
       Electrical: 'Electrical',
@@ -518,6 +563,51 @@ const dict = {
       sortPriceLow: 'السعر: من الأقل إلى الأعلى',
       sortPriceHigh: 'السعر: من الأعلى إلى الأقل',
     },
+    // NEW COMMON SECTION IN ARABIC
+    common: {
+      loading: 'جار التحميل...',
+      error: 'حدث خطأ',
+      retry: 'إعادة المحاولة',
+      save: 'حفظ',
+      cancel: 'إلغاء',
+      delete: 'حذف',
+      confirm: 'تأكيد',
+      search: 'بحث',
+      noResults: 'لا توجد نتائج',
+      success: 'نجح',
+      failed: 'فشل',
+      required: 'مطلوب',
+      optional: 'اختياري',
+      yes: 'نعم',
+      no: 'لا',
+      close: 'إغلاق',
+      next: 'التالي',
+      previous: 'السابق',
+      submit: 'إرسال',
+      processing: 'جارٍ المعالجة...',
+      update: 'تحديث',
+      create: 'إنشاء',
+      edit: 'تعديل',
+      view: 'عرض',
+      back: 'رجوع',
+      continue: 'متابعة',
+      done: 'تم',
+      skip: 'تخطي',
+      more: 'المزيد',
+      less: 'أقل',
+      show: 'إظهار',
+      hide: 'إخفاء',
+      active: 'نشط',
+      inactive: 'غير نشط',
+      enabled: 'مفعل',
+      disabled: 'معطل',
+      connected: 'متصل',
+      disconnected: 'غير متصل',
+      online: 'متصل بالإنترنت',
+      offline: 'غير متصل',
+      readMore: 'اقرأ المزيد',
+      showLess: 'عرض أقل',
+    },
     categories: {
       Plumbing: 'سباكة',
       Electrical: 'كهرباء',
@@ -913,11 +1003,24 @@ function get(obj: any, path: string): any {
 }
 
 export function tr(locale: Locale, key: string): string {
-  const d = (dict as any)[locale] ?? (dict as any).en;
-  const v = get(d, key);
-  if (typeof v === 'string') return v;
-  const ve = get((dict as any).en, key);
-  return typeof ve === 'string' ? ve : key;
+  try {
+    const d = (dict as any)[locale] ?? (dict as any).en;
+    const v = get(d, key);
+    if (typeof v === 'string') return v;
+    
+    const ve = get((dict as any).en, key);
+    if (typeof ve === 'string') return ve;
+    
+    // Log missing translations in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[i18n] Missing translation for key: "${key}" in locale: "${locale}"`);
+    }
+    
+    return key;
+  } catch (error) {
+    console.error(`[i18n] Error getting translation for key: "${key}"`, error);
+    return key;
+  }
 }
 
 export function getClientLocale(): Locale {
