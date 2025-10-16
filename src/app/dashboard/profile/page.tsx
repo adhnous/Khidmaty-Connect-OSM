@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { updateUserProfile } from '@/lib/user';
@@ -56,19 +48,19 @@ export default function ProfilePage() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{tr(locale, 'header.profile')}</CardTitle>
-        <CardDescription>
+    <section className="ds-card">
+      <div className="ds-card-section">
+        <h1 className="ds-section-title">{tr(locale, 'header.profile')}</h1>
+        <p className="ds-section-subtitle">
           {locale === 'ar' ? 'حدّث معلوماتك الشخصية وبيانات التواصل.' : 'Update your personal and contact information.'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
+        </p>
+      </div>
+      <div className="ds-card-section grid gap-4">
+        <div className="grid gap-2">
           <Label htmlFor="name">{locale === 'ar' ? 'الاسم الكامل' : 'Full Name'}</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" className="ds-input" />
         </div>
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor="phone">{tr(locale, 'form.labels.contactPhone')}</Label>
           <Input
             id="phone"
@@ -79,9 +71,10 @@ export default function ProfilePage() {
             placeholder={locale === 'ar' ? 'مثال: 091 234 5678' : 'e.g., 091 234 5678'}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            className="ds-input"
           />
         </div>
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor="whatsapp">{tr(locale, 'form.labels.contactWhatsapp')}</Label>
           <Input
             id="whatsapp"
@@ -92,16 +85,20 @@ export default function ProfilePage() {
             placeholder={locale === 'ar' ? 'مثال: +218 91 234 5678' : 'e.g., +218 91 234 5678'}
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
+            className="ds-input"
           />
         </div>
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor="city">{tr(locale, 'form.labels.city')}</Label>
-          <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} autoComplete="address-level2" />
+          <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} autoComplete="address-level2" className="ds-input" />
         </div>
-        <Button onClick={onSave} disabled={saving}>
-          {saving ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}
-        </Button>
-      </CardContent>
-    </Card>
+        <div>
+          <button onClick={onSave} disabled={saving} className="ds-btn ds-btn-primary">
+            {saving ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
+
