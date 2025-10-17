@@ -72,10 +72,7 @@ export function ServiceCard({
   }, [reviews, reviewsCount]);
   const hidePrice = useMemo(() => {
     try {
-      const requested = !!(searchParams?.get('hidePrice') || searchParams?.get('noPrice'));
-      if (requested) return true;
-      const ref = typeof document !== 'undefined' ? (document.referrer || '').toLowerCase() : '';
-      if (ref.includes(':3000')) return true; // owner-console default port
+      return !!(searchParams?.get('hidePrice') || searchParams?.get('noPrice'));
     } catch {}
     return false;
   }, [searchParams]);

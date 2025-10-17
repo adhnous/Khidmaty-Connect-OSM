@@ -37,6 +37,7 @@ import { reverseGeocodeNominatim, getLangFromDocument } from '@/lib/geocode';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { tileUrl, tileAttribution, markerHtml } from '@/lib/map';
 import { categories } from '@/lib/categories';
+import { Switch } from '@/components/ui/switch';
 
 // Client-only react-leaflet components
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
@@ -166,6 +167,7 @@ export function ServiceForm() {
   const [submitting, setSubmitting] = useState(false);
   const [mapMounted, setMapMounted] = useState(false);
   const [useCustomCategory, setUseCustomCategory] = useState(false);
+  const [autoPrice, setAutoPrice] = useState(true);
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -262,12 +264,13 @@ export function ServiceForm() {
   const subTotal = (subWatch || []).reduce((sum, s) => sum + (Number(s?.price) || 0), 0);
   // Additional YouTube links managed via watch/setValue
 
-  // Keep main price in sync with sub-services total
+  // Keep main price in sync with sub-services total when auto pricing is on
   useEffect(() => {
+    if (!autoPrice) return;
     form.setValue('price', Number.isFinite(subTotal) ? Number(subTotal) : 0, {
       shouldValidate: true,
     });
-  }, [subTotal]);
+  }, [subTotal, autoPrice]);
 
   function handleUseMyLocation() {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
@@ -703,12 +706,25 @@ export function ServiceForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{autoPrice ? tr(locale, 'form.subservices.autoCalc') : (locale === 'ar' ? 'سعر يدوي' : 'Manual price')}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{autoPrice ? (locale === 'ar' ? 'تلقائي' : 'Auto') : (locale === 'ar' ? 'يدوي' : 'Manual')}</span>
+                    <Switch checked={autoPrice} onCheckedChange={setAutoPrice} aria-label="Auto-calc from sub-services" />
+                  </div>
+                </div>
                 <FormControl>
-                  <Input type="number" placeholder="100" readOnly {...field} />
+                  <Input
+                    type="number"
+                    placeholder="100"
+                    readOnly={autoPrice}
+                    value={field.value as any}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      field.onChange(v === '' ? (autoPrice ? 0 : '') : Number(v));
+                    }}
+                  />
                 </FormControl>
-                <FormDescription>
-                  {tr(locale, 'form.subservices.autoCalc')}
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

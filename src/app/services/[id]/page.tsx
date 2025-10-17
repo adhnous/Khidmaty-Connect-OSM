@@ -255,18 +255,13 @@ export default function ServiceDetailPage() {
     return !!(user && service && service.providerId === user.uid);
   }, [user?.uid, service?.providerId]);
 
-  // Determine whether to hide price on this page
+  // Determine whether to hide price on this page (explicit URL params only)
   const hidePrice = useMemo(() => {
     try {
-      if (isOwner) return true; // owner shouldn't see public price card
-      const requested = !!(searchParams?.get('hidePrice') || searchParams?.get('noPrice'));
-      if (requested) return true;
-      const ref = typeof document !== 'undefined' ? (document.referrer || '').toLowerCase() : '';
-      // Hide if navigated from owner-console (commonly running on :3000)
-      if (ref.includes(':3000')) return true;
+      return !!(searchParams?.get('hidePrice') || searchParams?.get('noPrice'));
     } catch {}
     return false;
-  }, [isOwner, searchParams]);
+  }, [searchParams]);
 
   // DEBUG: log owner check when service/user changes
   useEffect(() => {

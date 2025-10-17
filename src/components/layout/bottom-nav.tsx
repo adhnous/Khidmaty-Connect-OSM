@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Home, Briefcase, User, LogIn, Tag } from "lucide-react";
 import { tr } from "@/lib/i18n";
@@ -14,6 +14,7 @@ export default function BottomNav() {
   const searchParams = useSearchParams();
   const [locale, setLocale] = useState<'en' | 'ar'>('en');
   const [showPricing, setShowPricing] = useState(false);
+  const navRef = useRef<HTMLElement | null>(null);
 
   // Set locale from document
   useEffect(() => {
@@ -24,6 +25,19 @@ export default function BottomNav() {
       console.error('Error setting locale:', error);
       setLocale('en');
     }
+  }, []);
+
+  // Expose BottomNav height to CSS var
+  useEffect(() => {
+    const updateVar = () => {
+      try {
+        const h = navRef.current?.offsetHeight ?? 0;
+        document.documentElement.style.setProperty('--bottom-nav-height', `${h}px`);
+      } catch {}
+    };
+    updateVar();
+    window.addEventListener('resize', updateVar);
+    return () => window.removeEventListener('resize', updateVar);
   }, []);
 
   // Handle pricing visibility
@@ -129,7 +143,7 @@ export default function BottomNav() {
 
   // Don't render on larger screens
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 md:hidden pb-safe">
+    <nav ref={navRef as any} className="fixed bottom-0 inset-x-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 md:hidden pb-safe">
       <div className="flex justify-around items-center">
         {navItems.map((item, index) => {
           const Icon = item.icon;

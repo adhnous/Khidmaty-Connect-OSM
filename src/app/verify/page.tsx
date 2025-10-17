@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getClientLocale, tr } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
-import { sendVerificationEmail, reloadCurrentUser } from "@/lib/auth";
+import { sendVerificationEmail, reloadCurrentUser, signOut, isCurrentUserVerified } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import {
   Card,
@@ -24,6 +24,7 @@ export default function VerifyPage() {
   const router = useRouter();
   const [sending, setSending] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const onResend = async () => {
     try {
@@ -44,11 +45,38 @@ export default function VerifyPage() {
     }
   };
 
+  // Auto-check every 5s so the page can move on right after verification
+  useEffect(() => {
+    const id = setInterval(async () => {
+      try {
+        await reloadCurrentUser();
+        if (isCurrentUserVerified()) {
+          toast({ title: tr(locale, "verify.verifiedTitle"), description: tr(locale, "verify.verifiedDesc") });
+          if (userProfile?.role === "provider") router.replace("/dashboard");
+          else router.replace("/");
+        }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(id);
+  }, [router, userProfile?.role]);
+
+  const onUseDifferentEmail = async () => {
+    try {
+      setSigningOut(true);
+      await signOut();
+      router.replace("/login");
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e?.message });
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   const onRefresh = async () => {
     try {
       setChecking(true);
       await reloadCurrentUser();
-      if (user?.emailVerified) {
+      if (isCurrentUserVerified() || user?.emailVerified) {
         toast({
           title: tr(locale, "verify.verifiedTitle"),
           description: tr(locale, "verify.verifiedDesc"),
@@ -98,6 +126,10 @@ export default function VerifyPage() {
             <Button onClick={onRefresh} disabled={checking || !user}>
               {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {tr(locale, "verify.check")}
+            </Button>
+            <Button onClick={onUseDifferentEmail} disabled={signingOut} variant="outline">
+              {signingOut && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {locale === 'ar' ? 'استخدم بريدًا مختلفًا' : 'Use a different email'}
             </Button>
           </div>
         </CardContent>
