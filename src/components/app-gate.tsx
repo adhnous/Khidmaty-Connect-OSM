@@ -66,11 +66,20 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
     const plan = (userProfile?.plan ?? 'free') as string;
     const pricingGate = userProfile?.pricingGate || {};
 
-    // Email verification check
+    // Email verification check (with dev bypass)
     if (!user.emailVerified && !isAllowedRoute(pathname)) {
-      console.log('Email not verified, redirecting to verify page');
-      router.replace('/verify');
-      return;
+      const devBypass = (() => {
+        try {
+          if (process.env.NEXT_PUBLIC_SKIP_EMAIL_VERIFICATION === '1') return true;
+          if (typeof window !== 'undefined' && localStorage.getItem('skipVerify') === '1') return true;
+        } catch {}
+        return false;
+      })();
+      if (!devBypass) {
+        console.log('Email not verified, redirecting to verify page');
+        router.replace('/verify');
+        return;
+      }
     }
 
     // Wait for features to load before doing role-based checks

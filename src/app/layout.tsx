@@ -10,11 +10,26 @@ import AdStrip from '@/components/ad-strip';
 import AppGate from '@/components/app-gate';
 import BottomNav from '@/components/layout/bottom-nav';
 import PwaInstall from '@/components/pwa-install';
+import { PT_Sans, Tajawal } from 'next/font/google';
 
 export const metadata: Metadata = {
   title: 'Khidmaty Connect',
   description: 'Your connection to skilled professionals in Libya.',
 };
+
+const ptSans = PT_Sans({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-pt-sans',
+  display: 'swap',
+});
+
+const tajawal = Tajawal({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-tajawal',
+  display: 'swap',
+});
 
 export default async function RootLayout({
   children,
@@ -33,18 +48,15 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
       </head>
 
-      <body className="font-body antialiased bg-background text-foreground">
+      <body className={`${ptSans.variable} ${tajawal.variable} font-body antialiased bg-background text-foreground`}>
+        <a href="#content" className="skip-link">{dir === 'rtl' ? 'تخطي إلى المحتوى' : 'Skip to content'}</a>
         <AuthProvider>
           <AdStrip />
           <AppGate>
             {/* reserve space for fixed BottomNav + iOS safe area */}
-            <main className="min-h-[100svh] pt-2 pb-24 pb-safe">
+            <main id="content" className="min-h-[100svh] pt-2 pb-[calc(var(--bottom-nav-height,0px)+env(safe-area-inset-bottom))] md:pb-8">
               {children}
             </main>
             <PwaInstall />

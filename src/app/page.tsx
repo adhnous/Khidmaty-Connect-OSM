@@ -130,7 +130,7 @@ export default function Home() {
                 </Button>
               </Link>
             </div>
-            <div id="search" className="mx-auto max-w-6xl mt-6">
+            <div id="search" className="mx-auto max-w-6xl mt-6 scroll-mt-[calc(var(--ad-height,0px)+4rem)]">
               <div className="rounded-2xl copper-gradient p-[2px]">
                 <div className="rounded-[1rem] bg-background text-foreground p-3 md:p-4 shadow-lg">
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-7">

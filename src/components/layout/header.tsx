@@ -189,7 +189,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-ink text-snow border-white/10 pt-safe">
+    <header className="sticky z-30 w-full border-b bg-ink text-snow border-white/10 pt-safe" style={{ top: 'var(--ad-height, 0px)' }}>
       <div className="container flex h-14 md:h-16 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2 md:gap-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, where, limit } from "firebase/firestore";
 import Link from "next/link";
@@ -18,6 +18,7 @@ export type AdItem = {
 
 export default function AdStrip() {
   const [ads, setAds] = useState<AdItem[]>([]);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const q = query(
@@ -54,6 +55,7 @@ export default function AdStrip() {
   }, []);
 
   const locale = getClientLocale();
+  const isRtl = locale === 'ar';
 
   const items = useMemo(() => {
     if (ads.length > 0) return ads;
@@ -85,6 +87,20 @@ export default function AdStrip() {
     return baseSequence;
   }, [items]);
 
+  useEffect(() => {
+    const updateVar = () => {
+      try {
+        const h = rootRef.current?.offsetHeight ?? 0;
+        if (typeof document !== 'undefined') {
+          document.documentElement.style.setProperty('--ad-height', `${h}px`);
+        }
+      } catch {}
+    };
+    updateVar();
+    window.addEventListener('resize', updateVar);
+    return () => window.removeEventListener('resize', updateVar);
+  }, [sequences.length, items.length]);
+
   if (items.length === 0) return null;
 
   function getBackgroundColor(color?: AdItem["color"]) {
@@ -99,7 +115,7 @@ export default function AdStrip() {
   const shouldBounce = sequences.length <= 4; // Use bounce animation for fewer items
 
   return (
-    <div className={`ad-marquee ${getBackgroundColor(items[0]?.color)}`}>
+    <div ref={rootRef} className={`ad-marquee ${getBackgroundColor(items[0]?.color)}`}>
       {/* Fixed: Removed container and fixed layout for animation */}
       <div className={`ad-track ${shouldBounce ? 'single' : ''}`}>
         {/* Sequence A - visible */}
@@ -122,7 +138,7 @@ export default function AdStrip() {
       {/* Fixed: Absolutely positioned advertise link */}
       <Link 
         href="/dashboard" 
-        className="absolute right-4 top-1/2 -translate-y-1/2 rounded px-3 py-1 text-xs bg-ink text-snow hover:opacity-90 z-10"
+        className={`absolute ${isRtl ? 'left-4 right-auto' : 'right-4 left-auto'} top-1/2 -translate-y-1/2 rounded px-3 py-1 text-xs bg-ink text-snow hover:opacity-90 z-10`}
       >
         {locale === 'ar' ? 'أعلن معنا' : 'Advertise with us'}
       </Link>
