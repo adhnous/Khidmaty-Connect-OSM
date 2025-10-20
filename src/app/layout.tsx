@@ -1,4 +1,4 @@
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import '@/styles/design-system.css';
 import 'leaflet/dist/leaflet.css';
@@ -10,13 +10,17 @@ import AdStrip from '@/components/ad-strip';
 import AppGate from '@/components/app-gate';
 import BottomNav from '@/components/layout/bottom-nav';
 import PwaInstall from '@/components/pwa-install';
-import { PT_Sans, Tajawal } from 'next/font/google';
+import { PT_Sans, Tajawal, Cairo } from 'next/font/google';
 
-export const metadata: Metadata = {
-  title: 'Khidmaty Connect',
-  description: 'Your connection to skilled professionals in Libya.',
-};
+// Cairo (default app font)
+const cairo = Cairo({
+  subsets: ['arabic', 'latin'],
+  weight: ['300','400','600','700'],
+  display: 'swap',
+  variable: '--font-cairo',
+});
 
+// Optional: keep these variables in case you use them for specific components
 const ptSans = PT_Sans({
   subsets: ['latin'],
   weight: ['400', '700'],
@@ -31,6 +35,11 @@ const tajawal = Tajawal({
   display: 'swap',
 });
 
+export const metadata: Metadata = {
+  title: 'Khidmaty Connect',
+  description: 'Your connection to skilled professionals in Libya.',
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -39,7 +48,7 @@ export default async function RootLayout({
   const dir = locale.startsWith('ar') ? 'rtl' : 'ltr';
 
   return (
-    <html lang={locale} dir={dir}>
+    <html lang={locale} dir={dir} className={cairo.variable}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#0A0A0A" />
@@ -50,7 +59,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
 
-      <body className={`${ptSans.variable} ${tajawal.variable} font-body antialiased bg-background text-foreground`}>
+      <body className={`${cairo.variable} ${ptSans.variable} ${tajawal.variable} font-body antialiased bg-background text-foreground`}>
         <a href="#content" className="skip-link">{dir === 'rtl' ? 'تخطي إلى المحتوى' : 'Skip to content'}</a>
         <AuthProvider>
           <AdStrip />

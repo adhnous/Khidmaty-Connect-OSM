@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Tajawal', 'PT Sans', Arial, Helvetica, sans-serif;
-}
+/* === Default app font: Cairo (via next/font) === */
+:root { --app-font: var(--font-cairo), system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans Arabic", Arial, sans-serif; }
+html, body { font-family: var(--app-font); }
 
 /* Offset anchor scroll for sticky header + ad strip */
 html {
