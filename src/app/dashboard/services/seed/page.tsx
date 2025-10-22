@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { listServicesByProvider, createService, type Service } from '@/lib/services';
+import { createService, type Service } from '@/lib/services';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles } from 'lucide-react';
 
@@ -30,10 +30,7 @@ export default function SeedServiceWizardPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [loading, setLoading] = useState(true);
-  const [hasService, setHasService] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [requestedId, setRequestedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Inputs
   const [title, setTitle] = useState('');
@@ -46,15 +43,7 @@ export default function SeedServiceWizardPage() {
   const [suggestedTitle, setSuggestedTitle] = useState('');
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      if (!user) { setLoading(false); return; }
-      try {
-        const rows = await listServicesByProvider(user.uid, 1);
-        setHasService((rows || []).length > 0);
-      } finally { setLoading(false); }
-    })();
-  }, [user?.uid]);
+  useEffect(() => {}, [user?.uid]);
 
   const taskList = useMemo(() => {
     const en = [
@@ -108,22 +97,7 @@ export default function SeedServiceWizardPage() {
 
   const toggleTask = (idx: number) => setTasks(prev => ({ ...prev, [String(idx)]: !prev[String(idx)] }));
 
-  const requestExtraSlot = async () => {
-    if (!user) return;
-    setRequesting(true);
-    try {
-      const token = await user.getIdToken(true);
-      const res = await fetch('/api/service-slots/request', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({}) });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || res.statusText);
-      setRequestedId(json.id);
-      toast({ title: locale === 'ar' ? 'تم إرسال الطلب' : 'Request submitted' });
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: locale === 'ar' ? 'فشل الطلب' : 'Request failed', description: e?.message || '' });
-    } finally {
-      setRequesting(false);
-    }
-  };
+  // No extra slot request flow; multiple services are allowed now
 
   const create = async () => {
     if (!user) { router.push('/login'); return; }
@@ -159,11 +133,7 @@ export default function SeedServiceWizardPage() {
       router.push(`/services/${id}`);
     } catch (e: any) {
       const msg = String(e?.message || 'create_failed');
-      if (msg.includes('limit_exceeded')) {
-        toast({ variant: 'destructive', title: locale === 'ar' ? 'تم الوصول إلى الحد' : 'Limit reached', description: locale === 'ar' ? 'لإنشاء خدمة أخرى، أرسل طلبًا.' : 'To create another service, please submit a request.' });
-      } else {
-        toast({ variant: 'destructive', title: locale === 'ar' ? 'فشل الإنشاء' : 'Create failed', description: msg });
-      }
+      toast({ variant: 'destructive', title: locale === 'ar' ? 'فشل الإنشاء' : 'Create failed', description: msg });
     }
   };
 
@@ -222,13 +192,7 @@ export default function SeedServiceWizardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {!hasService ? (
-              <Button onClick={create} disabled={generating}>{locale === 'ar' ? 'إنشاء الخدمة' : 'Create service'}</Button>
-            ) : requestedId ? (
-              <div className="rounded border bg-green-50 p-2 text-sm text-green-700">{locale === 'ar' ? 'تم إرسال طلب فتحة إضافية.' : 'Extra slot request submitted.'}</div>
-            ) : (
-              <Button variant="outline" onClick={requestExtraSlot} disabled={requesting}>{locale === 'ar' ? 'طلب فتحة إضافية' : 'Request extra slot'}</Button>
-            )}
+            <Button onClick={create} disabled={generating}>{locale === 'ar' ? 'إنشاء الخدمة' : 'Create service'}</Button>
           </div>
         </CardContent>
       </Card>

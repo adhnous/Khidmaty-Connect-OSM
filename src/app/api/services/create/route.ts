@@ -20,7 +20,7 @@ async function verifyBearer(req: Request) {
   }
 }
 
-// Enforced create: providers can create only one service unless they have an approved extra slot request
+// Providers can create services (beta restriction removed)
 export async function POST(req: Request) {
   const authz = await verifyBearer(req);
   if (!authz.ok) return NextResponse.json({ error: authz.error }, { status: authz.code });
@@ -30,24 +30,6 @@ export async function POST(req: Request) {
 
   // Only providers can use this endpoint (admins should use the owner-console)
   if (role !== 'provider') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-
-  // Count existing services by this provider
-  const existingSnap = await db.collection('services').where('providerId', '==', uid).limit(1).get();
-  const alreadyHasService = existingSnap.docs.length > 0;
-
-  let usingRequestId: string | null = null;
-  if (alreadyHasService) {
-    // See if there is an approved, not-consumed request for extra slot
-    const rq = await db
-      .collection('service_slot_requests')
-      .where('uid', '==', uid)
-      .where('status', '==', 'approved')
-      .limit(1)
-      .get();
-    const doc = rq.docs[0];
-    if (!doc) return NextResponse.json({ error: 'limit_exceeded' }, { status: 403 });
-    usingRequestId = doc.id;
-  }
 
   // Build payload (strict allowlist)
   const payload: any = {
@@ -76,10 +58,6 @@ export async function POST(req: Request) {
   if (!payload.title) return NextResponse.json({ error: 'title_required' }, { status: 400 });
 
   const ref = await db.collection('services').add(payload);
-
-  if (usingRequestId) {
-    await db.collection('service_slot_requests').doc(usingRequestId).set({ consumed: true, consumedAt: new Date(), consumedServiceId: ref.id }, { merge: true });
-  }
 
   return NextResponse.json({ ok: true, id: ref.id });
 }

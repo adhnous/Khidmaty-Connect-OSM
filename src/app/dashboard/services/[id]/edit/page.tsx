@@ -94,6 +94,9 @@ export default function EditServicePage() {
     },
   });
 
+  const titleValue = form.watch('title') as string;
+  const descriptionValue = form.watch('description') as string;
+
   // Require sign-in to edit and load the service
   useEffect(() => {
     if (!authLoading && !user) {
@@ -429,6 +432,7 @@ export default function EditServicePage() {
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
+                    <div className="mt-1 text-xs text-muted-foreground">{(form.watch('title')?.length || 0)}/100 · {locale === 'ar' ? 'الحد الأدنى 6 أحرف' : 'min 6 chars'}</div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -442,6 +446,7 @@ export default function EditServicePage() {
                     <FormControl>
                       <Textarea className="min-h-[150px]" {...field} />
                     </FormControl>
+                    <div className="mt-1 text-xs text-muted-foreground">{(form.watch('description')?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}</div>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -38,6 +38,7 @@ import { getClientLocale, tr } from '@/lib/i18n';
 import { tileUrl, tileAttribution, markerHtml } from '@/lib/map';
 import { categories } from '@/lib/categories';
 import { Switch } from '@/components/ui/switch';
+import CategoryCombobox from '@/components/category-combobox';
 
 // Client-only react-leaflet components
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
@@ -163,11 +164,20 @@ export function ServiceForm() {
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
   const debounceTimeout = useRef<NodeJS.Timeout>();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [newVideoUrl, setNewVideoUrl] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [mapMounted, setMapMounted] = useState(false);
   const [useCustomCategory, setUseCustomCategory] = useState(false);
   const [autoPrice, setAutoPrice] = useState(true);
+
+  useEffect(() => {
+    const urls = selectedFiles.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [selectedFiles]);
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -192,6 +202,10 @@ export function ServiceForm() {
       lng: 13.1913 as any,
     },
   });
+
+  // Live character counts for key fields
+  const titleValue = form.watch('title') as string;
+  const descriptionValue = form.watch('description') as string;
 
   // Watch location fields (after form is created)
   const lat = form.watch('lat') as number | undefined;
@@ -415,7 +429,7 @@ export function ServiceForm() {
         price: data.price,
         category: data.category,
         city: data.city,
-        area: data.area,
+        area: data.area ?? '',
         ...(data.lat != null ? { lat: data.lat } : {}),
         ...(data.lng != null ? { lng: data.lng } : {}),
         ...(data.mapUrl && data.mapUrl.trim() ? { mapUrl: data.mapUrl.trim() } : {}),
@@ -461,9 +475,10 @@ export function ServiceForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>{tr(locale, 'form.labels.title')}</FormLabel>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <FormControl>
                   <Input
+                    className="w-full"
                     placeholder={tr(locale, 'form.placeholders.title')}
                     {...field}
                   />
@@ -483,6 +498,7 @@ export function ServiceForm() {
                   {tr(locale, 'form.actions.improve')}
                 </Button>
               </div>
+              <div className="mt-1 text-xs text-muted-foreground">{(titleValue?.length || 0)}/100 · {locale === 'ar' ? 'الحد الأدنى 6 أحرف' : 'min 6 chars'}</div>
         {/* Sub-services repeater */}
         <div className="space-y-3">
           <FormLabel>{tr(locale, 'form.subservices.label')}</FormLabel>
@@ -576,7 +592,7 @@ export function ServiceForm() {
             </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" onClick={handleUseMyLocation}>{tr(locale, 'form.actions.useMyLocation')}</Button>
           <Button type="button" variant="outline" onClick={() => { form.setValue('lat', undefined as any); form.setValue('lng', undefined as any); }}>{tr(locale, 'form.actions.clearLocation')}</Button>
         </div>
@@ -602,6 +618,7 @@ export function ServiceForm() {
               <FormDescription>
                 {tr(locale, 'form.help.description')}
               </FormDescription>
+              <div className="mt-1 text-xs text-muted-foreground">{(descriptionValue?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}</div>
               <FormMessage />
             </FormItem>
           )}
@@ -633,34 +650,12 @@ export function ServiceForm() {
                   </>
                 ) : (
                   <>
-                    <Select
-                      onValueChange={(v) => {
-                        if (v === '__CUSTOM__') {
-                          setUseCustomCategory(true);
-                          form.setValue('category', '', { shouldValidate: true });
-                          return;
-                        }
-                        field.onChange(v);
-                      }}
-                      defaultValue={field.value}
+                    <CategoryCombobox
                       value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={tr(locale, 'form.labels.category')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {tr(locale, `categories.${cat}`)}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="__CUSTOM__">
-                          {locale === 'ar' ? 'إضافة فئة جديدة…' : 'Add new category…'}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onChange={(v) => field.onChange(v)}
+                      placeholder={tr(locale, 'form.labels.category') as string}
+                      mergeCommunity
+                    />
                     <div className="pt-1">
                       <Button type="button" variant="link" className="p-0" onClick={() => setUseCustomCategory(true)}>
                         {locale === 'ar' ? 'لم تجد فئتك؟ اكتب فئة مخصصة' : "Can't find yours? Type a custom category"}
@@ -749,7 +744,7 @@ export function ServiceForm() {
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} />
                     </SelectTrigger>
                   </FormControl>
@@ -774,59 +769,63 @@ export function ServiceForm() {
                 <FormControl>
                   <Input placeholder={tr(locale, 'form.labels.area')} {...field} />
                 </FormControl>
+                <FormDescription>{locale === 'ar' ? 'مثال: قرقارش' : 'e.g., Gargaresh'}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="lat"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{tr(locale, 'form.labels.latitude')}</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="e.g., 32.8872"
-                    value={(field.value as any) ?? ''}
-                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
-                  />
-                </FormControl>
-                <FormDescription>
-                  If provided, the map on your service page will use this exact location.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lng"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{tr(locale, 'form.labels.longitude')}</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="e.g., 13.1913"
-                    value={(field.value as any) ?? ''}
-                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <details className="rounded border p-3">
+          <summary className="cursor-pointer select-none text-sm font-medium">{tr(locale, 'form.labels.advancedLocation') || (locale === 'ar' ? 'خيارات الموقع المتقدمة' : 'Advanced location options')}</summary>
+          <div className="mt-3 grid grid-cols-1 gap-8 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="lat"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{tr(locale, 'form.labels.latitude')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="e.g., 32.8872"
+                      value={(field.value as any) ?? ''}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {locale === 'ar' ? 'يمكنك تركها فارغة واستخدام الخريطة أعلاه.' : 'You can leave these empty and use the map above.'}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="lng"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{tr(locale, 'form.labels.longitude')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="e.g., 13.1913"
+                      value={(field.value as any) ?? ''}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </details>
 
         <div className="space-y-3">
           <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
           <AddressSearch
-            className="max-w-md"
+            className="w-full max-w-md"
             placeholder={tr(locale, 'form.placeholders.searchAddress')}
             countryCodes="ly"
             city={String(cityWatch || '')}
@@ -1015,100 +1014,105 @@ export function ServiceForm() {
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="videoUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{tr(locale, 'form.labels.videoUrl')}</FormLabel>
-              <FormControl>
-                <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
-              </FormControl>
-              <FormDescription>{tr(locale, 'form.help.videoUrl')}</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <details className="rounded border p-3">
+          <summary className="cursor-pointer select-none text-sm font-medium">{locale === 'ar' ? 'الوسائط والروابط' : 'Media & links'}</summary>
+          <div className="mt-3 space-y-4">
+            <FormField
+              control={form.control}
+              name="videoUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{tr(locale, 'form.labels.videoUrl')}</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
+                  </FormControl>
+                  <FormDescription>{tr(locale, 'form.help.videoUrl')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        {/* Additional YouTube links */}
-        <div className="space-y-2">
-          <FormLabel>{tr(locale, 'form.labels.videoUrls')}</FormLabel>
-          <div className="space-y-2">
-            {(form.watch('videoUrls') || []).map((url, idx) => (
-              <div key={idx} className="flex items-center gap-2">
+            <div className="space-y-2">
+              <FormLabel>{tr(locale, 'form.labels.videoUrls')}</FormLabel>
+              <div className="space-y-2">
+                {(form.watch('videoUrls') || []).map((url, idx) => (
+                  <div key={idx} className="flex flex-wrap items-center gap-2">
+                    <Input
+                      className="min-w-0 flex-1"
+                      value={url}
+                      onChange={(e) => {
+                        const next = [...(form.getValues('videoUrls') || [])];
+                        next[idx] = e.target.value;
+                        form.setValue('videoUrls', next, { shouldValidate: true });
+                      }}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const next = (form.getValues('videoUrls') || []).filter((_, i) => i !== idx);
+                        form.setValue('videoUrls', next, { shouldValidate: true });
+                      }}
+                    >
+                      {tr(locale, 'form.subservices.remove')}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
                 <Input
-                  value={url}
-                  onChange={(e) => {
-                    const next = [...(form.getValues('videoUrls') || [])];
-                    next[idx] = e.target.value;
-                    form.setValue('videoUrls', next, { shouldValidate: true });
-                  }}
+                  className="min-w-0 flex-1"
                   placeholder="https://www.youtube.com/watch?v=..."
+                  value={newVideoUrl}
+                  onChange={(e) => setNewVideoUrl(e.target.value)}
                 />
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => {
-                    const next = (form.getValues('videoUrls') || []).filter((_, i) => i !== idx);
+                    const v = newVideoUrl.trim();
+                    if (!v) return;
+                    const next = [...(form.getValues('videoUrls') || []), v];
                     form.setValue('videoUrls', next, { shouldValidate: true });
+                    setNewVideoUrl('');
                   }}
                 >
-                  {tr(locale, 'form.subservices.remove')}
+                  + Add
                 </Button>
               </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="https://www.youtube.com/watch?v=..."
-              value={newVideoUrl}
-              onChange={(e) => setNewVideoUrl(e.target.value)}
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                const v = newVideoUrl.trim();
-                if (!v) return;
-                const next = [...(form.getValues('videoUrls') || []), v];
-                form.setValue('videoUrls', next, { shouldValidate: true });
-                setNewVideoUrl('');
-              }}
-            >
-              + Add
-            </Button>
-          </div>
-        </div>
+            </div>
 
-        {/* Social links */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="facebookUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{tr(locale, 'form.labels.facebookUrl')}</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://facebook.com/yourpage" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="telegramUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{tr(locale, 'form.labels.telegramUrl')}</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://t.me/yourchannel" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="facebookUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{tr(locale, 'form.labels.facebookUrl')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://facebook.com/yourpage" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="telegramUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{tr(locale, 'form.labels.telegramUrl')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://t.me/yourchannel" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </details>
 
         <FormItem>
           <FormLabel>{tr(locale, 'form.images.label')}</FormLabel>
@@ -1149,6 +1153,28 @@ export function ServiceForm() {
               {tr(locale, 'form.images.selectedCount')
                 .replace('{count}', String(selectedFiles.length))
                 .replace('{names}', selectedFiles.map(f => f.name).join(', '))}
+            </div>
+          )}
+          {previews.length > 0 && (
+            <div className="mt-2 grid grid-cols-3 gap-2 md:grid-cols-4">
+              {previews.map((src, i) => (
+                <div key={i} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-24 w-full rounded object-cover" />
+                  <button
+                    type="button"
+                    className="absolute right-1 top-1 rounded bg-black/60 px-1 text-xs text-white"
+                    onClick={() => {
+                      const next = [...selectedFiles];
+                      next.splice(i, 1);
+                      setSelectedFiles(next);
+                    }}
+                    aria-label="Remove image"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </FormItem>
