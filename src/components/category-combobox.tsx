@@ -141,7 +141,7 @@ export default function CategoryCombobox({ value, onChange, allowAll, allValue, 
           <ChevronDown className="h-4 w-4 opacity-70" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-2" align="start">
+      <PopoverContent className="w-[min(320px,90vw)] max-w-[90vw] p-2" align="start">
         <div className="p-1">
           <Input autoFocus placeholder={placeholder || 'Search category…'} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>

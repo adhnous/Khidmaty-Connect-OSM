@@ -65,7 +65,7 @@ export default async function RootLayout({
           <AdStrip />
           <AppGate>
             {/* reserve space for fixed BottomNav + iOS safe area */}
-            <main id="content" className="min-h-[100svh] pt-2 pb-[calc(var(--bottom-nav-height,0px)+env(safe-area-inset-bottom))] md:pb-8">
+            <main id="content" className="min-h-[100svh] overflow-x-hidden pt-2 pb-[calc(var(--bottom-nav-height,0px)+env(safe-area-inset-bottom))] md:pb-8">
               {children}
             </main>
             <PwaInstall />
