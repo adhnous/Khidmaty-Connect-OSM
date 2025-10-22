@@ -1149,7 +1149,7 @@ export function ServiceForm() {
             {tr(locale, 'form.help.coverImage')}
           </FormDescription>
           {selectedFiles.length > 0 && (
-            <div className="pt-2 text-sm text-muted-foreground">
+            <div className="pt-2 text-sm text-muted-foreground break-words">
               {tr(locale, 'form.images.selectedCount')
                 .replace('{count}', String(selectedFiles.length))
                 .replace('{names}', selectedFiles.map(f => f.name).join(', '))}
