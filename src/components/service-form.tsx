@@ -498,7 +498,7 @@ export function ServiceForm() {
                   {tr(locale, 'form.actions.improve')}
                 </Button>
               </div>
-              <div className="mt-1 text-xs text-muted-foreground">{(titleValue?.length || 0)}/100 · {locale === 'ar' ? 'الحد الأدنى 6 أحرف' : 'min 6 chars'}</div>
+              <div className="mt-1 text-sm text-foreground/80">{(titleValue?.length || 0)}/100 · {locale === 'ar' ? 'الحد الأدنى 6 أحرف' : 'min 6 chars'}</div>
         {/* Sub-services repeater */}
         <div className="space-y-3">
           <FormLabel>{tr(locale, 'form.subservices.label')}</FormLabel>
@@ -618,7 +618,7 @@ export function ServiceForm() {
               <FormDescription>
                 {tr(locale, 'form.help.description')}
               </FormDescription>
-              <div className="mt-1 text-xs text-muted-foreground">{(descriptionValue?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}</div>
+              <div className="mt-1 text-sm text-foreground/80">{(descriptionValue?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}</div>
               <FormMessage />
             </FormItem>
           )}
@@ -702,9 +702,9 @@ export function ServiceForm() {
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">{autoPrice ? tr(locale, 'form.subservices.autoCalc') : (locale === 'ar' ? 'سعر يدوي' : 'Manual price')}</span>
+                  <span className="text-sm text-foreground/80">{autoPrice ? tr(locale, 'form.subservices.autoCalc') : (locale === 'ar' ? 'سعر يدوي' : 'Manual price')}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{autoPrice ? (locale === 'ar' ? 'تلقائي' : 'Auto') : (locale === 'ar' ? 'يدوي' : 'Manual')}</span>
+                    <span className="text-sm text-foreground/80">{autoPrice ? (locale === 'ar' ? 'تلقائي' : 'Auto') : (locale === 'ar' ? 'يدوي' : 'Manual')}</span>
                     <Switch checked={autoPrice} onCheckedChange={setAutoPrice} aria-label="Auto-calc from sub-services" />
                   </div>
                 </div>
@@ -906,7 +906,7 @@ export function ServiceForm() {
               </div>
             </div>
           )}
-          <div className="px-2 py-1 text-xs text-muted-foreground">
+          <div className="px-2 py-1 text-sm text-foreground/80">
             {latNum != null && lngNum != null ? (
               <span>
                 {tr(locale, 'form.map.selected')}: {latNum.toFixed(6)}, {lngNum.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}

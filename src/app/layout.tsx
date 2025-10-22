@@ -44,7 +44,7 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies();
-  const locale = (cookieStore.get('locale')?.value || 'en').toLowerCase();
+  const locale = (cookieStore.get('locale')?.value || 'ar').toLowerCase();
   const dir = locale.startsWith('ar') ? 'rtl' : 'ltr';
 
   return (

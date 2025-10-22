@@ -89,7 +89,7 @@ export function ServiceCard({
           placeholder="blur"
           blurDataURL={blur}
         />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 md:h-16 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 md:h-16 bg-gradient-to-t from-black/60 to-transparent" />
         <Badge variant="secondary" className="absolute left-3 bottom-3 bg-background/90 text-xs shadow-sm">
           {tr(locale, `categories.${category}`)}
         </Badge>
