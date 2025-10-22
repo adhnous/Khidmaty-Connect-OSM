@@ -41,6 +41,7 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
       path.startsWith('/checkout') || 
       path.startsWith('/login') || 
       path.startsWith('/verify') || 
+      path.startsWith('/analytics/public') || 
       path.startsWith('/_next') || 
       path.startsWith('/api');
 
