@@ -753,6 +753,7 @@ const dict = {
       profile: 'الملف الشخصي',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
+      addService: 'إضافة خدمة جديدة',
     },
     welcome: {
       title: 'مرحبا في لوحة التحكم',
