@@ -34,6 +34,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config) => {
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@opentelemetry/exporter-jaeger': false,
+      '@opentelemetry/exporter-zipkin': false,
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
