@@ -377,10 +377,7 @@ export default function EditServicePage() {
         price: data.price,
         category: data.category,
         city: data.city,
-        area: data.area,
         availabilityNote: data.availabilityNote,
-        contactPhone: data.contactPhone,
-        contactWhatsapp: data.contactWhatsapp,
         images,
         subservices: data.subservices ?? [],
       };
@@ -398,6 +395,24 @@ export default function EditServicePage() {
       // Social links
       if ((data as any).facebookUrl && (data as any).facebookUrl.trim()) payload.facebookUrl = (data as any).facebookUrl.trim(); else payload.facebookUrl = deleteField();
       if ((data as any).telegramUrl && (data as any).telegramUrl.trim()) payload.telegramUrl = (data as any).telegramUrl.trim(); else payload.telegramUrl = deleteField();
+
+      if (typeof data.area === 'string' && data.area.trim()) {
+        payload.area = data.area.trim();
+      } else {
+        payload.area = deleteField();
+      }
+      if (typeof (data as any).contactPhone === 'string') {
+        const v = (data as any).contactPhone.trim();
+        payload.contactPhone = v ? v : deleteField();
+      } else {
+        payload.contactPhone = deleteField();
+      }
+      if (typeof (data as any).contactWhatsapp === 'string') {
+        const v = (data as any).contactWhatsapp.trim();
+        payload.contactWhatsapp = v ? v : deleteField();
+      } else {
+        payload.contactWhatsapp = deleteField();
+      }
 
       await updateService(id, payload);
       toast({ title: tr(locale, 'form.toasts.updateSuccess') });

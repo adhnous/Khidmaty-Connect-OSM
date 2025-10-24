@@ -156,7 +156,10 @@ export async function updateService(
   data: Partial<Omit<Service, 'id' | 'createdAt' | 'providerId'>>
 ) {
   const docRef = doc(db, 'services', id);
-  await updateDoc(docRef, data as any);
+  const clean: any = Object.fromEntries(
+    Object.entries((data as any) || {}).filter(([_, v]) => v !== undefined)
+  );
+  await updateDoc(docRef, clean);
 }
 
 export async function deleteService(id: string, reason?: string) {
