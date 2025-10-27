@@ -2,6 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { useState, useTransition, useCallback, useRef, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import L from 'leaflet';
+import { useRouter } from 'next/navigation';
+import { Sparkles, Loader2, UploadCloud } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -21,23 +27,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+
 import { serviceSchema, type ServiceFormData } from '@/lib/schemas';
 import { libyanCities, cityLabel, cityCenter } from '@/lib/cities';
-import { useState, useTransition, useCallback, useRef, useEffect, useMemo } from 'react';
-import dynamic from 'next/dynamic';
-import L from 'leaflet';
-import { Sparkles, Loader2, UploadCloud } from 'lucide-react';
-import { Badge } from './ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { formatMessage, success } from '@/lib/messages';
+import { getClientLocale, tr } from '@/lib/i18n';
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
 import { createService, uploadServiceImages, type ServiceImage } from '@/lib/services';
 import AddressSearch from '@/components/address-search';
 import { reverseGeocodeNominatim, getLangFromDocument } from '@/lib/geocode';
-import { getClientLocale, tr } from '@/lib/i18n';
 import { tileUrl, tileAttribution, markerHtml } from '@/lib/map';
-import { categories } from '@/lib/categories';
-import { Switch } from '@/components/ui/switch';
 import CategoryCombobox from '@/components/category-combobox';
 
 // Client-only react-leaflet components
@@ -70,8 +72,6 @@ async function uploadImagesCloudinary(files: File[]): Promise<ServiceImage[]> {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('upload_preset', preset);
-    // Optional: place inside a folder. Comment out or customize as needed.
-    // fd.append('folder', 'khidmaty/services');
     const res = await fetch(endpoint, { method: 'POST', body: fd });
     if (!res.ok) {
       const txt = await res.text();
@@ -149,7 +149,7 @@ export function ServiceForm() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, userProfile, loading } = useAuth();
-  
+
   // Only providers can access the service creation form
   if (loading) return null;
   if (userProfile?.role !== 'provider') {
@@ -159,10 +159,11 @@ export function ServiceForm() {
       </div>
     );
   }
+
   const [isImprovingTitle, startImprovingTitleTransition] = useTransition();
   const [isCategorizing, startCategorizingTransition] = useTransition();
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
-  const debounceTimeout = useRef<NodeJS.Timeout>();
+  const debounceTimeout = useRef<ReturnType<typeof setTimeout>>();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [newVideoUrl, setNewVideoUrl] = useState<string>('');
@@ -233,11 +234,13 @@ export function ServiceForm() {
       ? `https://www.google.com/maps/search/?api=1&query=${latNum},${lngNum}`
       : null
   ), [latNum, lngNum]);
+
   const appleMapsUrl = useMemo(() => (
     latNum != null && lngNum != null
       ? `http://maps.apple.com/?q=${latNum},${lngNum}`
       : null
   ), [latNum, lngNum]);
+
   const geoUrl = useMemo(() => (
     latNum != null && lngNum != null
       ? `geo:${latNum},${lngNum}?q=${latNum},${lngNum}`
@@ -276,7 +279,6 @@ export function ServiceForm() {
   const subFieldArray = useFieldArray({ control: form.control, name: 'subservices' });
   const subWatch = form.watch('subservices') as any[] | undefined;
   const subTotal = (subWatch || []).reduce((sum, s) => sum + (Number(s?.price) || 0), 0);
-  // Additional YouTube links managed via watch/setValue
 
   // Keep main price in sync with sub-services total when auto pricing is on
   useEffect(() => {
@@ -284,7 +286,7 @@ export function ServiceForm() {
     form.setValue('price', Number.isFinite(subTotal) ? Number(subTotal) : 0, {
       shouldValidate: true,
     });
-  }, [subTotal, autoPrice]);
+  }, [subTotal, autoPrice, form]);
 
   function handleUseMyLocation() {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
@@ -306,7 +308,30 @@ export function ServiceForm() {
     );
   }
 
-  // (attached via MapContainer.whenCreated below) keep form lat/lng synced to map center on zoom/pan
+  // For description field (use form.register to get ref & field, then debounce auto-category)
+  const { ref, ...field } = form.register('description');
+  const handleAutoCategory = useCallback(() => {
+    const description = form.getValues('description');
+    if (!description || description.length < 50) return;
+
+    startCategorizingTransition(async () => {
+      try {
+        const result = await apiAutoCategorizeService({ description });
+        setCategorySuggestions(result.categorySuggestions);
+      } catch (error) {
+        // Non-blocking: log only (you can toast if you want)
+        console.error('Could not get category suggestions', error);
+      }
+    });
+  }, [form, startCategorizingTransition]);
+
+  const onDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    field.onChange(e);
+    clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
+      handleAutoCategory();
+    }, 1000);
+  };
 
   const handleImproveTitle = async () => {
     const { title, description, category } = form.getValues();
@@ -314,58 +339,21 @@ export function ServiceForm() {
       toast({
         variant: 'destructive',
         title: 'Missing information',
-        description:
-          'Please fill in title, description, and category to improve the title.',
+        description: 'Please fill in title, description, and category to improve the title.',
       });
       return;
     }
     startImprovingTitleTransition(async () => {
       try {
-        const result = await apiImproveServiceTitle({
-          title,
-          description,
-          category,
-        });
+        const result = await apiImproveServiceTitle({ title, description, category });
         form.setValue('title', result.improvedTitle, { shouldValidate: true });
-        toast({
-          title: tr(locale, 'form.toasts.aiTitleImproved'),
-          description: tr(locale, 'form.toasts.aiSuggested'),
-        });
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: tr(locale, 'form.toasts.aiErrorTitle'),
-          description: tr(locale, 'form.toasts.aiErrorDesc'),
-        });
+        toast({ title: tr(locale, 'form.toasts.aiTitleImproved'), description: tr(locale, 'form.toasts.aiSuggested') });
+      } catch (error: any) {
+        const code = typeof error?.message === 'string' ? error.message : 'unknown';
+        toast({ variant: 'destructive', title: formatMessage(code, locale) });
       }
     });
   };
-
-  const handleAutoCategory = useCallback(() => {
-    const description = form.getValues('description');
-    if (description.length < 50) return;
-
-    startCategorizingTransition(async () => {
-      try {
-        const result = await apiAutoCategorizeService({ description });
-        setCategorySuggestions(result.categorySuggestions);
-      } catch (error) {
-        console.error('Could not get category suggestions', error);
-      }
-    });
-  }, [form]);
-
-  const onDescriptionChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    field.onChange(e);
-    clearTimeout(debounceTimeout.current);
-    debounceTimeout.current = setTimeout(() => {
-      handleAutoCategory();
-    }, 1000);
-  };
-  
-  const { ref, ...field } = form.register('description');
 
   async function onSubmit(data: ServiceFormData) {
     if (!user) {
@@ -394,9 +382,7 @@ export function ServiceForm() {
             process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === 'true'
           ) {
             const limited = selectedFiles.slice(0, 2);
-            const dataUrls = await Promise.all(
-              limited.map((f) => compressToDataUrl(f, 800, 0.6))
-            );
+            const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f, 800, 0.6)));
             images = dataUrls.map((u: string) => ({ url: u }));
           } else {
             images = await uploadServiceImages(user.uid, selectedFiles);
@@ -412,15 +398,16 @@ export function ServiceForm() {
           });
           if (mode !== 'local') {
             const limited = selectedFiles.slice(0, 2);
-            const dataUrls = await Promise.all(
-              limited.map((f) => compressToDataUrl(f, 800, 0.6))
-            );
+            const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f, 800, 0.6)));
             images = dataUrls.map((u: string) => ({ url: u }));
           }
         }
       }
 
-      const providerName = userProfile?.displayName || user.displayName || (user.email ? user.email.split('@')[0] : null);
+      const providerName =
+        userProfile?.displayName ||
+        user.displayName ||
+        (user.email ? user.email.split('@')[0] : null);
       const providerEmail = user.email || null;
 
       const serviceId = await createService({
@@ -449,18 +436,12 @@ export function ServiceForm() {
         subservices: data.subservices ?? [],
       });
 
-      toast({
-        title: tr(locale, 'form.toasts.createdTitle'),
-        description: tr(locale, 'form.toasts.createdDesc'),
-      });
+      toast({ title: success(locale, 'submitted'), description: tr(locale, 'form.toasts.createdDesc') });
       router.push(`/services/${serviceId}`);
     } catch (error: any) {
       console.error(error);
-      toast({
-        variant: 'destructive',
-        title: tr(locale, 'form.toasts.createFailedTitle'),
-        description: error?.message || 'Please try again.',
-      });
+      const code = typeof error?.message === 'string' ? error.message : 'unknown';
+      toast({ variant: 'destructive', title: formatMessage(code, locale) });
     } finally {
       setSubmitting(false);
     }
@@ -498,108 +479,124 @@ export function ServiceForm() {
                   {tr(locale, 'form.actions.improve')}
                 </Button>
               </div>
-              <div className="mt-1 text-sm text-foreground/80">{(titleValue?.length || 0)}/100 · {locale === 'ar' ? 'الحد الأدنى 6 أحرف' : 'min 6 chars'}</div>
-        {/* Sub-services repeater */}
-        <div className="space-y-3">
-          <FormLabel>{tr(locale, 'form.subservices.label')}</FormLabel>
-          <div className="space-y-3">
-            {subFieldArray.fields.length === 0 && (
-              <p className="text-sm text-muted-foreground">{tr(locale, 'form.subservices.empty')}</p>
-            )}
-            {subFieldArray.fields.map((field, index) => (
-              <div key={field.id} className="rounded border p-3 space-y-2">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                  <FormField
-                    control={form.control}
-                    name={`subservices.${index}.title` as const}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.subservices.title')}</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`subservices.${index}.price` as const}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.subservices.price')}</FormLabel>
-                        <FormControl>
-                          <Input type="number" min={0} step="1" placeholder="50" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`subservices.${index}.unit` as const}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.subservices.unit')}</FormLabel>
-                        <FormControl>
-                          <Input placeholder={tr(locale, 'form.subservices.unitPlaceholder')} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex items-end">
-                    <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>
-                      {tr(locale, 'form.subservices.remove')}
-                    </Button>
-                  </div>
-                </div>
-                <FormField
-                  control={form.control}
-                  name={`subservices.${index}.description` as const}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.subservices.description')}</FormLabel>
-                      <FormControl>
-                        <Textarea rows={2} placeholder={tr(locale, 'form.subservices.descriptionPlaceholder')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="mt-1 text-sm text-foreground/80">
+                {(titleValue?.length || 0)}/100 · {locale === 'ar' ? 'الحد الأدنى 6 أحرف' : 'min 6 chars'}
               </div>
-            ))}
 
-            <div className="flex items-center justify-between text-sm">
-              <div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div>
-              <div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div>
-            </div>
+              {/* Sub-services repeater */}
+              <div className="space-y-3">
+                <FormLabel>{tr(locale, 'form.subservices.label')}</FormLabel>
+                <div className="space-y-3">
+                  {subFieldArray.fields.length === 0 && (
+                    <p className="text-sm text-muted-foreground">{tr(locale, 'form.subservices.empty')}</p>
+                  )}
+                  {subFieldArray.fields.map((field, index) => (
+                    <div key={field.id} className="space-y-2 rounded border p-3">
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                        <FormField
+                          control={form.control}
+                          name={`subservices.${index}.title` as const}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{tr(locale, 'form.subservices.title')}</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`subservices.${index}.price` as const}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{tr(locale, 'form.subservices.price')}</FormLabel>
+                              <FormControl>
+                                <Input type="number" min={0} step="1" placeholder="50" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`subservices.${index}.unit` as const}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{tr(locale, 'form.subservices.unit')}</FormLabel>
+                              <FormControl>
+                                <Input placeholder={tr(locale, 'form.subservices.unitPlaceholder')} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="flex items-end">
+                          <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>
+                            {tr(locale, 'form.subservices.remove')}
+                          </Button>
+                        </div>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name={`subservices.${index}.description` as const}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{tr(locale, 'form.subservices.description')}</FormLabel>
+                            <FormControl>
+                              <Textarea rows={2} placeholder={tr(locale, 'form.subservices.descriptionPlaceholder')} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ))}
 
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                subFieldArray.append({
-                  id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                  title: '',
-                  price: 0,
-                  unit: '',
-                  description: '',
-                })
-              }
-            >
-              + {tr(locale, 'form.subservices.add')}
-            </Button>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" onClick={handleUseMyLocation}>{tr(locale, 'form.actions.useMyLocation')}</Button>
-          <Button type="button" variant="outline" onClick={() => { form.setValue('lat', undefined as any); form.setValue('lng', undefined as any); }}>{tr(locale, 'form.actions.clearLocation')}</Button>
-        </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div>
+                    <div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      subFieldArray.append({
+                        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                        title: '',
+                        price: 0,
+                        unit: '',
+                        description: '',
+                      })
+                    }
+                  >
+                    + {tr(locale, 'form.subservices.add')}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" variant="outline" onClick={handleUseMyLocation}>
+                  {tr(locale, 'form.actions.useMyLocation')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    form.setValue('lat', undefined as any);
+                    form.setValue('lng', undefined as any);
+                  }}
+                >
+                  {tr(locale, 'form.actions.clearLocation')}
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="description"
@@ -615,14 +612,15 @@ export function ServiceForm() {
                   onChange={onDescriptionChange}
                 />
               </FormControl>
-              <FormDescription>
-                {tr(locale, 'form.help.description')}
-              </FormDescription>
-              <div className="mt-1 text-sm text-foreground/80">{(descriptionValue?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}</div>
+              <FormDescription>{tr(locale, 'form.help.description')}</FormDescription>
+              <div className="mt-1 text-sm text-foreground/80">
+                {(descriptionValue?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}
+              </div>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -666,11 +664,7 @@ export function ServiceForm() {
                 {categorySuggestions.length > 0 && (
                   <div className="space-y-2 pt-2">
                     <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {isCategorizing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
+                      {isCategorizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                       {tr(locale, 'form.ai.suggestions')}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -679,11 +673,7 @@ export function ServiceForm() {
                           key={s}
                           variant="secondary"
                           className="cursor-pointer hover:bg-primary/20"
-                          onClick={() =>
-                            form.setValue('category', s, {
-                              shouldValidate: true,
-                            })
-                          }
+                          onClick={() => form.setValue('category', s, { shouldValidate: true })}
                         >
                           {s}
                         </Badge>
@@ -695,6 +685,7 @@ export function ServiceForm() {
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="price"
@@ -702,7 +693,9 @@ export function ServiceForm() {
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm text-foreground/80">{autoPrice ? tr(locale, 'form.subservices.autoCalc') : (locale === 'ar' ? 'سعر يدوي' : 'Manual price')}</span>
+                  <span className="text-sm text-foreground/80">
+                    {autoPrice ? tr(locale, 'form.subservices.autoCalc') : (locale === 'ar' ? 'سعر يدوي' : 'Manual price')}
+                  </span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-foreground/80">{autoPrice ? (locale === 'ar' ? 'تلقائي' : 'Auto') : (locale === 'ar' ? 'يدوي' : 'Manual')}</span>
                     <Switch checked={autoPrice} onCheckedChange={setAutoPrice} aria-label="Auto-calc from sub-services" />
@@ -725,6 +718,7 @@ export function ServiceForm() {
             )}
           />
         </div>
+
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -775,8 +769,11 @@ export function ServiceForm() {
             )}
           />
         </div>
+
         <details className="rounded border p-3">
-          <summary className="cursor-pointer select-none text-sm font-medium">{tr(locale, 'form.labels.advancedLocation') || (locale === 'ar' ? 'خيارات الموقع المتقدمة' : 'Advanced location options')}</summary>
+          <summary className="cursor-pointer select-none text-sm font-medium">
+            {tr(locale, 'form.labels.advancedLocation') || (locale === 'ar' ? 'خيارات الموقع المتقدمة' : 'Advanced location options')}
+          </summary>
           <div className="mt-3 grid grid-cols-1 gap-8 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -843,9 +840,8 @@ export function ServiceForm() {
                   : [selectedCityCenter?.lat ?? 32.8872, selectedCityCenter?.lng ?? 13.1913]}
                 zoom={13}
                 className="h-full w-full cursor-crosshair"
-                scrollWheelZoom={true}
+                scrollWheelZoom
                 whenReady={(e: any) => {
-                  // Ensure Leaflet computes pane positions after mount/layout
                   setTimeout(() => e.target.invalidateSize(), 0);
                 }}
                 onClick={(e: any) => {
@@ -870,7 +866,7 @@ export function ServiceForm() {
                 {(latNum != null && lngNum != null) && (
                   <Marker
                     position={[latNum, lngNum] as any}
-                    draggable={true}
+                    draggable
                     icon={markerIcon as any}
                     eventHandlers={{
                       dragend: (e: any) => {
@@ -884,6 +880,7 @@ export function ServiceForm() {
                   </Marker>
                 )}
               </MapContainer>
+
               <div className="pointer-events-auto absolute bottom-2 right-2 flex gap-2">
                 <a
                   className="rounded bg-background/80 px-2 py-1 text-xs underline shadow"
@@ -906,11 +903,12 @@ export function ServiceForm() {
               </div>
             </div>
           )}
+
           <div className="px-2 py-1 text-sm text-foreground/80">
             {latNum != null && lngNum != null ? (
               <span>
                 {tr(locale, 'form.map.selected')}: {latNum.toFixed(6)}, {lngNum.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}
-                {` `}
+                {' '}
                 <a
                   className="underline"
                   href={`https://www.openstreetmap.org/?mlat=${latNum}&mlon=${lngNum}#map=13/${latNum}/${lngNum}`}
@@ -919,7 +917,7 @@ export function ServiceForm() {
                 >
                   {tr(locale, 'form.map.openInOSM')}
                 </a>
-                {` `}·{` `}
+                {' · '}
                 <a
                   className="underline"
                   href={gmapsUrl ?? '#'}
@@ -929,7 +927,7 @@ export function ServiceForm() {
                 >
                   Google Maps
                 </a>
-                {` `}·{` `}
+                {' · '}
                 <a
                   className="underline"
                   href={appleMapsUrl ?? '#'}
@@ -939,7 +937,7 @@ export function ServiceForm() {
                 >
                   Apple Maps
                 </a>
-                {` `}·{` `}
+                {' · '}
                 <a
                   className="underline"
                   href={geoUrl ?? '#'}
@@ -982,7 +980,6 @@ export function ServiceForm() {
               </FormItem>
             )}
           />
-
         </div>
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -1015,7 +1012,9 @@ export function ServiceForm() {
         </div>
 
         <details className="rounded border p-3">
-          <summary className="cursor-pointer select-none text-sm font-medium">{locale === 'ar' ? 'الوسائط والروابط' : 'Media & links'}</summary>
+          <summary className="cursor-pointer select-none text-sm font-medium">
+            {locale === 'ar' ? 'الوسائط والروابط' : 'Media & links'}
+          </summary>
           <div className="mt-3 space-y-4">
             <FormField
               control={form.control}
@@ -1123,13 +1122,11 @@ export function ServiceForm() {
                 className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed bg-secondary transition-colors hover:bg-muted"
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <UploadCloud className="w-8 h-8 mb-3 text-muted-foreground"/>
+                  <UploadCloud className="mb-3 h-8 w-8 text-muted-foreground" />
                   <p className="mb-2 text-sm text-muted-foreground">
                     <span className="font-semibold">{tr(locale, 'form.actions.clickToUpload')}</span>
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {tr(locale, 'form.help.imageTypes')}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{tr(locale, 'form.help.imageTypes')}</p>
                 </div>
                 <Input
                   id="dropzone-file"
@@ -1145,16 +1142,16 @@ export function ServiceForm() {
               </label>
             </div>
           </FormControl>
-          <FormDescription>
-            {tr(locale, 'form.help.coverImage')}
-          </FormDescription>
+          <FormDescription>{tr(locale, 'form.help.coverImage')}</FormDescription>
+
           {selectedFiles.length > 0 && (
-            <div className="pt-2 text-sm text-muted-foreground break-words">
+            <div className="break-words pt-2 text-sm text-muted-foreground">
               {tr(locale, 'form.images.selectedCount')
                 .replace('{count}', String(selectedFiles.length))
-                .replace('{names}', selectedFiles.map(f => f.name).join(', '))}
+                .replace('{names}', selectedFiles.map((f) => f.name).join(', '))}
             </div>
           )}
+
           {previews.length > 0 && (
             <div className="mt-2 grid grid-cols-3 gap-2 md:grid-cols-4">
               {previews.map((src, i) => (

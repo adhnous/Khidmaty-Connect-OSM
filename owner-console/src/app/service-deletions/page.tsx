@@ -1,7 +1,10 @@
-"use client";
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getIdTokenOrThrow } from '@/lib/auth-client';
+import { useTokenOrToast } from '@/lib/get-token-or-toast';
+import { getClientLocale } from '@/lib/i18n';
+import { formatMessage, success } from '@/lib/messages';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ServiceDeletionsPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -22,31 +25,75 @@ export default function ServiceDeletionsPage() {
     return p.toString();
   }, [status, uid, serviceId]);
 
+  const { get } = useTokenOrToast();
+  const { toast } = useToast();
+  const locale = getClientLocale?.() ?? 'en';
+
   async function load() {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
-      const token = await getIdTokenOrThrow();
-      const res = await fetch(`/api/service-deletions/list?${qs}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+      const token = await get();
+      if (!token) return; // toast already shown by helper
+
+      const res = await fetch(`/api/service-deletions/list?${qs}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || res.statusText);
+      if (!res.ok) {
+        const codeOrMsg = (json?.error as string) ?? res.statusText ?? 'unknown';
+        throw new Error(codeOrMsg);
+      }
       setRows(json.rows || []);
     } catch (e: any) {
-      setError(e?.message || 'load_failed');
-    } finally { setLoading(false); }
+      const codeOrMsg =
+        (typeof e?.code === 'string' && e.code) ||
+        (typeof e?.message === 'string' && e.message) ||
+        'unknown';
+      setError(formatMessage(codeOrMsg, locale));
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { load(); }, []);
+  // Initial load only; filters are applied when the user clicks "Apply"
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function decide(id: string, action: 'approve' | 'reject') {
     try {
-      const token = await getIdTokenOrThrow();
-      const res = await fetch('/api/service-deletions/decide', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id, action }) });
+      const token = await get();
+      if (!token) return;
+
+      const res = await fetch('/api/service-deletions/decide', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id, action }),
+      });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || res.statusText);
+      if (!res.ok) {
+        const codeOrMsg = (json?.error as string) ?? res.statusText ?? 'unknown';
+        throw new Error(codeOrMsg);
+      }
+
+      // Approve => service deleted; Reject => request closed/restored
+      toast({
+        title: action === 'approve' ? success(locale, 'deleted') : success(locale, 'updated'),
+      });
+
       await load();
-      alert(action === 'approve' ? 'Approved and service deleted.' : 'Rejected and service restored.');
     } catch (e: any) {
-      alert(e?.message || 'update_failed');
+      const codeOrMsg =
+        (typeof e?.code === 'string' && e.code) ||
+        (typeof e?.message === 'string' && e.message) ||
+        'unknown';
+      toast({ variant: 'destructive', title: formatMessage(codeOrMsg, locale) });
     }
   }
 
@@ -77,12 +124,18 @@ export default function ServiceDeletionsPage() {
             <input className="oc-input" value={serviceId} onChange={(e) => setServiceId(e.target.value)} />
           </div>
           <div style={{ alignSelf: 'end' }}>
-            <button className="oc-btn oc-btn-primary" onClick={load} disabled={loading}>Apply</button>
+            <button className="oc-btn oc-btn-primary" onClick={load} disabled={loading}>
+              Apply
+            </button>
           </div>
         </div>
       </div>
 
-      {error && (<div className="oc-card" style={{ borderColor: '#fecaca', background: '#fef2f2', color: '#991b1b' }}>{error}</div>)}
+      {error && (
+        <div className="oc-card" style={{ borderColor: '#fecaca', background: '#fef2f2', color: '#991b1b' }}>
+          {error}
+        </div>
+      )}
 
       <div className="oc-grid">
         {loading ? (
@@ -94,7 +147,9 @@ export default function ServiceDeletionsPage() {
             <div key={r.id} className="oc-card oc-row">
               <div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h3 className="oc-title" title={r.id}>{r.serviceTitle || r.serviceId}</h3>
+                  <h3 className="oc-title" title={r.id}>
+                    {r.serviceTitle || r.serviceId}
+                  </h3>
                   <span className={`oc-badge ${r.status}`}>{r.status}</span>
                 </div>
                 <div className="oc-meta">
@@ -112,19 +167,28 @@ export default function ServiceDeletionsPage() {
               <div className="oc-actions">
                 {r.status === 'pending' && (
                   <>
-                    <button className="oc-btn oc-btn-green" onClick={() => decide(r.id, 'approve')}>Approve & Delete</button>
-                    <button className="oc-btn oc-btn-red" onClick={() => decide(r.id, 'reject')}>Reject</button>
+                    <button className="oc-btn oc-btn-green" onClick={() => decide(r.id, 'approve')}>
+                      Approve & Delete
+                    </button>
+                    <button className="oc-btn oc-btn-red" onClick={() => decide(r.id, 'reject')}>
+                      Reject
+                    </button>
                   </>
                 )}
-                <button className="oc-btn" onClick={() => {
-                  try {
-                    const origin = window.location.origin;
-                    const mainOrigin = origin.includes(':3000') ? origin.replace(':3000', ':3001') : origin;
-                    window.open(`${mainOrigin}/services/${r.serviceId}`, '_blank');
-                  } catch {
-                    window.open(`/services/${r.serviceId}`, '_blank');
-                  }
-                }}>View</button>
+                <button
+                  className="oc-btn"
+                  onClick={() => {
+                    try {
+                      const origin = window.location.origin;
+                      const mainOrigin = origin.includes(':3000') ? origin.replace(':3000', ':3001') : origin;
+                      window.open(`${mainOrigin}/services/${r.serviceId}`, '_blank');
+                    } catch {
+                      window.open(`/services/${r.serviceId}`, '_blank');
+                    }
+                  }}
+                >
+                  View
+                </button>
               </div>
             </div>
           ))

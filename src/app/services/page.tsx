@@ -1,11 +1,13 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { ServiceCard } from '@/components/service-card';
+import { formatMessage } from '@/lib/messages';
+import { getClientLocale } from '@/lib/i18n';
 
- type Svc = {
+type Svc = {
   id: string;
   title: string;
   category: string | null;
@@ -18,6 +20,7 @@ export default function ServicesListPage() {
   const [rows, setRows] = useState<Svc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const locale = getClientLocale?.() ?? 'en';
 
   useEffect(() => {
     let alive = true;
@@ -46,13 +49,24 @@ export default function ServicesListPage() {
         });
         if (alive) setRows(list);
       } catch (e: any) {
-        if (alive) setError(e?.message || 'Failed to load services');
+        if (alive) {
+          // Prefer error.code if available (Firestore/Firebase often sets it),
+          // otherwise fall back to message. Then map to friendly text.
+          const codeOrMsg =
+            (typeof e?.code === 'string' && e.code) ||
+            (typeof e?.message === 'string' && e.message) ||
+            'unknown';
+          setError(formatMessage(codeOrMsg, locale));
+        }
       } finally {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
-  }, []);
+    return () => {
+      alive = false;
+    };
+    // Including locale keeps the linter happy, and only re-runs if language changes.
+  }, [locale]);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -61,7 +75,9 @@ export default function ServicesListPage() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{error}</div>
+        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
+          {error}
+        </div>
       )}
 
       {loading ? (
@@ -71,7 +87,9 @@ export default function ServicesListPage() {
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded-md border p-4 text-muted-foreground">No services yet.</div>
+        <div className="rounded-md border p-4 text-muted-foreground">
+          No services yet.
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((r) => (

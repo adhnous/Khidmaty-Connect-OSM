@@ -1,13 +1,16 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
-import { getIdTokenOrThrow } from '@/lib/auth-client';
- 
-// In your services/page.tsx, temporarily add:
-//import AuthDebug from '@/components/auth-debug';
+import { getClientLocale } from '@/lib/i18n';
+import { formatMessage, success } from '@/lib/messages';
+import { useTokenOrToast } from '@/lib/get-token-or-toast';
+import { useToast } from '@/hooks/use-toast';
 
+// In your services/page.tsx, temporarily add:
+// import AuthDebug from '@/components/auth-debug';
 // In the return section, add:
-//<AuthDebug />
+// <AuthDebug />
+
 type Row = {
   id: string;
   title: string;
@@ -35,20 +38,33 @@ export default function ServicesModerationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { get } = useTokenOrToast();
+  const { toast } = useToast();
+  const locale = getClientLocale?.() ?? 'en';
+
   async function load() {
     setError(null);
     setLoading(true);
     try {
-      const token = await getIdTokenOrThrow();
+      const token = await get();
+      if (!token) return; // toast already shown by useTokenOrToast
+
       const res = await fetch(`/api/services/list?status=${status}`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || res.statusText);
-      setRows(json.rows || []);
+      if (!res.ok) {
+        const codeOrMsg = (json?.error as string) ?? res.statusText ?? 'unknown';
+        throw new Error(codeOrMsg);
+      }
+      setRows((json.rows as Row[]) || []);
     } catch (e: any) {
-      setError(e?.message || 'Failed to load');
+      const codeOrMsg =
+        (typeof e?.code === 'string' && e.code) ||
+        (typeof e?.message === 'string' && e.message) ||
+        'unknown';
+      setError(formatMessage(codeOrMsg, locale));
     } finally {
       setLoading(false);
     }
@@ -61,23 +77,49 @@ export default function ServicesModerationPage() {
 
   async function update(id: string, next: Status) {
     try {
-      const token = await getIdTokenOrThrow();
+      const token = await get();
+      if (!token) return;
+
       const res = await fetch('/api/services/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ id, status: next }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || res.statusText);
+      if (!res.ok) {
+        const codeOrMsg = (json?.error as string) ?? res.statusText ?? 'unknown';
+        throw new Error(codeOrMsg);
+      }
+
+      // Success toast based on action
+      toast({
+        title: next === 'approved' ? success(locale, 'approved') : success(locale, 'updated'),
+      });
+
       await load();
     } catch (e: any) {
-      alert(e?.message || 'Failed to update');
+      const codeOrMsg =
+        (typeof e?.code === 'string' && e.code) ||
+        (typeof e?.message === 'string' && e.message) ||
+        'unknown';
+      toast({ variant: 'destructive', title: formatMessage(codeOrMsg, locale) });
     }
   }
 
   function fmtPrice(n?: number | null) {
     if (typeof n !== 'number') return null;
-    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'LYD', maximumFractionDigits: 0 }).format(n); } catch { return `${n} LYD`; }
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: 'LYD',
+        maximumFractionDigits: 0,
+      }).format(n);
+    } catch {
+      return `${n} LYD`;
+    }
   }
 
   function badgeClass(s: Row['status']) {
@@ -89,7 +131,11 @@ export default function ServicesModerationPage() {
       <div className="oc-toolbar">
         <h1 className="oc-h1">Services Moderation</h1>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <select className="oc-select" value={status} onChange={(e) => setStatus(e.target.value as Status)}>
+          <select
+            className="oc-select"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Status)}
+          >
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
@@ -97,7 +143,14 @@ export default function ServicesModerationPage() {
         </div>
       </div>
 
-      {error && <div className="oc-card" style={{ borderColor: '#fecaca', background: '#fef2f2', color: '#991b1b' }}>{error}</div>}
+      {error && (
+        <div
+          className="oc-card"
+          style={{ borderColor: '#fecaca', background: '#fef2f2', color: '#991b1b' }}
+        >
+          {error}
+        </div>
+      )}
 
       <div className="oc-grid">
         {loading ? (
@@ -114,49 +167,99 @@ export default function ServicesModerationPage() {
                 loading="lazy"
               />
               <div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h3 className="oc-title" title={r.title}>{r.title || r.id}</h3>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <h3 className="oc-title" title={r.title}>
+                    {r.title || r.id}
+                  </h3>
                   <span className={badgeClass(r.status)}>{r.status}</span>
                 </div>
                 <div className="oc-meta">
                   {r.category && <span>{r.category}</span>}
                   {typeof r.price === 'number' && <span>{fmtPrice(r.price)}</span>}
-                  {(r.city || r.area) && <span>{[r.area, r.city].filter(Boolean).join(', ')}</span>}
+                  {(r.city || r.area) && (
+                    <span>{[r.area, r.city].filter(Boolean).join(', ')}</span>
+                  )}
                 </div>
                 {r.description && (
                   <p className="oc-desc" title={r.description}>
-                    {r.description.length > 160 ? `${r.description.slice(0, 160)}…` : r.description}
+                    {r.description.length > 160
+                      ? `${r.description.slice(0, 160)}…`
+                      : r.description}
                   </p>
                 )}
-                {(r.images && r.images.length > 1) && (
-                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                {r.images && r.images.length > 1 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 6,
+                      marginTop: 8,
+                      flexWrap: 'wrap',
+                    }}
+                  >
                     {r.images.slice(1, 5).map((im, i) => (
-                      <img key={i} src={im.url} alt={`img-${i}`} style={{ width: 72, height: 54, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+                      <img
+                        key={i}
+                        src={im.url}
+                        alt={`img-${i}`}
+                        style={{
+                          width: 72,
+                          height: 54,
+                          objectFit: 'cover',
+                          borderRadius: 6,
+                          border: '1px solid #e5e7eb',
+                        }}
+                      />
                     ))}
                   </div>
                 )}
                 {r.videoUrl && (
                   <div className="oc-meta" style={{ marginTop: 6 }}>
-                    <a href={r.videoUrl} target="_blank" rel="noreferrer" className="oc-subtle" style={{ textDecoration: 'underline' }}>Video</a>
+                    <a
+                      href={r.videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="oc-subtle"
+                      style={{ textDecoration: 'underline' }}
+                    >
+                      Video
+                    </a>
                   </div>
                 )}
                 <div className="oc-meta" style={{ marginTop: 6 }}>
                   <span className="oc-subtle">Provider: {r.providerName || r.providerId}</span>
                   <span className="oc-subtle">Created: {r.createdAt || '-'}</span>
                   {(r.contactPhone || r.contactWhatsapp) && (
-                    <span className="oc-subtle">Contact: {[r.contactPhone, r.contactWhatsapp].filter(Boolean).join(' / ')}</span>
+                    <span className="oc-subtle">
+                      Contact: {[r.contactPhone, r.contactWhatsapp].filter(Boolean).join(' / ')}
+                    </span>
                   )}
                 </div>
               </div>
               <div className="oc-actions">
                 {status !== 'approved' && (
-                  <button className="oc-btn oc-btn-green" onClick={() => update(r.id, 'approved')}>Approve</button>
+                  <button
+                    className="oc-btn oc-btn-green"
+                    onClick={() => update(r.id, 'approved')}
+                  >
+                    Approve
+                  </button>
                 )}
                 {status !== 'rejected' && (
-                  <button className="oc-btn oc-btn-red" onClick={() => update(r.id, 'rejected')}>Reject</button>
+                  <button className="oc-btn oc-btn-red" onClick={() => update(r.id, 'rejected')}>
+                    Reject
+                  </button>
                 )}
                 {status !== 'pending' && (
-                  <button className="oc-btn" onClick={() => update(r.id, 'pending')}>Mark Pending</button>
+                  <button className="oc-btn" onClick={() => update(r.id, 'pending')}>
+                    Mark Pending
+                  </button>
                 )}
               </div>
             </div>

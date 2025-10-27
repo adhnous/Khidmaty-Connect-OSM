@@ -36,16 +36,16 @@ const tajawal = Tajawal({
 });
 
 export const metadata: Metadata = {
-  title: 'Khidmaty Connect',
-  description: 'Your connection to skilled professionals in Libya.',
+  title: 'خدمتي كونكت',
+  description: 'وسيلتك للتواصل مع المهنيين المحترفين في ليبيا',
 };
 
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const cookieStore = await cookies();
-  const locale = (cookieStore.get('locale')?.value || 'ar').toLowerCase();
-  const dir = locale.startsWith('ar') ? 'rtl' : 'ltr';
+  // Always use Arabic as the default language
+  const locale = 'ar';
+  const dir = 'rtl';
 
   return (
     <html lang={locale} dir={dir} className={cairo.variable}>

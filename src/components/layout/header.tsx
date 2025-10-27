@@ -35,11 +35,11 @@ export function Header() {
   const [lockActive, setLockActive] = useState(false);
   const [locale, setLocale] = useState<'en' | 'ar'>(() => {
     try {
-      if (typeof document === 'undefined') return 'en';
-      const lang = (document.documentElement.getAttribute('lang') || 'en').toLowerCase();
-      return lang.startsWith('ar') ? 'ar' : 'en';
+      if (typeof document === 'undefined') return 'ar';
+      const fromHtml = (document.documentElement.getAttribute('lang') || 'ar').toLowerCase();
+      return fromHtml.startsWith('en') ? 'en' : 'ar';
     } catch {
-      return 'en';
+      return 'ar';
     }
   });
 

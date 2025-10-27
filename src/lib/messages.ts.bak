@@ -1,0 +1,500 @@
+// src/lib/messages.ts// src/lib/messages.ts// src/lib/messages.ts
+
+// Maps codes to friendly EN/AR messages.
+
+// Pure presentation layer. No logic/security changes.// Maps codes to friendly EN/AR messages.// Maps codes to friendly EN/AR messages.
+
+
+
+export type Locale = "en" | "ar";// Pure presentation layer. No logic/security changes.// Pure presentation layer. No logic/security changes.
+
+
+
+type MessageStructure = {
+
+  generic: {
+
+    unknown: string;export type Locale = "en" | "ar";export type Locale = "en" | "ar";
+
+    offline: string;
+
+    permission: string;
+
+    notFound: string;
+
+    badRequest: string;type MessageStructure = {type MessageStructure = {
+
+    tryLater: string;
+
+  };  generic: {  generic: {
+
+  success: {
+
+    saved: string;    unknown: string;    unknown: string;
+
+    created: string;
+
+    updated: string;    offline: string;    offline: string;
+
+    deleted: string;
+
+    submitted: string;    permission: string;    permission: string;
+
+    sent: string;
+
+  };    notFound: string;    notFound: string;
+
+  codes: {
+
+    [key: string]: string;    badRequest: string;    badRequest: string;
+
+  };
+
+};    tryLater: string;    tryLater: string;
+
+
+
+const EN: MessageStructure = {  };  };
+
+  generic: {
+
+    unknown: "Something went wrong. Please try again",  success: {  success: {
+
+    offline: "You seem offline. Check your connection",
+
+    permission: "You don't have permission to do that",    saved: string;    saved: string;
+
+    notFound: "We couldn't find what you're looking for",
+
+    badRequest: "Please check the form and try again",    created: string;    created: string;
+
+    tryLater: "Please try again in a moment",
+
+  },    updated: string;    updated: string;
+
+  success: {
+
+    saved: "Changes saved successfully",    deleted: string;    deleted: string;
+
+    created: "Created successfully",
+
+    updated: "Updated successfully",    submitted: string;    submitted: string;
+
+    deleted: "Deleted successfully",
+
+    submitted: "Submitted for review",    sent: string;    sent: string;
+
+    sent: "Message sent successfully",
+
+  },  };  };
+
+  codes: {
+
+    not_signed_in: "Please sign in to continue",  codes: {  codes: {
+
+    token_refresh_failed: "Session refresh failed. Please sign in again",
+
+    auth_state_error: "Sign-in check failed. Please retry",    [key: string]: string;    [key: string]: string;
+
+    missing_token: "Please sign in to continue",
+
+    invalid_token: "Your session is invalid. Please sign in again",  };  };
+
+    forbidden: "You don't have permission for this action",
+
+    title_required: "Please add a title",};};
+
+    bad_request: "Please check the form and try again",
+
+    not_found: "The requested item was not found",
+
+    internal_error: "Server error. Please try again later",
+
+    invalid_status: "Invalid status value",const EN: MessageStructure = {const EN: MessageStructure = {
+
+    already_requested: "You already requested this",
+
+    invalid_provider: "Invalid provider account",  generic: {  generic: {
+
+    invalid_plan: "Invalid plan selected",
+
+    plan_not_found: "Selected plan was not found",    unknown: "Something went wrong. Please try again",    unknown: "Something went wrong. Please try again",
+
+    no_service: "Service not found",
+
+    no_updates: "No changes to save",    offline: "You seem offline. Check your connection",    offline: "You seem offline. Check your connection",
+
+    no_files: "Please attach at least one file",
+
+    id_required: "ID is required",    permission: "You don't have permission to do that",    permission: "You don't have permission to do that",
+
+    missing_id: "ID is required",
+
+    invalid_serviceId: "Invalid service",    notFound: "We couldn't find what you're looking for",    notFound: "We couldn't find what you're looking for",
+
+    invalid_conversationId: "Invalid conversation",
+
+    conversation_not_found: "Conversation not found",    badRequest: "Please check the form and try again",    badRequest: "Please check the form and try again",
+
+    bad_event: "Unsupported request",
+
+    invalid: "Invalid request",    tryLater: "Please try again in a moment",    tryLater: "Please try again in a moment",
+
+    "lat and lng required": "Please set a location on the map",
+
+    metabase_env_missing: "Dashboard configuration missing",  },  },
+
+    no_tokens: "Missing credentials. Try again later",
+
+  },  success: {  success: {
+
+};
+
+    saved: "Changes saved successfully",    saved: "Changes saved successfully",
+
+const AR: MessageStructure = {
+
+  generic: {    created: "Created successfully",    created: "Created successfully",
+
+    unknown: "حدث خطأ ما. يرجى المحاولة مرة أخرى",
+
+    offline: "يبدو أنك غير متصل بالإنترنت. تحقق من اتصالك",    updated: "Updated successfully",    updated: "Updated successfully",
+
+    permission: "ليس لديك صلاحية للقيام بذلك",
+
+    notFound: "لم نتمكن من العثور على ما تبحث عنه",    deleted: "Deleted successfully",    deleted: "Deleted successfully",
+
+    badRequest: "يرجى التحقق من النموذج والمحاولة مرة أخرى",
+
+    tryLater: "يرجى المحاولة مرة أخرى بعد قليل",    submitted: "Submitted for review",    submitted: "Submitted for review",
+
+  },
+
+  success: {    sent: "Message sent successfully",    sent: "Message sent successfully",
+
+    saved: "تم حفظ التغييرات بنجاح",
+
+    created: "تم الإنشاء بنجاح",  },  },
+
+    updated: "تم التحديث بنجاح",
+
+    deleted: "تم الحذف بنجاح",  codes: {  codes: {
+
+    submitted: "تم الإرسال للمراجعة",
+
+    sent: "تم إرسال الرسالة بنجاح",    not_signed_in: "Please sign in to continue",    not_signed_in: "Please sign in to continue",
+
+  },
+
+  codes: {    token_refresh_failed: "Session refresh failed. Please sign in again",    token_refresh_failed: "Session refresh failed. Please sign in again",
+
+    not_signed_in: "يرجى تسجيل الدخول للمتابعة",
+
+    token_refresh_failed: "فشل تحديث الجلسة. يرجى إعادة تسجيل الدخول",    auth_state_error: "Sign-in check failed. Please retry",    auth_state_error: "Sign-in check failed. Please retry",
+
+    auth_state_error: "فشل التحقق من تسجيل الدخول. يرجى المحاولة مرة أخرى",
+
+    missing_token: "يرجى تسجيل الدخول للمتابعة",    missing_token: "Please sign in to continue",    missing_token: "Please sign in to continue",
+
+    invalid_token: "جلستك غير صالحة. يرجى إعادة تسجيل الدخول",
+
+    forbidden: "ليس لديك صلاحية لتنفيذ هذا الإجراء",    invalid_token: "Your session is invalid. Please sign in again",    invalid_token: "Your session is invalid. Please sign in again",
+
+    title_required: "يرجى إضافة عنوان",
+
+    bad_request: "يرجى التحقق من النموذج والمحاولة مرة أخرى",    forbidden: "You don't have permission for this action",    forbidden: "You don't have permission for this action",
+
+    not_found: "لم يتم العثور على العنصر المطلوب",
+
+    internal_error: "خطأ في الخادم. يرجى المحاولة لاحقًا",    title_required: "Please add a title",    title_required: "Please add a title",
+
+    invalid_status: "قيمة الحالة غير صالحة",
+
+    already_requested: "لقد قمت بالطلب مسبقًا",    bad_request: "Please check the form and try again",    bad_request: "Please check the form and try again",
+
+    invalid_provider: "حساب مزود الخدمة غير صالح",
+
+    invalid_plan: "الخطة المختارة غير صالحة",    not_found: "The requested item was not found",    not_found: "The requested item was not found",
+
+    plan_not_found: "الخطة المختارة غير موجودة",
+
+    no_service: "الخدمة غير موجودة",    internal_error: "Server error. Please try again later",    internal_error: "Server error. Please try again later",
+
+    no_updates: "لا توجد تغييرات للحفظ",
+
+    no_files: "يرجى إرفاق ملف واحد على الأقل",    invalid_status: "Invalid status value",    invalid_status: "Invalid status value",
+
+    id_required: "المعرف مطلوب",
+
+    missing_id: "المعرف مطلوب",    already_requested: "You already requested this",    already_requested: "You already requested this",
+
+    invalid_serviceId: "خدمة غير صالحة",
+
+    invalid_conversationId: "محادثة غير صالحة",    invalid_provider: "Invalid provider account",    invalid_provider: "Invalid provider account",
+
+    conversation_not_found: "لم يتم العثور على المحادثة",
+
+    bad_event: "طلب غير مدعوم",    invalid_plan: "Invalid plan selected",    invalid_plan: "Invalid plan selected",
+
+    invalid: "طلب غير صالح",
+
+    "lat and lng required": "يرجى تحديد الموقع على الخريطة",    plan_not_found: "Selected plan was not found",    plan_not_found: "Selected plan was not found",
+
+    metabase_env_missing: "إعدادات لوحة التحكم مفقودة",
+
+    no_tokens: "بيانات الاعتماد غير متوفرة. حاول لاحقًا",    no_service: "Service not found",    no_service: "Service not found",
+
+  },
+
+};    no_updates: "No changes to save",    no_updates: "No changes to save",
+
+
+
+function getMessages(locale: Locale): MessageStructure {    no_files: "Please attach at least one file",    no_files: "Please attach at least one file",
+
+  return locale === "ar" ? AR : EN;
+
+}    id_required: "ID is required",    id_required: "ID is required",
+
+
+
+export function formatMessage(codeOrMsg: unknown, locale: Locale): string {    missing_id: "ID is required",    missing_id: "ID is required",
+
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+
+    return getMessages(locale).generic.offline;    invalid_serviceId: "Invalid service",    invalid_serviceId: "Invalid service",
+
+  }
+
+      invalid_conversationId: "Invalid conversation",    invalid_conversationId: "Invalid conversation",
+
+  const messages = getMessages(locale);
+
+      conversation_not_found: "Conversation not found",    conversation_not_found: "Conversation not found",
+
+  if (typeof codeOrMsg !== "string") return messages.generic.unknown;
+
+      bad_event: "Unsupported request",    bad_event: "Unsupported request",
+
+  if (codeOrMsg in messages.codes) {
+
+    return messages.codes[codeOrMsg];    invalid: "Invalid request",    invalid: "Invalid request",
+
+  }
+
+      "lat and lng required": "Please set a location on the map",    "lat and lng required": "Please set a location on the map",
+
+  if (codeOrMsg.includes("permission")) return messages.generic.permission;
+
+  if (codeOrMsg.includes("not found")) return messages.generic.notFound;    metabase_env_missing: "Dashboard configuration missing",    metabase_env_missing: "Dashboard configuration missing",
+
+  if (codeOrMsg.includes("bad request")) return messages.generic.badRequest;
+
+      no_tokens: "Missing credentials. Try again later",    no_tokens: "Missing credentials. Try again later",
+
+  return messages.generic.unknown;
+
+}  },  },
+
+
+
+export function success(locale: Locale, key: keyof MessageStructure["success"]) {};};
+
+  return getMessages(locale).success[key];
+
+}
+
+const AR: MessageStructure = {const AR = {
+
+  generic: {  generic: {
+
+    unknown: "حدث خطأ ما. يرجى المحاولة مرة أخرى",    unknown: "حدث خطأ ما. يرجى المحاولة مرة أخرى",
+
+    offline: "يبدو أنك غير متصل بالإنترنت. تحقق من اتصالك",    offline: "يبدو أنك غير متصل بالإنترنت. تحقق من اتصالك",
+
+    permission: "ليس لديك صلاحية للقيام بذلك",    permission: "ليس لديك صلاحية للقيام بذلك",
+
+    notFound: "لم نتمكن من العثور على ما تبحث عنه",    notFound: "لم نتمكن من العثور على ما تبحث عنه",
+
+    badRequest: "يرجى التحقق من النموذج والمحاولة مرة أخرى",    badRequest: "يرجى التحقق من النموذج والمحاولة مرة أخرى",
+
+    tryLater: "يرجى المحاولة مرة أخرى بعد قليل",    tryLater: "يرجى المحاولة مرة أخرى بعد قليل",
+
+  },  },
+
+  success: {  success: {
+
+    saved: "تم حفظ التغييرات بنجاح",    saved: "تم الحفظ بنجاح",
+
+    created: "تم الإنشاء بنجاح",    created: "تم الإنشاء بنجاح",
+
+    updated: "تم التحديث بنجاح",    updated: "تم التحديث بنجاح",
+
+    deleted: "تم الحذف بنجاح",    deleted: "تم الحذف بنجاح",
+
+    submitted: "تم الإرسال للمراجعة",    submitted: "تم الإرسال للمراجعة",
+
+    sent: "تم إرسال الرسالة بنجاح",    sent: "تم إرسال الرسالة بنجاح",
+
+  },  },
+
+  codes: {  // Codes verified in your client & route handlers
+
+    not_signed_in: "يرجى تسجيل الدخول للمتابعة",  codes: {
+
+    token_refresh_failed: "فشل تحديث الجلسة. يرجى إعادة تسجيل الدخول",    not_signed_in: "Please sign in to continue.",
+
+    auth_state_error: "فشل التحقق من تسجيل الدخول. يرجى المحاولة مرة أخرى",    token_refresh_failed: "Session refresh failed. Please sign in again.",
+
+    missing_token: "يرجى تسجيل الدخول للمتابعة",    auth_state_error: "Sign-in check failed. Please retry.",
+
+    invalid_token: "جلستك غير صالحة. يرجى إعادة تسجيل الدخول",    missing_token: "Please sign in to continue.",
+
+    forbidden: "ليس لديك صلاحية لتنفيذ هذا الإجراء",    invalid_token: "Your session is invalid. Please sign in again.",
+
+    title_required: "يرجى إضافة عنوان",    forbidden: "You don’t have permission for this action.",
+
+    bad_request: "يرجى التحقق من النموذج والمحاولة مرة أخرى",    title_required: "Please add a title.",
+
+    not_found: "لم يتم العثور على العنصر المطلوب",    bad_request: "Please check the form and try again.",
+
+    internal_error: "خطأ في الخادم. يرجى المحاولة لاحقًا",    not_found: "The requested item was not found.",
+
+    invalid_status: "قيمة الحالة غير صالحة",    internal_error: "Server error. Please try again later.",
+
+    already_requested: "لقد قمت بالطلب مسبقًا",    invalid_status: "Invalid status value.",
+
+    invalid_provider: "حساب مزود الخدمة غير صالح",    already_requested: "You already requested this.",
+
+    invalid_plan: "الخطة المختارة غير صالحة",    invalid_provider: "Invalid provider account.",
+
+    plan_not_found: "الخطة المختارة غير موجودة",    invalid_plan: "Invalid plan selected.",
+
+    no_service: "الخدمة غير موجودة",    plan_not_found: "Selected plan was not found.",
+
+    no_updates: "لا توجد تغييرات للحفظ",    no_service: "Service not found.",
+
+    no_files: "يرجى إرفاق ملف واحد على الأقل",    no_updates: "No changes to save.",
+
+    id_required: "المعرف مطلوب",    no_files: "Please attach at least one file.",
+
+    missing_id: "المعرف مطلوب",    "No files": "Please attach at least one file.",
+
+    invalid_serviceId: "خدمة غير صالحة",    id_required: "ID is required.",
+
+    invalid_conversationId: "محادثة غير صالحة",    missing_id: "ID is required.",
+
+    conversation_not_found: "لم يتم العثور على المحادثة",    invalid_serviceId: "Invalid service.",
+
+    bad_event: "طلب غير مدعوم",    invalid_conversationId: "Invalid conversation.",
+
+    invalid: "طلب غير صالح",    conversation_not_found: "Conversation not found.",
+
+    "lat and lng required": "يرجى تحديد الموقع على الخريطة",    bad_event: "Unsupported request.",
+
+    metabase_env_missing: "إعدادات لوحة التحكم مفقودة",    invalid: "Invalid request.",
+
+    no_tokens: "بيانات الاعتماد غير متوفرة. حاول لاحقًا",    "lat and lng required": "Please set a location on the map.",
+
+  },    metabase_env_missing: "Dashboard configuration missing.",
+
+};    no_tokens: "Missing credentials. Try again later.",
+
+  },
+
+function getMessages(locale: Locale): MessageStructure {};
+
+  return locale === "ar" ? AR : EN;
+
+}const AR: MessageStructure = {
+
+  generic: {
+
+export function formatMessage(codeOrMsg: unknown, locale: Locale): string {    unknown: "حدث خطأ ما. يرجى المحاولة مرة أخرى",
+
+  if (typeof navigator !== "undefined" && !navigator.onLine) {    offline: "يبدو أنك غير متصل بالإنترنت. تحقق من اتصالك",
+
+    return getMessages(locale).generic.offline;    permission: "ليس لديك صلاحية للقيام بذلك",
+
+  }    notFound: "لم نتمكن من العثور على ما تبحث عنه",
+
+      badRequest: "يرجى التحقق من النموذج والمحاولة مرة أخرى",
+
+  const messages = getMessages(locale);    tryLater: "يرجى المحاولة مرة أخرى بعد قليل",
+
+    },
+
+  if (typeof codeOrMsg !== "string") return messages.generic.unknown;  success: {
+
+      saved: "تم حفظ التغييرات بنجاح",
+
+  if (codeOrMsg in messages.codes) {    created: "تم الإنشاء بنجاح",
+
+    return messages.codes[codeOrMsg];    updated: "تم التحديث بنجاح",
+
+  }    deleted: "تم الحذف بنجاح",
+
+      submitted: "تم الإرسال للمراجعة",
+
+  if (codeOrMsg.includes("permission")) return messages.generic.permission;    sent: "تم إرسال الرسالة بنجاح",
+
+  if (codeOrMsg.includes("not found")) return messages.generic.notFound;  },
+
+  if (codeOrMsg.includes("bad request")) return messages.generic.badRequest;  codes: {
+
+      not_signed_in: "يرجى تسجيل الدخول للمتابعة.",
+
+  return messages.generic.unknown;    token_refresh_failed: "فشل تحديث الجلسة. يرجى تسجيل الدخول مجددًا.",
+
+}    auth_state_error: "فشل التحقق من تسجيل الدخول. حاول مرة أخرى.",
+
+    missing_token: "يرجى تسجيل الدخول للمتابعة.",
+
+export function success(locale: Locale, key: keyof MessageStructure["success"]) {    invalid_token: "الجلسة غير صالحة. يرجى تسجيل الدخول مجددًا.",
+
+  return getMessages(locale).success[key];    forbidden: "ليست لديك صلاحية لهذا الإجراء.",
+
+}    title_required: "يرجى إضافة عنوان.",
+    bad_request: "يرجى مراجعة النموذج والمحاولة مرة أخرى.",
+    not_found: "العنصر المطلوب غير موجود.",
+    internal_error: "خطأ في الخادم. حاول لاحقًا.",
+    invalid_status: "قيمة الحالة غير صحيحة.",
+    already_requested: "تم تقديم الطلب مسبقًا.",
+    invalid_provider: "حساب المزوّد غير صالح.",
+    invalid_plan: "الخطة المختارة غير صالحة.",
+    plan_not_found: "الخطة المختارة غير موجودة.",
+    no_service: "الخدمة غير موجودة.",
+    no_updates: "لا توجد تعديلات للحفظ.",
+    no_files: "يرجى إرفاق ملف واحد على الأقل.",
+    "No files": "يرجى إرفاق ملف واحد على الأقل.",
+    id_required: "المعرّف مطلوب.",
+    missing_id: "المعرّف مطلوب.",
+    invalid_serviceId: "خدمة غير صالحة.",
+    invalid_conversationId: "محادثة غير صالحة.",
+    conversation_not_found: "لم يتم العثور على المحادثة.",
+    bad_event: "طلب غير مدعوم.",
+    invalid: "طلب غير صالح.",
+    "lat and lng required": "يرجى تحديد الموقع على الخريطة.",
+    metabase_env_missing: "إعدادات لوحة التحكم مفقودة.",
+    no_tokens: "بيانات الاعتماد غير متوفرة. حاول لاحقًا.",
+  },
+};
+
+export function formatMessage(codeOrMsg: unknown, locale: Locale): string {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return L(locale).generic.offline;
+  }
+  const t = L(locale);
+  if (typeof codeOrMsg !== "string") return t.generic.unknown;
+  if (t.codes[codeOrMsg as keyof typeof t.codes]) {
+    return t.codes[codeOrMsg as keyof typeof t.codes];
+  }
+  if (codeOrMsg.includes("permission")) return t.generic.permission;
+  if (codeOrMsg.includes("not found")) return t.generic.notFound;
+  if (codeOrMsg.includes("bad request")) return t.generic.badRequest;
+  return t.generic.unknown;
+}
+
+export function success(locale: Locale, key: keyof typeof EN.success) {
+  return L(locale).success[key];
+}

@@ -22,13 +22,32 @@ export const signOut = () => {
 };
 
 export const resetPassword = (email: string) => {
-  return sendPasswordResetEmail(auth, email);
+  const origin =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_BASE_URL || 'https://khidmaty.ly';
+
+  // Send reset emails so the link opens your /auth/action page
+  return sendPasswordResetEmail(auth, email, {
+    url: `${origin}/auth/action?next=/login`,
+    handleCodeInApp: true,
+  });
 };
 
 export const sendVerificationEmail = (user?: User | null) => {
   const u = user ?? auth.currentUser;
   if (!u) throw new Error('No authenticated user');
-  return sendEmailVerification(u);
+
+  // Send verification emails so the link opens your /auth/action page
+  const origin =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_BASE_URL || 'https://khidmaty.ly';
+
+  return sendEmailVerification(u, {
+    url: `${origin}/auth/action?next=/welcome`,
+    handleCodeInApp: true,
+  });
 };
 
 export const reloadCurrentUser = async () => {

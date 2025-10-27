@@ -7,7 +7,7 @@ const dict = {
     header: {
       browse: 'Browse Services',
       providers: 'For Providers',
-      providerDashboard: 'Provider Dashboard',
+      providerDashboard: 'Provider Dashboard', 
       myServices: 'My Services',
       addService: 'Add New Service',
       profile: 'Profile',
@@ -21,7 +21,7 @@ const dict = {
       tabs: { signin: 'Sign In', signup: 'Sign Up' },
       fields: {
         email: 'Email',
-        password: 'Password',
+        password: 'Password', 
         roleLabel: 'I am a...',
         roleSeeker: 'Service Seeker (Looking for a professional)',
         roleProvider: 'Service Provider (Offering my services)',
@@ -34,7 +34,7 @@ const dict = {
       toasts: {
         accountCreatedTitle: 'Account Created',
         accountCreatedDesc: 'You have been successfully signed up.',
-        signedInTitle: 'Signed In',
+        signedInTitle: 'Signed In', 
         signedInDesc: 'You have been successfully signed in.',
         emailInUseTitle: 'Email already in use',
         emailInUseDesc:
@@ -52,7 +52,7 @@ const dict = {
         redirectFailedTitle: 'Redirect failed',
         redirectFailedDesc: 'Could not retrieve user profile for redirection.',
         verifyEmailSentTitle: 'Verification email sent',
-        verifyEmailSentDesc:
+        verifyEmailSentDesc: 
           'Please check your inbox and click the link to verify.',
         pleaseVerifyTitle: 'Please verify your email',
         pleaseVerifyDesc: 'We sent you a verification email. Verify to continue.',
@@ -447,7 +447,7 @@ const dict = {
     },
   },
 
- ar: {
+  ar: {
   header: {
     browse: 'تصفح الخدمات',
     providers: 'للمقدّمين',
@@ -459,8 +459,47 @@ const dict = {
     login: 'تسجيل الدخول / إنشاء حساب',
     switch: 'تغيير اللغة',
   },
-
-  common: {
+  login: {
+    welcome: 'أهلاً وسهلاً',
+    subtitle: 'سجل دخولك أو أنشئ حساباً جديداً للمتابعة',
+    tabs: { signin: 'دخول', signup: 'حساب جديد' },
+    fields: {
+      email: 'البريد الإلكتروني',
+      password: 'كلمة المرور',
+      roleLabel: 'أنا...',
+      roleSeeker: 'باحث عن خدمة (أبحث عن متخصص)',
+      roleProvider: 'مقدم خدمة (أقدم خدماتي)', 
+    },
+    actions: {
+      signIn: 'تسجيل دخول',
+      signUp: 'إنشاء حساب',
+      forgot: 'نسيت كلمة المرور؟',
+    },
+    toasts: {
+      accountCreatedTitle: 'تم إنشاء الحساب',
+      accountCreatedDesc: 'تم التسجيل بنجاح.',
+      signedInTitle: 'تم تسجيل الدخول',
+      signedInDesc: 'تم تسجيل الدخول بنجاح.',
+      emailInUseTitle: 'البريد الإلكتروني مستخدم',
+      emailInUseDesc: 'تم التحويل لصفحة تسجيل الدخول. إذا نسيت كلمة المرور، اضغط على "نسيت كلمة المرور؟"',
+      signUpFailedTitle: 'فشل إنشاء الحساب',
+      signUpFailedDesc: 'حدث خطأ غير متوقع.',
+      signOutFailedTitle: 'فشل تسجيل الخروج',
+      signOutFailedDesc: 'حدث خطأ أثناء تسجيل الخروج.',
+      emailRequiredTitle: 'البريد الإلكتروني مطلوب',
+      emailRequiredDesc: 'أدخل بريدك الإلكتروني ثم اضغط على نسيت كلمة المرور.',
+      resetSentTitle: 'تم إرسال رابط استعادة كلمة المرور',
+      resetSentDesc: 'تفقد بريدك الإلكتروني للحصول على رابط الاستعادة.',
+      resetFailedTitle: 'فشلت عملية الاستعادة',
+      resetFailedDesc: 'تعذر إرسال بريد استعادة كلمة المرور.',
+      redirectFailedTitle: 'فشل التوجيه',
+      redirectFailedDesc: 'تعذر استرداد بيانات المستخدم للتوجيه.',
+      verifyEmailSentTitle: 'تم إرسال رابط التحقق',
+      verifyEmailSentDesc: 'يرجى تفقد بريدك الوارد والضغط على الرابط للتحقق.',
+      pleaseVerifyTitle: 'يرجى تأكيد بريدك الإلكتروني',
+      pleaseVerifyDesc: 'تم إرسال بريد التحقق. قم بتأكيد بريدك للمتابعة.',
+    },
+  },  common: {
     loading: 'جار التحميل...',
     error: 'حدث خطأ',
     retry: 'إعادة المحاولة',
@@ -627,10 +666,13 @@ const dict = {
     backToMyServices: 'العودة إلى خدماتي',
     description: 'الوصف',
     availability: 'التوفر',
+    share: 'مشاركة',
     location: 'الموقع',
     approxIn: 'الموقع التقريبي في',
     video: 'فيديو',
     servicePrice: 'سعر الخدمة',
+    serviceDuration: 'مدة الخدمة',
+    serviceLocation: 'موقع الخدمة',
     viewOnMap: 'عرض على الخريطة',
     contactWhatsApp: 'تواصل عبر واتساب',
     callProvider: 'اتصل بالمقدم',
@@ -934,12 +976,15 @@ function get(obj: any, path: string): any {
 
 export function tr(locale: Locale, key: string): string {
   try {
-    const d = (dict as any)[locale] ?? (dict as any).en;
-    const v = get(d, key);
-    if (typeof v === 'string') return v;
+    // Always look up Arabic first for missing translations
+    const ar = get((dict as any).ar, key);
+    if (typeof ar === 'string') return ar;
 
-    const ve = get((dict as any).en, key);
-    if (typeof ve === 'string') return ve;
+    // Only check English if locale is English and key exists
+    if (locale === 'en') {
+      const en = get((dict as any).en, key);
+      if (typeof en === 'string') return en;
+    }
 
     // Log missing translations in development
     if (process.env.NODE_ENV !== 'production') {
@@ -948,6 +993,7 @@ export function tr(locale: Locale, key: string): string {
       );
     }
 
+    // Default to key name if no translation found
     return key;
   } catch (error) {
     console.error(
@@ -960,12 +1006,23 @@ export function tr(locale: Locale, key: string): string {
 
 export function getClientLocale(): Locale {
   try {
+    // Return Arabic for server-side rendering
     if (typeof document === 'undefined') return 'ar';
+    
+    // Check cookie first
     const m = document.cookie.match(/(?:^|; )locale=([^;]+)/);
-    const fromCookie = (m?.[1] || '').toLowerCase();
-    const fromHtml = (document.documentElement.getAttribute('lang') || 'en').toLowerCase();
-    const l = (fromCookie || fromHtml).startsWith('ar') ? 'ar' : 'en';
-    return l as Locale;
+    if (m && m[1]) {
+      return m[1].toLowerCase().startsWith('ar') ? 'ar' : 'en';
+    }
+    
+    // If no cookie, check HTML lang attribute
+    const htmlLang = document.documentElement.getAttribute('lang');
+    if (htmlLang) {
+      return htmlLang.toLowerCase().startsWith('ar') ? 'ar' : 'en';  
+    }
+
+    // Default to Arabic if no preference set
+    return 'ar';
   } catch {
     return 'ar';
   }
