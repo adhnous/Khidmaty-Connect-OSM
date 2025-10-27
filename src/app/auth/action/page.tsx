@@ -6,7 +6,7 @@ import { applyActionCode, checkActionCode, confirmPasswordReset } from 'firebase
 import { auth } from '@/lib/firebase';
 import { getClientLocale } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
-import { formatMessage, success } from '@/lib/messages';
+import { formatMessage /*, success */ } from '@/lib/messages';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -47,7 +47,8 @@ export default function AuthActionPage() {
         if (mode === 'verifyEmail') {
           await applyActionCode(auth, oobCode);
           setStatus('done');
-          toast({ title: success(locale, 'approved') });
+          // FIX: use a literal message (approved is not a valid key for `success`)
+          toast({ title: locale === 'ar' ? 'تمّ تأكيد بريدك الإلكتروني' : 'Email verified' });
           setTimeout(() => router.replace(String(continueUrl || '/')), 1200);
         } else {
           // For resetPassword/recoverEmail we show the form or a message
@@ -71,7 +72,9 @@ export default function AuthActionPage() {
       setStatus('working');
       await confirmPasswordReset(auth, oobCode, newPassword);
       setStatus('done');
-      toast({ title: success(locale, 'updated') });
+      // this one is valid for `success`
+      // toast({ title: success(locale, 'updated') });
+      toast({ title: locale === 'ar' ? 'تم تغيير كلمة المرور بنجاح' : 'Password updated' });
       setTimeout(() => router.replace('/login'), 1200);
     } catch (e: any) {
       setStatus('error');
