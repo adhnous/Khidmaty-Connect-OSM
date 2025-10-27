@@ -56,10 +56,10 @@ export function Header() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({ title: 'Signed Out', description: 'You have been successfully signed out.' });
+      toast({ title: 'تم تسجيل الخروج', description: 'تم تسجيل خروجك بنجاح.' });
       router.push('/');
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Sign Out Failed', description: 'There was an error signing out.' });
+      toast({ variant: 'destructive', title: 'فشل تسجيل الخروج', description: 'حدث خطأ أثناء تسجيل الخروج.' });
     }
   };
 

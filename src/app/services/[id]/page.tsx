@@ -142,7 +142,7 @@ export default function ServiceDetailPage() {
     } catch (e: any) {
       // eslint-disable-next-line no-console
       console.error('chat start failed', e);
-      toast({ variant: 'destructive', title: 'Could not start chat' });
+      toast({ variant: 'destructive', title: 'لا يمكن بدء المحادثة' });
     } finally {
       setStartingChat(false);
     }
@@ -201,9 +201,9 @@ export default function ServiceDetailPage() {
         await updateService(service.id, { shareCount: nextCount, priority: nextPriority });
         setService({ ...(service as any), shareCount: nextCount, priority: nextPriority });
       }
-      toast({ title: 'Share link ready', description: (shared ? 'Thanks for sharing!' : 'Link copied to clipboard.') });
+      toast({ title: 'رابط المشاركة جاهز', description: (shared ? 'شكراً للمشاركة!' : 'تم نسخ الرابط.') });
     } catch {
-      toast({ variant: 'destructive', title: 'Share failed' });
+      toast({ variant: 'destructive', title: 'فشلت المشاركة' });
     } finally {
       setSharing(false);
     }
@@ -593,7 +593,7 @@ export default function ServiceDetailPage() {
               {isOwner ? (
                 <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.ownerBlocked')}</p>
               ) : service.providerId === 'demo' ? (
-                <p className="text-sm text-muted-foreground">Reviews are disabled for demo services.</p>
+                <p className="text-sm text-muted-foreground">التقييمات معطلة للخدمات التجريبية.</p>
               ) : (
                 <div className="rounded border bg-background p-4">
                   <label className="mb-2 block text-sm font-medium">{tr(locale, 'reviews.ratingLabel')}</label>

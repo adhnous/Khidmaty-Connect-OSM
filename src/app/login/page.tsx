@@ -35,16 +35,16 @@ import { Logo } from '@/components/logo';
 import { getClientLocale, tr } from '@/lib/i18n';
 
 const signUpSchema = z.object({
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  email: z.string().email('عنوان البريد الإلكتروني غير صالح'),
+  password: z.string().min(6, 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل'),
   role: z.enum(['seeker', 'provider'], {
-    required_error: 'Please select a role.',
+    required_error: 'يرجى اختيار الدور',
   }),
 });
 
 const signInSchema = z.object({
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(1, 'Password is required.'),
+  email: z.string().email('عنوان البريد الإلكتروني غير صالح'),
+  password: z.string().min(1, 'كلمة المرور مطلوبة'),
 });
 
 type SignUpFormData = z.infer<typeof signUpSchema>;

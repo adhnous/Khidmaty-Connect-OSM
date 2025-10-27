@@ -39,7 +39,7 @@ export default function VerifyPage() {
         description: tr(locale, "login.toasts.verifyEmailSentDesc"),
       });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: e?.message });
+      toast({ variant: "destructive", title: "خطأ", description: e?.message });
     } finally {
       setSending(false);
     }
@@ -66,7 +66,7 @@ export default function VerifyPage() {
       await signOut();
       router.replace("/login");
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: e?.message });
+      toast({ variant: "destructive", title: "خطأ", description: e?.message });
     } finally {
       setSigningOut(false);
     }
@@ -91,7 +91,7 @@ export default function VerifyPage() {
         description: tr(locale, "verify.notVerifiedDesc"),
       });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: e?.message });
+      toast({ variant: "destructive", title: "خطأ", description: e?.message });
     } finally {
       setChecking(false);
     }
@@ -114,7 +114,7 @@ export default function VerifyPage() {
           ) : (
             <p className="text-sm text-muted-foreground">
               <Link href="/login" className="underline">
-                Login
+                تسجيل الدخول
               </Link>
             </p>
           )}
@@ -129,7 +129,7 @@ export default function VerifyPage() {
             </Button>
             <Button onClick={onUseDifferentEmail} disabled={signingOut} variant="outline">
               {signingOut && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {locale === 'ar' ? 'استخدم بريدًا مختلفًا' : 'Use a different email'}
+              {tr(locale, 'verify.useDifferentEmail')}
             </Button>
           </div>
         </CardContent>

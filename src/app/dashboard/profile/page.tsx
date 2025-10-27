@@ -39,9 +39,9 @@ export default function ProfilePage() {
         ...(whatsapp.trim() !== '' ? { whatsapp: whatsapp.trim() } : { whatsapp: null }),
         ...(city.trim() !== '' ? { city: city.trim() } : { city: null }),
       });
-      toast({ title: 'Saved', description: 'Your profile has been updated.' });
+      toast({ title: 'تم الحفظ', description: 'تم تحديث ملفك الشخصي.' });
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Save failed', description: e?.message || 'Could not update profile.' });
+      toast({ variant: 'destructive', title: 'فشل الحفظ', description: e?.message || 'تعذر تحديث الملف الشخصي.' });
     } finally {
       setSaving(false);
     }
