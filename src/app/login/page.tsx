@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -28,7 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { signUp, signIn, resetPassword, sendVerificationEmail } from '@/lib/auth';
+import { signUp, signIn, resetPassword, sendVerificationEmail, signInWithGoogle, signInAnonymously } from '@/lib/auth';
 import { getUserProfile, createUserProfile, UserProfile, UserRole } from '@/lib/user';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
@@ -54,10 +53,11 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
   const [resetting, setResetting] = useState(false);
   const locale = getClientLocale();
-
 
   const signUpForm = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -71,12 +71,16 @@ export default function LoginPage() {
 
   const handleRedirect = async (user: User) => {
     try {
-      let userProfile: UserProfile | null = null;
-      // Poll for the user profile to ensure it's available after creation
-      for (let i = 0; i < 5; i++) {
-        userProfile = await getUserProfile(user.uid);
-        if (userProfile) break;
-        await new Promise(resolve => setTimeout(resolve, 500));
+      let userProfile: UserProfile | null = await getUserProfile(user.uid);
+      if (!userProfile) {
+        try {
+          await createUserProfile(user.uid, user.email || '', 'seeker');
+        } catch {}
+        for (let i = 0; i < 5; i++) {
+          userProfile = await getUserProfile(user.uid);
+          if (userProfile) break;
+          await new Promise(resolve => setTimeout(resolve, 400));
+        }
       }
 
       if (userProfile?.role === 'provider') {
@@ -85,14 +89,13 @@ export default function LoginPage() {
         router.push('/');
       }
     } catch (error) {
-       console.error("Redirect failed:", error);
-       toast({
+      console.error('Redirect failed:', error);
+      toast({
         variant: 'destructive',
         title: 'Redirect failed',
         description: 'Could not retrieve user profile for redirection.',
-       });
-       // Fallback redirection
-       router.push('/');
+      });
+      router.push('/');
     }
   };
 
@@ -162,6 +165,38 @@ export default function LoginPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const doGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const userCredential = await signInWithGoogle();
+      await handleRedirect(userCredential.user);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: tr(locale, 'login.toasts.googleSignInFailedTitle'),
+        description: error?.message || tr(locale, 'login.toasts.googleSignInFailedDesc'),
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const doGuestSignIn = async () => {
+    setGuestLoading(true);
+    try {
+      const userCredential = await signInAnonymously();
+      await handleRedirect(userCredential.user);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: tr(locale, 'login.toasts.guestSignInFailedTitle'),
+        description: error?.message || tr(locale, 'login.toasts.guestSignInFailedDesc'),
+      });
+    } finally {
+      setGuestLoading(false);
     }
   };
 
@@ -269,6 +304,16 @@ export default function LoginPage() {
                     {isSigningIn && <Loader2 className="mr-2 animate-spin" />}
                     {tr(locale, 'login.actions.signIn')}
                   </Button>
+                  <div className="mt-3 grid grid-cols-1 gap-2">
+                    <Button type="button" variant="outline" onClick={doGoogleSignIn} disabled={googleLoading}>
+                      {googleLoading && <Loader2 className="mr-2 animate-spin" />}
+                      تسجيل الدخول باستخدام Google
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={doGuestSignIn} disabled={guestLoading}>
+                      {guestLoading && <Loader2 className="mr-2 animate-spin" />}
+                      الدخول كضيف
+                    </Button>
+                  </div>
                 </form>
               </Form>
             </TabsContent>

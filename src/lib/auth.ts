@@ -5,6 +5,9 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   reload,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInAnonymously as firebaseSignInAnonymously,
   type User,
 } from 'firebase/auth';
 import { auth } from './firebase';
@@ -15,6 +18,16 @@ export const signUp = (email: string, password: string) => {
 
 export const signIn = (email: string, password: string) => {
   return signInWithEmailAndPassword(auth, email, password);
+};
+
+export const signInWithGoogle = () => {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  return signInWithPopup(auth, provider);
+};
+
+export const signInAnonymously = () => {
+  return firebaseSignInAnonymously(auth);
 };
 
 export const signOut = () => {
