@@ -311,6 +311,13 @@ export const dict = {
       login: 'تسجيل الدخول / إنشاء حساب',
       switch: 'تغيير اللغة',
     },
+    footer:{
+      aboutUs: 'عننا',
+      contactUs: 'اتصل بنا',
+      terms: 'الشروط والأحكام',
+      privacy: 'سياسة الخصوصية',
+      help: 'المساعدة',
+    },
    dashboard: {
     serviceForm: {
       editSubtitle: 'إضافة خدمة',
