@@ -52,3 +52,5 @@ next-env.d.ts
 # firebase logs
 firebase-debug.log
 firestore-debug.log
+
+khidmaty.zip
