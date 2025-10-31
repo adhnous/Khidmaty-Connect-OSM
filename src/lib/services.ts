@@ -34,6 +34,7 @@ export type SubService = {
     title: string;
     description: string;
     price: number;
+    priceMode?: 'firm' | 'negotiable' | 'call';
     category: string;
     city: string;
     area: string;

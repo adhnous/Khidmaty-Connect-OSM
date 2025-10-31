@@ -167,9 +167,11 @@ export default function MyServicesPage() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <span>{service.title}</span>
-                      {(((service as any).pendingDelete === true) || service.status === 'pending') && (
+                      {((service as any).pendingDelete === true) ? (
                         <Badge variant="destructive">{locale === 'ar' ? 'قيد الحذف' : 'Pending deletion'}</Badge>
-                      )}
+                      ) : (service as any).status === 'pending' ? (
+                        <Badge variant="secondary">{locale === 'ar' ? 'قيد الموافقة' : 'Waiting for approval'}</Badge>
+                      ) : null}
                     </div>
                   </TableCell>
                   <TableCell>

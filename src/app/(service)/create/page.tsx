@@ -54,7 +54,7 @@ const mediaSchema = z.object({
   videoUrl: serviceSchema.shape.videoUrl.optional(),
   videoUrls: serviceSchema.shape.videoUrls.optional(),
 });
-const pricingSchema = z.object({ price: serviceSchema.shape.price, subservices: serviceSchema.shape.subservices });
+const pricingSchema = z.object({ price: serviceSchema.shape.price, priceMode: serviceSchema.shape.priceMode, subservices: serviceSchema.shape.subservices });
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -74,6 +74,7 @@ export default function CreateServiceWizardPage() {
       city: libyanCities[0]?.value ?? "Tripoli",
       area: "",
       price: 0,
+      priceMode: 'firm',
       subservices: [],
       location: { lat: 32.8872, lng: 13.1913 },
       images: [],
@@ -529,6 +530,23 @@ export default function CreateServiceWizardPage() {
                 <div className="space-y-4">
                   <FormField
                     control={form.control}
+                    name="priceMode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{tr(locale, "form.labels.priceMode")}</FormLabel>
+                        <FormControl>
+                          <select className="w-full rounded border bg-background p-2" value={field.value} onChange={field.onChange}>
+                            <option value="firm">{locale === 'ar' ? 'ثابت' : 'Firm'}</option>
+                            <option value="negotiable">{locale === 'ar' ? 'قابل للتفاوض' : 'Negotiable'}</option>
+                            <option value="call">{locale === 'ar' ? 'اتصل بي' : 'Call me'}</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="price"
                     render={({ field }) => (
                       <FormItem>
@@ -602,7 +620,17 @@ export default function CreateServiceWizardPage() {
                       </div>
                     )}
                     <Separator />
-                    <div><span className="font-medium">{tr(locale, "form.labels.price")}:</span> {Number(form.watch("price") || 0)} LYD</div>
+                    <div>
+                      <span className="font-medium">{tr(locale, "form.labels.price")}:</span>{' '}
+                      {(() => {
+                        const mode = String(form.watch('priceMode') || 'firm');
+                        const price = Number(form.watch('price') || 0);
+                        if (mode === 'call') return tr(locale, 'details.callForPrice');
+                        const base = `${price} LYD`;
+                        if (mode === 'negotiable') return `${base} (${tr(locale, 'details.negotiable')})`;
+                        return base;
+                      })()}
+                    </div>
                     {Array.isArray(form.watch("subservices")) && form.watch("subservices")!.length > 0 && (
                       <div>
                         <div className="font-medium mb-1">{tr(locale, "form.subservices.titlePlural")}:</div>

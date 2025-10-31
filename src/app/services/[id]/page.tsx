@@ -667,7 +667,14 @@ export default function ServiceDetailPage() {
                     {tr(locale, 'details.servicePrice')}
                   </CardTitle>
                   <p className="text-center text-4xl font-bold text-primary">
-                    {service.price} LYD
+                    {(() => {
+                      const mode = String((service as any)?.priceMode || 'firm');
+                      const price = Number((service as any)?.price || 0);
+                      if (mode === 'call') return tr(locale, 'details.callForPrice');
+                      const base = `${price} LYD`;
+                      if (mode === 'negotiable') return `${base} (${tr(locale, 'details.negotiable')})`;
+                      return base;
+                    })()}
                   </p>
                 </CardHeader>
               )}

@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export const subServiceSchema = z.object({
   id: z.string().min(1),
@@ -12,6 +12,7 @@ export const serviceSchema = z.object({
   title: z.string().min(6, 'يجب أن يتكون العنوان من 6 أحرف على الأقل').max(100, 'لا يمكن أن يتجاوز العنوان 100 حرف'),
   description: z.string().min(30, 'يجب أن يتكون الوصف من 30 حرفًا على الأقل').max(800, 'لا يمكن أن يتجاوز الوصف 800 حرف'),
   price: z.coerce.number().min(0, 'يجب أن يكون السعر 0 أو أكثر'),
+  priceMode: z.enum(['firm', 'negotiable', 'call']).default('firm'),
   category: z.string({required_error: "يرجى اختيار فئة"}).min(1, 'يرجى اختيار فئة'),
   city: z.string({required_error: "يرجى اختيار مدينة"}).min(1, 'يرجى اختيار مدينة'),
   area: z
