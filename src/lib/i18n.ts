@@ -317,6 +317,7 @@ export const dict = {
       terms: 'الشروط والأحكام',
       privacy: 'سياسة الخصوصية',
       help: 'المساعدة',
+      rights: 'جميع الحقوق محفوظة',
     },
    dashboard: {
     serviceForm: {
