@@ -41,13 +41,14 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
       path.startsWith('/checkout') || 
       path.startsWith('/login') || 
       path.startsWith('/verify') || 
+      path.startsWith('/auth/action') ||
       path.startsWith('/analytics/public') || 
       path.startsWith('/_next') || 
       path.startsWith('/api');
 
-    // If user is authenticated but profile is missing or disabled
-    if (user && (!userProfile || userProfile?.status === 'disabled')) {
-      console.log('User profile missing or disabled, signing out...');
+    // If user profile is disabled, sign out; otherwise wait for profile to load
+    if (user && userProfile?.status === 'disabled') {
+      console.log('User profile disabled, signing out...');
       (async () => {
         try { 
           await signOut(); 
@@ -60,6 +61,9 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // If authenticated but profile not yet available (e.g., being created), wait
+    if (user && !userProfile) return;
+
     // If no user, nothing to check
     if (!user) return;
 
@@ -67,8 +71,8 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
     const plan = (userProfile?.plan ?? 'free') as string;
     const pricingGate = userProfile?.pricingGate || {};
 
-    // Email verification check (with dev bypass)
-    if (!user.emailVerified && !isAllowedRoute(pathname)) {
+    // Email verification check (with dev bypass). Skip for anonymous users.
+    if (!user.isAnonymous && !user.emailVerified && !isAllowedRoute(pathname)) {
       const devBypass = (() => {
         try {
           if (process.env.NEXT_PUBLIC_SKIP_EMAIL_VERIFICATION === '1') return true;

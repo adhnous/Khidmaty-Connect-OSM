@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { getAuth } from 'firebase/auth';
 
@@ -61,7 +60,6 @@ export default function PushDebugPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
       <main className="container flex-1 py-6 md:py-10">
         <h1 className="mb-4 text-2xl font-bold">Push Debug</h1>
         <div className="mb-4 space-y-2 rounded border p-4 text-sm">

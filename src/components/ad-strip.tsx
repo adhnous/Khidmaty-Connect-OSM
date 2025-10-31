@@ -87,19 +87,7 @@ export default function AdStrip() {
     return baseSequence;
   }, [items]);
 
-  useEffect(() => {
-    const updateVar = () => {
-      try {
-        const h = rootRef.current?.offsetHeight ?? 0;
-        if (typeof document !== 'undefined') {
-          document.documentElement.style.setProperty('--ad-height', `${h}px`);
-        }
-      } catch {}
-    };
-    updateVar();
-    window.addEventListener('resize', updateVar);
-    return () => window.removeEventListener('resize', updateVar);
-  }, [sequences.length, items.length]);
+  useEffect(() => {}, []);
 
   if (items.length === 0) return null;
 
@@ -167,3 +155,4 @@ function AdBadge({ ad }: { ad: AdItem }) {
   
   return <span className="mx-2 inline-block">{content}</span>;
 }
+

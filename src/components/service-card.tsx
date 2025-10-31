@@ -91,7 +91,7 @@ export function ServiceCard({
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 md:h-16 bg-gradient-to-t from-black/60 to-transparent" />
         <Badge variant="secondary" className="absolute left-3 bottom-3 bg-background/90 text-xs shadow-sm">
-          {tr(locale, `categories.${category}`)}
+          {tr(locale, `categories.${normalizeCategory(category)}`)}
         </Badge>
       </div>
       <CardContent className="p-2.5 md:p-3">
@@ -137,4 +137,21 @@ export function ServiceCard({
   ) : (
     <div className="group cursor-default">{content}</div>
   );
+}
+
+function normalizeCategory(raw?: string): string {
+  const s = String(raw || '').trim().toLowerCase();
+  if (!s) return 'general';
+  if (s.includes('plumb')) return 'plumbing';
+  if (s.includes('automot') || s.includes('mechanic') || s.includes('car')) return 'automotive';
+  if (s.includes('electr')) return 'electrical';
+  if (s.includes('digital')) return 'digitalMarketing';
+  if (s.includes('marketing')) return 'digitalMarketing';
+  if (s.includes('home')) return 'homeServices';
+  if (s.includes('transport') || s.includes('delivery')) return 'transport';
+  if (s.includes('wash')) return 'carWash';
+  if (s.includes('child')) return 'childcare';
+  if (s.includes('educat') || s.includes('tutor') || s.includes('training')) return 'education';
+  if (s.includes('general')) return 'general';
+  return s.replace(/\s+|&|\//g, '').replace(/-/g, '').toLowerCase();
 }

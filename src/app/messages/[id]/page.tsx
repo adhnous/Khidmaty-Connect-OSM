@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,7 +70,6 @@ export default function ConversationPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
       <main className="container flex-1 py-6 md:py-8">
         <div className="mx-auto max-w-3xl">
           <div className="mb-3 flex items-center justify-between">

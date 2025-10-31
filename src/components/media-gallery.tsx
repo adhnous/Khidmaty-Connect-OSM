@@ -87,9 +87,9 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
       </div>
 
       {/* Main viewer */}
-      <div className="order-1 overflow-hidden rounded-lg border md:order-2">
+      <div className="order-1 md:order-2">
         {isVideo ? (
-          <div className="aspect-video w-full">
+          <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-muted">
             <iframe
               src={String(media[active].url)}
               className="h-full w-full"
@@ -100,13 +100,15 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
             />
           </div>
         ) : (
-          <Image
-            src={transformCloudinary(String(media[active].url), { w: 1200, q: 'auto' })}
-            alt={title}
-            width={1200}
-            height={900}
-            className="aspect-square w-full object-cover md:aspect-video"
-          />
+          <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-muted">
+            <Image
+              src={transformCloudinary(String(media[active].url), { w: 1200, q: 'auto' })}
+              alt={title}
+              width={1200}
+              height={675}
+              className="h-full w-full object-cover"
+            />
+          </div>
         )}
       </div>
     </div>

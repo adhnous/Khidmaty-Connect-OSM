@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { tr } from '@/lib/i18n';
 import ContactForm from '@/components/contact-form';
@@ -17,7 +16,6 @@ export default async function ContactPage() {
   const locale = (cookieLocale.startsWith('ar') ? 'ar' : 'en') as 'en' | 'ar';
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <Header />
       <main className="container max-w-2xl flex-1 px-4 py-12">
         <h1 className="mb-2 text-3xl font-bold">{tr(locale, 'footer.contact')}</h1>
         <p className="mb-6 text-muted-foreground">

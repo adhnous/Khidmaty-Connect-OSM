@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { tr } from '@/lib/i18n';
 
@@ -16,7 +15,6 @@ export default async function AboutPage() {
   const locale = (cookieLocale.startsWith('ar') ? 'ar' : 'en') as 'en' | 'ar';
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <Header />
       <main className="mx-auto max-w-4xl px-4 py-12">
       <section className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">{tr(locale, 'pages.about.title')}</h1>

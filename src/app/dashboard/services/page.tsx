@@ -123,6 +123,7 @@ export default function MyServicesPage() {
   };
 
   return (
+    <div className="mx-auto max-w-6xl px-4 md:px-6">
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
@@ -199,5 +200,6 @@ export default function MyServicesPage() {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }

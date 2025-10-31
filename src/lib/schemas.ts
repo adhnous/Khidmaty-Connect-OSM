@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const subServiceSchema = z.object({
   id: z.string().min(1),
@@ -10,7 +10,7 @@ export const subServiceSchema = z.object({
 
 export const serviceSchema = z.object({
   title: z.string().min(6, 'يجب أن يتكون العنوان من 6 أحرف على الأقل').max(100, 'لا يمكن أن يتجاوز العنوان 100 حرف'),
-  description: z.string().min(30, 'يجب أن يتكون الوصف من 30 حرفاً على الأقل').max(800, 'لا يمكن أن يتجاوز الوصف 800 حرف'),
+  description: z.string().min(30, 'يجب أن يتكون الوصف من 30 حرفًا على الأقل').max(800, 'لا يمكن أن يتجاوز الوصف 800 حرف'),
   price: z.coerce.number().min(0, 'يجب أن يكون السعر 0 أو أكثر'),
   category: z.string({required_error: "يرجى اختيار فئة"}).min(1, 'يرجى اختيار فئة'),
   city: z.string({required_error: "يرجى اختيار مدينة"}).min(1, 'يرجى اختيار مدينة'),
@@ -20,6 +20,14 @@ export const serviceSchema = z.object({
     ),
   lat: z.coerce.number().min(-90).max(90).optional(),
   lng: z.coerce.number().min(-180).max(180).optional(),
+  // New nested location object (used by the create wizard)
+  location: z
+    .object({
+      lat: z.coerce.number().min(-90).max(90),
+      lng: z.coerce.number().min(-180).max(180),
+      address: z.string().optional(),
+    })
+    .default({ lat: 32.8872, lng: 13.1913 }),
   // Optional map URL (Google Maps or OpenStreetMap). Empty string becomes undefined.
   mapUrl: z
     .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url('أدخل رابط صالح').optional()),
@@ -31,6 +39,8 @@ export const serviceSchema = z.object({
   // Optional YouTube video URL. Empty string becomes undefined.
   videoUrl: z
     .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url('أدخل رابط صالح').optional()),
+  youtubeUrl: z
+    .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url().optional()),
   // New: multiple video URLs (YouTube). Empty items are filtered out on submit.
   videoUrls: z
     .array(z.string().url('أدخل رابط صالح'))
@@ -41,9 +51,20 @@ export const serviceSchema = z.object({
     .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url('أدخل رابط صالح').optional()),
   telegramUrl: z
     .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().url('أدخل رابط صالح').optional()),
-  // images: z.any() // Image handling is complex, placeholder for now
+  // Images array used by the wizard
+  images: z
+    .array(
+      z.object({
+        url: z.string().url(),
+        id: z.string().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+      })
+    )
+    .default([]),
   subservices: z.array(subServiceSchema).default([]),
 });
 
 export type ServiceFormData = z.infer<typeof serviceSchema>;
 export type SubServiceFormData = z.infer<typeof subServiceSchema>;
+

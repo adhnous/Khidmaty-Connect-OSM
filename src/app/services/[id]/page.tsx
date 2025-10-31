@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 
 import { Footer } from '@/components/layout/footer';
-import { Header } from '@/components/layout/header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -435,11 +434,39 @@ export default function ServiceDetailPage() {
     return out;
   }, [service?.videoUrls]);
 
+  // Helpers to normalize i18n keys
+  function categoryKey(raw?: string | null): string {
+    const s = String(raw || '').trim().toLowerCase();
+    // Map common labels to slugs
+    if (!s) return 'general';
+    if (s.includes('plumb')) return 'plumbing';
+    if (s.includes('automot') || s.includes('mechanic') || s.includes('car')) return 'automotive';
+    if (s.includes('electr')) return 'electrical';
+    if (s.includes('digital')) return 'digitalMarketing';
+    if (s.includes('marketing')) return 'digitalMarketing';
+    if (s.includes('home')) return 'homeServices';
+    if (s.includes('transport') || s.includes('delivery')) return 'transport';
+    if (s.includes('wash')) return 'carWash';
+    if (s.includes('child')) return 'childcare';
+    if (s.includes('educat') || s.includes('tutor') || s.includes('training')) return 'education';
+    if (s.includes('general')) return 'general';
+    return s.replace(/\s+|&|\//g, '').replace(/-/g, '').toLowerCase();
+  }
+
+  function cityKey(raw?: string | null): string {
+    const s = String(raw || '').trim().toLowerCase();
+    if (s.startsWith('trip')) return 'tripoli';
+    if (s.startsWith('ben') || s.includes('benghazi')) return 'benghazi';
+    if (s.startsWith('mis') || s.includes('misrata')) return 'misrata';
+    return s;
+  }
+
+  const sep = locale === 'ar' ? '، ' : ', ';
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
       <main className="flex-1 py-12 md:py-16">
-        <div className="container grid gap-8 md:grid-cols-3 lg:gap-12">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:grid lg:grid-cols-12 lg:gap-6">
           {loading && (
             <div className="md:col-span-3 text-center text-muted-foreground">{tr(locale, 'details.loading')}</div>
           )}
@@ -457,7 +484,7 @@ export default function ServiceDetailPage() {
           )}
           {!loading && service && (
           <>
-          <div className="md:col-span-2">
+          <div className="lg:col-span-8">
             <MediaGallery
               title={service.title}
               images={service.images || []}
@@ -469,13 +496,13 @@ export default function ServiceDetailPage() {
               {service.title}
             </h1>
             <div className="mb-6 flex flex-wrap items-center gap-4 text-muted-foreground">
-              <Badge variant="secondary" className="text-base">
-                {tr(locale, `categories.${service.category}`)}
+              <Badge variant="secondary" className="text-base ps-2 pe-2">
+                {tr(locale, `categories.${categoryKey(service.category)}`)}
               </Badge>
-              <div className="flex items-center gap-1.5">
+              <div className={`flex items-center gap-1.5 ${locale === 'ar' ? 'flex-row-reverse' : ''}`}>
                 <MapPin className="h-5 w-5" />
                 <span>
-                  {service.city}, {service.area}
+                  {tr(locale, `cities.${cityKey(service.city)}`)}{service.area ? `${sep}${service.area}` : ''}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -632,7 +659,7 @@ export default function ServiceDetailPage() {
             </div>
           </div>
 
-          <div className="md:col-span-1">
+          <div className="lg:col-span-4">
             <Card className="sticky top-24">
               {!hidePrice && (
                 <CardHeader>
@@ -662,6 +689,14 @@ export default function ServiceDetailPage() {
                     disabled={requesting}
                   >
                     {tr(locale, 'details.requestService')}
+                  </Button>
+                )}
+                {/* Call provider (phone) */}
+                {((service as any)?.contactPhone) && (
+                  <Button asChild size="lg" variant="secondary" className="h-12 w-full text-lg">
+                    <a href={`tel:${String((service as any).contactPhone).replace(/\s+/g, '')}`}>
+                      <Phone className="mr-2" /> {tr(locale, 'details.callProvider')}
+                    </a>
                   </Button>
                 )}
                 {subservicesList.length > 0 && (

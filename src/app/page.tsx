@@ -19,24 +19,22 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import { Footer } from '@/components/layout/footer';
-import { Header } from '@/components/layout/header';
 import { ServiceCard } from '@/components/service-card';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { listServicesFiltered, type Service, type ListFilters } from '@/lib/services';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { libyanCities, cityLabel } from '@/lib/cities';
-import { categories as allCategories } from '@/lib/categories';
-import CategoryCombobox from '@/components/category-combobox';
+import { CategoryCards, type CategoryCardId } from '@/components/category-cards';
 
 
 const featuredCategories = [
-  { name: 'Education', icon: Briefcase },
-  { name: 'Home Services', icon: HomeIcon },
-  { name: 'Automotive', icon: Car },
-  { name: 'Electrical', icon: Hammer },
-  { name: 'Digital Marketing', icon: Megaphone },
-  { name: 'Sales', icon: ShoppingCart },
+  { name: 'education', icon: Briefcase },
+  { name: 'homeServices', icon: HomeIcon },
+  { name: 'automotive', icon: Car },
+  { name: 'electrical', icon: Hammer },
+  { name: 'digitalMarketing', icon: Megaphone },
+  { name: 'sales', icon: ShoppingCart },
 ];
 // Stable sentinel values so labels can be localized while values remain constant
 const ALL_CATEGORIES = 'ALL_CATEGORIES';
@@ -48,7 +46,7 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(true);
   const [q, setQ] = useState('');
   const [city, setCity] = useState<string>(ALL_CITIES);
-  const [category, setCategory] = useState<string>(ALL_CATEGORIES);
+  const [category, setCategory] = useState<string | CategoryCardId>(ALL_CATEGORIES as string);
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -69,27 +67,52 @@ export default function Home() {
   async function fetchServices() {
     try {
       setLoading(true);
-      const filters: ListFilters = {};
-      if (category && category !== ALL_CATEGORIES) filters.category = category;
-      if (city && city !== ALL_CITIES) filters.city = city;
-      if (maxPrice) filters.maxPrice = Number(maxPrice);
-      const data = await listServicesFiltered({ ...filters, limit: 24 });
+      const isGroup = category && category !== ALL_CATEGORIES;
+      const baseFilters: ListFilters = {};
+      if (city && city !== ALL_CITIES) baseFilters.city = city;
+      if (maxPrice) baseFilters.maxPrice = Number(maxPrice);
+      const data = await listServicesFiltered({ ...baseFilters, limit: isGroup ? 120 : 24 });
+
       const needle = q.trim().toLowerCase();
-      let filtered = needle
-        ? data.filter((s) =>
-            (s.title || '').toLowerCase().includes(needle) ||
-            (s.description || '').toLowerCase().includes(needle) ||
-            (s.category || '').toLowerCase().includes(needle) ||
-            (s.city || '').toLowerCase().includes(needle)
-          )
-        : data;
-      // Apply client-side sort for price; for newest, keep backend default
+
+      const belongsToGroup = (raw: string, g: string): boolean => {
+        const s = String(raw || '').toLowerCase();
+        const has = (...ks: string[]) => ks.some(k => s.includes(k));
+        switch (g) {
+          case 'repair': return has('repair','plumb','electric','carpentr','home','clean','paint','hvac','air condi','appliance','roof','floor','til','handyman','furniture','metal','weld','masonry','concrete','glass','aluminum','interior');
+          case 'consulting': return has('consult','legal','account','tax','insur','real estate','architect','engineer','market research','support');
+          case 'education': return has('educat','tutor','training','teach');
+          case 'hr': return has('hr','recruit','employment','hiring','human resources');
+          case 'medical': return has('health','medical','clinic','care','nurse','elderly','child');
+          case 'transport': return has('transport','delivery','car wash','car repair','mechanic','truck','motorcycle','boat','marine','vehicle');
+          case 'creative': return has('advertis','creative','graphic','design','photo','video','print','branding','copywrit','packaging','label');
+          case 'sales': return has('sales','retail','store','shop','e-commerce','marketplace','pos','merchandising','signage','inventory');
+          case 'crafts': return has('craft','tailor','locksmith','weld','carpentr','handmade','artisan','agricult');
+          default: return false;
+        }
+      };
+
+      let filtered = data;
+
+      if (isGroup) {
+        filtered = data.filter(s => String((s.category || '')).toLowerCase() === String(category).toLowerCase() || belongsToGroup(s.category, String(category)));
+      }
+
+      if (needle) {
+        filtered = filtered.filter((s) =>
+          (s.title || '').toLowerCase().includes(needle) ||
+          (s.description || '').toLowerCase().includes(needle) ||
+          (s.category || '').toLowerCase().includes(needle) ||
+          (s.city || '').toLowerCase().includes(needle)
+        );
+      }
+
       if (sort === 'priceLow') {
         filtered = [...filtered].sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
       } else if (sort === 'priceHigh') {
         filtered = [...filtered].sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
       }
-      // Promote services flagged as boosted/featured to the top while preserving current order within groups
+
       {
         const isBoosted = (s: Service) => (((s as any)?.priority ?? 0) > 0) || ((s as any)?.featured === true);
         if (filtered.some((s) => isBoosted(s))) {
@@ -108,10 +131,9 @@ export default function Home() {
   }
   return (
     <div className="flex min-h-screen flex-col bg-ink">
-      <Header />
       <main className="flex-1">
         <section className="relative bg-gradient-to-b from-ink via-copperDark to-copper text-snow overflow-hidden py-12 md:py-24">
-          <div className="container relative text-center">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 relative text-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight font-headline">
               {tr(locale, 'home.heroTitle')}
             </h1>
@@ -120,21 +142,23 @@ export default function Home() {
             </p>
             <div className="mt-6 mb-5 flex flex-wrap items-center justify-center gap-2 md:gap-3">
               <Link href="/dashboard/services">
-                <Button size="sm" className="h-9 md:h-10 bg-copper hover:bg-copperDark text-ink font-semibold">
+                <Button size="sm" className="h-9 md:h-10 font-semibold bg-white/90 text-ink hover:bg-white border border-white/30 shadow-sm">
+                  <Briefcase className="me-2 h-4 w-4" />
                   {tr(locale, 'home.providerCta')}
                 </Button>
               </Link>
               <Link href="#search">
                 <Button size="sm" className="h-9 md:h-10 bg-power hover:bg-powerDark text-snow font-semibold">
+                  <Search className="me-2 h-4 w-4" />
                   {tr(locale, 'home.seekerCta')}
                 </Button>
               </Link>
             </div>
-            <div id="search" className="mx-auto max-w-6xl mt-6 scroll-mt-[calc(var(--ad-height,0px)+4rem)]">
+            <div id="search" className="mx-auto max-w-6xl mt-6 scroll-mt-[calc(var(--ad-height, 32px)+var(--navH))]">
               <div className="rounded-2xl copper-gradient p-[2px]">
                 <div className="rounded-[1rem] bg-background text-foreground p-3 md:p-4 shadow-lg">
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-3">
                     <Input
                       type="text"
                       inputMode="search"
@@ -147,15 +171,6 @@ export default function Home() {
                       onBlur={() => setSearchFocused(false)}
                     />
                   </div>
-                  <CategoryCombobox
-                    value={category}
-                    onChange={setCategory}
-                    allowAll
-                    allValue={ALL_CATEGORIES}
-                    allLabel={tr(locale, 'home.allCategories')}
-                    placeholder={tr(locale, 'home.categoryPlaceholder')}
-                    mergeCommunity
-                  />
                   <Select value={city} onValueChange={setCity}>
                     <SelectTrigger className="h-11 text-sm md:text-base text-foreground">
                       <SelectValue className="text-foreground" placeholder={tr(locale, 'home.cityPlaceholder')} />
@@ -188,43 +203,18 @@ export default function Home() {
                       <SelectItem value="priceHigh">{tr(locale, 'home.sortPriceHigh')}</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button size="lg" className="h-11 md:h-12 text-base" onClick={fetchServices}>
+                  <Button size="lg" className="h-11 md:h-12 w-full text-base bg-power hover:bg-powerDark text-white" onClick={fetchServices}>
                     <Search className="mr-2" />
                     {tr(locale, 'home.search')}
                   </Button>
                 </div>
                 {!(searchFocused || q.trim().length > 0) && (
                   <div className="mt-4 border-t pt-4">
-                    <h3 className="mb-3 text-sm font-semibold text-foreground/70">
-                      {tr(locale, 'home.featuredCategories')}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
-                      {featuredCategories.map((categoryItem) => (
-                        <Button
-                          key={categoryItem.name}
-                          variant="ghost"
-                          aria-label={tr(locale, `categories.${categoryItem.name}`)}
-                          aria-pressed={category === categoryItem.name}
-                          className={`group h-20 md:h-24 w-full overflow-hidden rounded-xl border bg-gradient-to-br from-background to-secondary/50 p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                            category === categoryItem.name
-                              ? 'ring-2 ring-primary/50 border-primary/40'
-                              : 'border-border/60 hover:border-primary/30'
-                          }`}
-                          onClick={() => setCategory(categoryItem.name)}
-                        >
-                          <div className="flex h-full w-full items-center justify-center gap-3 p-4 md:p-5">
-                            <div className={`rounded-full p-2.5 md:p-3 ring-1 ${
-                              category === categoryItem.name ? 'bg-primary/10 ring-primary/40' : 'bg-primary/5 ring-primary/20 group-hover:bg-primary/10'
-                            }`}>
-                              <categoryItem.icon className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                            </div>
-                            <span className={`text-sm font-medium ${category === categoryItem.name ? 'text-foreground' : 'text-foreground/90'}`}>
-                              {tr(locale, `categories.${categoryItem.name}`)}
-                            </span>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
+                    <CategoryCards
+                      locale={locale}
+                      selectedId={category === ALL_CATEGORIES ? null : (category as any)}
+                      onSelect={(id) => setCategory(id)}
+                    />
                   </div>
                 )}
               </div>
@@ -236,7 +226,7 @@ export default function Home() {
         
 
         <section className="bg-secondary py-12">
-          <div className="container">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <h2 className="mb-8 text-2xl md:text-3xl font-bold font-headline">
               {tr(locale, 'home.popularServices')}
             </h2>
@@ -271,3 +261,4 @@ export default function Home() {
     </div>
   );
 }
+

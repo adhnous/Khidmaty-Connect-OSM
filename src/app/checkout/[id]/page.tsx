@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getIdTokenOrThrow } from "@/lib/auth-client";
 import { useAuth } from "@/hooks/use-auth";
-import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -160,7 +159,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-ink text-snow">
-      <Header />
       <main className="flex-1">
         <section className="py-16">
           <div className="container">

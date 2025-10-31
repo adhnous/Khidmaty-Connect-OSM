@@ -7,7 +7,9 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { cookies } from 'next/headers';
 import SwRegister from '@/components/sw-register';
 import AdStrip from '@/components/ad-strip';
+import TopNav from '@/components/layout/top-nav';
 import AppGate from '@/components/app-gate';
+import MainShell from '@/components/main-shell';
 import BottomNav from '@/components/layout/bottom-nav';
 import PwaInstall from '@/components/pwa-install';
 import { PT_Sans, Tajawal, Cairo } from 'next/font/google';
@@ -63,9 +65,10 @@ export default async function RootLayout({
         <a href="#content" className="skip-link">{dir === 'rtl' ? 'تخطي إلى المحتوى' : 'Skip to content'}</a>
         <AuthProvider>
           <AdStrip />
+          <TopNav />
           <AppGate>
-            {/* reserve space for fixed BottomNav + iOS safe area */}
-            <main id="content" className="min-h-[100svh] overflow-x-hidden pt-2 pb-[calc(var(--bottom-nav-height,0px)+env(safe-area-inset-bottom))] md:pb-8">
+            {/* reserve space via CSS tokens: ads + nav */}
+            <main data-app className="min-h-screen" style={{ paddingTop: 'calc(var(--ad-height, 32px) + var(--navH, 56px))' }}>
               {children}
             </main>
             <PwaInstall />

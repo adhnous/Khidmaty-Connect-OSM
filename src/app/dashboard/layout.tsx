@@ -1,28 +1,10 @@
-
+﻿
 'use client';
 
 import Link from 'next/link';
-import {
-  BarChart2,
-  List,
-  PlusCircle,
-  Settings,
-  User,
-} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getClientLocale, tr } from '@/lib/i18n';
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarProvider,
-} from '@/components/ui/sidebar';
-import { Header } from '@/components/layout/header';
-import { Footer } from '@/components/layout/footer';
 import { useAuth } from '@/hooks/use-auth';
 import { getFeatures } from '@/lib/settings';
 
@@ -92,86 +74,29 @@ export default function DashboardLayout({
   // If seeker (or missing profile) somehow lands here before redirect finishes, render a friendly message instead of provider UI
   if (userProfile?.role !== 'provider') {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="container py-8">
-          <h1 className="mb-2 text-2xl font-bold">For Providers Only</h1>
-          <p className="text-muted-foreground">
-            Your account is a seeker. Service creation and provider dashboard are available only to provider accounts.
-          </p>
-        </main>
-        <Footer />
-      </div>
+      <main className="mx-auto max-w-6xl p-4 sm:p-6">
+        <h1 className="mb-2 text-2xl font-bold">For Providers Only</h1>
+        <p className="text-muted-foreground">
+          Your account is a seeker. Service creation and provider dashboard are available only to provider accounts.
+        </p>
+      </main>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <div className="flex flex-1">
-          <Sidebar>
-            <SidebarContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/dashboard/services">
-                      <List />
-                      {tr(locale, 'dashboard.sidebar.myServices')}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/dashboard/services/new">
-                      <PlusCircle />
-                      {tr(locale, 'dashboard.sidebar.addService')}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/dashboard/analytics">
-                      <BarChart2 />
-                      {tr(locale, 'dashboard.sidebar.analytics')}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/dashboard/profile">
-                      <User />
-                      {tr(locale, 'dashboard.sidebar.profile')}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/dashboard/settings">
-                      <Settings />
-                      {tr(locale, 'dashboard.sidebar.settings')}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarContent>
-          </Sidebar>
-          <main className="flex-1 p-4 md:p-8">
-            {showPricingBanner && (
-              <div className="mb-4 rounded-md border border-yellow-500/30 bg-yellow-50 p-4 text-yellow-900">
-                <div className="mb-2 font-semibold">Upgrade your plan</div>
-                <div className="mb-3 text-sm">Unlock more features and visibility. Choose a plan to continue.</div>
-                <Link href="/pricing" className="inline-flex items-center rounded bg-copper px-3 py-1.5 text-sm font-semibold text-ink hover:bg-copperDark">
-                  View plans
-                </Link>
-              </div>
-            )}
-            {children}
-          </main>
+    <main className="mx-auto max-w-6xl p-4 md:p-6">
+      {showPricingBanner && (
+        <div className="mb-4 rounded-md border border-yellow-500/30 bg-yellow-50 p-4 text-yellow-900">
+          <div className="mb-2 font-semibold">Upgrade your plan</div>
+          <div className="mb-3 text-sm">Unlock more features and visibility. Choose a plan to continue.</div>
+          <Link href="/pricing" className="inline-flex items-center rounded bg-copper px-3 py-1.5 text-sm font-semibold text-ink hover:bg-copperDark">
+            View plans
+          </Link>
         </div>
-        <Footer />
-      </div>
-    </SidebarProvider>
+      )}
+      <div className="mx-auto max-w-6xl">{children}</div>
+    </main>
   );
 }
+
 

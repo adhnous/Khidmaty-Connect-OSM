@@ -6,13 +6,10 @@
 :root { --app-font: var(--font-cairo), system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans Arabic", Arial, sans-serif; }
 html, body { font-family: var(--app-font); overflow-x: hidden; }
 
-/* Offset anchor scroll for sticky header + ad strip */
-html {
-  scroll-padding-top: calc(var(--ad-height, 0px) + 3.5rem + env(safe-area-inset-top));
-}
-@media (min-width: 768px) {
-  html { scroll-padding-top: calc(var(--ad-height, 0px) + 4rem + env(safe-area-inset-top)); }
-}
+/* Header tokens and scroll offset */
+:root { --navH: 56px; --ad-height: 40px; }
+@media (max-width: 767.98px) { :root { --navH: 48px; } }
+html { scroll-padding-top: calc(var(--ad-height) + var(--navH) + env(safe-area-inset-top)); }
 
 @layer base {
   :root {
@@ -112,6 +109,8 @@ html {
 
 /* Guard main containers from exceeding viewport width */
 main, .container, .ds-container { max-width: 100vw; }
+/* Reserve space for fixed ads + nav */
+main[data-app] { padding-top: calc(var(--ad-height) + env(safe-area-inset-top) + var(--navH)); }
 
 /* Darker placeholders for clarity (both themes use foreground with alpha) */
 input::placeholder,
@@ -147,11 +146,20 @@ textarea::placeholder {
   /* Ad marquee strip - FIXED VERSION */
   .ad-marquee {
     @apply w-full shadow-sm;
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 40;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 110; /* above black nav */
+    height: calc(var(--ad-height) + env(safe-area-inset-top));
+    display: flex;
+    align-items: center;
     overflow: hidden; /* Keep overflow hidden */
-    padding-top: max(0px, env(safe-area-inset-top));
+    contain: layout paint;
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
   .ad-track {
     display: flex;
@@ -225,6 +233,3 @@ textarea::placeholder {
     outline: 2px solid #fff;
   }
 }
-
-
-

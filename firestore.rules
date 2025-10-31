@@ -8,6 +8,61 @@ service cloud.firestore {
     }
     function isAdmin() { let r = userRole(); return r == 'admin' || r == 'owner'; }
 
+    // Consultations collection with enhanced security rules (restored)
+    match /consultations/{messageId} {
+      function isMessageParticipant() {
+        return isSignedIn() && (
+          request.auth.uid == resource.data.senderId || 
+          request.auth.uid == resource.data.receiverId
+        );
+      }
+
+      function isValidMessage() {
+        let data = request.resource.data;
+        return data.senderId is string &&
+               data.receiverId is string &&
+               data.serviceId is string &&
+               data.createdAt is timestamp &&
+               data.text is string &&
+               data.text.size() <= 1000 &&
+               data.status in ['sent', 'delivered', 'read'] &&
+               data.isProvider is bool;
+      }
+
+      function isValidParticipant(data) {
+        return isSignedIn() && (
+          // Provider sending to seeker
+          (userRole() == 'provider' && 
+           request.auth.uid == data.senderId && 
+           exists(/databases/$(database)/documents/services/$(data.serviceId))) ||
+          // Seeker sending to provider
+          (userRole() == 'seeker' && 
+           request.auth.uid == data.senderId)
+        );
+      }
+
+      // Allow read if user is a participant in the conversation
+      allow read: if isSignedIn() && (
+        (request.auth.uid == resource.data.senderId || 
+         request.auth.uid == resource.data.receiverId) ||
+        isAdmin()
+      );
+
+      // Allow create with validation
+      allow create: if isSignedIn() && 
+                   request.resource.data.senderId == request.auth.uid &&
+                   isValidMessage() &&
+                   isValidParticipant(request.resource.data);
+
+      // Allow update for message status only
+      allow update: if isSignedIn() &&
+                   isMessageParticipant() &&
+                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'readAt']);
+
+      // Allow delete for admin only
+      allow delete: if isAdmin();
+    }
+
     // Allow public read access for services
     match /services/{serviceId} {
       function isProviderOwner() { return isSignedIn() && resource.data.providerId == request.auth.uid; }
@@ -58,7 +113,15 @@ service cloud.firestore {
     // Users can create their own profile, and can only read/write their own data afterwards.
     match /users/{userId} {
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      // Allow reading user profiles for signed-in users (restores prior behavior)
+      allow read: if request.auth != null;
+      // Only allow users to update/delete their own profiles
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Per-user draft for the create-service wizard
+    match /servicesDrafts/{uid} {
+      allow read, create, update, delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // Aggregated daily stats: providers can read only their rows; no client writes

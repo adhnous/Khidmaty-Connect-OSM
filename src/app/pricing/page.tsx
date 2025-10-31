@@ -3,7 +3,6 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { getClientLocale, tr } from "@/lib/i18n";
 import { plans } from "@/lib/plans";
@@ -55,7 +54,6 @@ export default function PricingPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-ink text-snow">
-      <Header />
       <main className="flex-1">
         {!allowed && !loading && (
           <section className="py-16">

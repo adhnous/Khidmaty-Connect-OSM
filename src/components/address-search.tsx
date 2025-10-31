@@ -7,6 +7,7 @@ import { getClientLocale } from '@/lib/i18n';
 export type AddressSearchProps = {
   placeholder?: string;
   defaultQuery?: string;
+  value?: string; // controlled value (optional)
   countryCodes?: string; // e.g., 'ly'
   onSelect: (res: { lat: number; lng: number; displayName: string }) => void;
   className?: string;
@@ -16,6 +17,7 @@ export type AddressSearchProps = {
 export default function AddressSearch({
   placeholder = 'Search address',
   defaultQuery = '',
+  value,
   countryCodes = 'ly',
   onSelect,
   className = '',
@@ -29,6 +31,11 @@ export default function AddressSearch({
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const lang = getClientLocale();
+
+  // Keep input in sync when parent provides a controlled value
+  useEffect(() => {
+    if (typeof value === 'string' && value !== q) setQ(value);
+  }, [value]);
 
   useEffect(() => {
     if (t.current) window.clearTimeout(t.current);
@@ -104,7 +111,7 @@ export default function AddressSearch({
             </button>
           ))}
           {loading && (
-            <div className="px-3 py-2 text-xs text-muted-foreground">Searching…</div>
+            <div className="px-3 py-2 text-xs text-muted-foreground">{lang === 'ar' ? 'جارٍ البحث…' : 'Searching…'}</div>
           )}
         </div>
       )}

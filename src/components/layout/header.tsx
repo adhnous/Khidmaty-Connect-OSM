@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { LogIn, User, LogOut, Briefcase, Bell, Menu } from 'lucide-react';
 import Link from 'next/link';
@@ -25,6 +25,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 export function Header() {
+  // Hide the black header bar on product routes
+  const p = (typeof window !== 'undefined' ? window.location.pathname : (typeof window === 'undefined' ? '' : '')) || '';
+  if (p.startsWith('/dashboard') || p.startsWith('/create') || p.startsWith('/owner')) {
+    return null;
+  }
   const { user, userProfile } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -56,10 +61,10 @@ export function Header() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({ title: 'تم تسجيل الخروج', description: 'تم تسجيل خروجك بنجاح.' });
+      toast({ title: 'ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬', description: 'ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø®Ø±ÙˆØ¬Ùƒ Ø¨Ù†Ø¬Ø§Ø­.' });
       router.push('/');
     } catch (error) {
-      toast({ variant: 'destructive', title: 'فشل تسجيل الخروج', description: 'حدث خطأ أثناء تسجيل الخروج.' });
+      toast({ variant: 'destructive', title: 'ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬', description: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬.' });
     }
   };
 
@@ -173,16 +178,16 @@ export function Header() {
         const granted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
         const description = granted
           ? (locale === 'ar'
-              ? 'مفتاح VAPID لإشعارات الويب مفقود أو غير صالح. عيّن NEXT_PUBLIC_FIREBASE_VAPID_KEY إلى المفتاح العام من Firebase.'
+              ? 'Ù…ÙØªØ§Ø­ VAPID Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„ÙˆÙŠØ¨ Ù…ÙÙ‚ÙˆØ¯ Ø£Ùˆ ØºÙŠØ± ØµØ§Ù„Ø­. Ø¹ÙŠÙ‘Ù† NEXT_PUBLIC_FIREBASE_VAPID_KEY Ø¥Ù„Ù‰ Ø§Ù„Ù…ÙØªØ§Ø­ Ø§Ù„Ø¹Ø§Ù… Ù…Ù† Firebase.'
               : 'Missing or invalid Web Push VAPID key. Set NEXT_PUBLIC_FIREBASE_VAPID_KEY to the PUBLIC key from Firebase Console.')
-          : (locale === 'ar' ? 'تم رفض الإذن أو غير مدعوم.' : 'Permission denied or unsupported.');
-        toast({ variant: 'destructive', title: (locale === 'ar' ? 'لم يتم تفعيل الإشعارات' : 'Notifications not enabled'), description });
+          : (locale === 'ar' ? 'ØªÙ… Ø±ÙØ¶ Ø§Ù„Ø¥Ø°Ù† Ø£Ùˆ ØºÙŠØ± Ù…Ø¯Ø¹ÙˆÙ….' : 'Permission denied or unsupported.');
+        toast({ variant: 'destructive', title: (locale === 'ar' ? 'Ù„Ù… ÙŠØªÙ… ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Notifications not enabled'), description });
         return;
       }
       await saveFcmToken(user.uid, token);
-      toast({ title: (locale === 'ar' ? 'تم تفعيل الإشعارات' : 'Notifications enabled'), description: (locale === 'ar' ? 'ستتلقى تنبيهات عند وجود نشاط جديد.' : 'You will receive alerts for new activity.') });
+      toast({ title: (locale === 'ar' ? 'ØªÙ… ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Notifications enabled'), description: (locale === 'ar' ? 'Ø³ØªØªÙ„Ù‚Ù‰ ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø¹Ù†Ø¯ ÙˆØ¬ÙˆØ¯ Ù†Ø´Ø§Ø· Ø¬Ø¯ÙŠØ¯.' : 'You will receive alerts for new activity.') });
     } catch (err) {
-      toast({ variant: 'destructive', title: (locale === 'ar' ? 'فشل التفعيل' : 'Enable failed'), description: (locale === 'ar' ? 'تعذر تفعيل الإشعارات.' : 'Could not enable notifications.') });
+      toast({ variant: 'destructive', title: (locale === 'ar' ? 'ÙØ´Ù„ Ø§Ù„ØªÙØ¹ÙŠÙ„' : 'Enable failed'), description: (locale === 'ar' ? 'ØªØ¹Ø°Ø± ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª.' : 'Could not enable notifications.') });
     } finally {
       setNotifLoading(false);
     }
@@ -197,13 +202,13 @@ export function Header() {
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" className="h-9 w-9 md:h-10 md:w-10 rounded-full text-snow hover:bg-white/10" aria-label={locale === 'ar' ? 'القائمة' : 'Menu'}>
+                <Button variant="ghost" className="h-9 w-9 md:h-10 md:w-10 rounded-full text-snow hover:bg-white/10" aria-label={locale === 'ar' ? 'Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©' : 'Menu'}>
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side={locale === 'ar' ? 'right' : 'left'} className="w-72 max-w-[85vw]">
                 <SheetHeader>
-                  <SheetTitle>{locale === 'ar' ? 'القائمة' : 'Menu'}</SheetTitle>
+                  <SheetTitle>{locale === 'ar' ? 'Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©' : 'Menu'}</SheetTitle>
                 </SheetHeader>
                 <nav className="mt-4 grid gap-2">
                   <Button variant="ghost" className="justify-start" asChild>
@@ -231,7 +236,7 @@ export function Header() {
                     aria-label={tr(locale, 'header.switch')}
                     title={tr(locale, 'header.switch')}
                   >
-                    {locale === 'ar' ? 'English' : 'العربية'}
+                    {locale === 'ar' ? 'English' : 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©'}
                   </Button>
                   {user ? (
                     <>
@@ -290,11 +295,11 @@ export function Header() {
                   className="h-9 rounded-full text-snow hover:bg-white/10 border-0"
                   onClick={enableNotifications}
                   disabled={notifLoading}
-                  title={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
-                  aria-label={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
+                  title={locale === 'ar' ? 'ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Enable notifications'}
+                  aria-label={locale === 'ar' ? 'ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Enable notifications'}
                 >
                   <Bell className="mr-1 h-4 w-4" />
-                  {locale === 'ar' ? 'الإشعارات' : 'Notifications'}
+                  {locale === 'ar' ? 'Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Notifications'}
                 </Button>
               )}
               <Button
@@ -381,3 +386,4 @@ export function Header() {
     </header>
   );
 }
+
