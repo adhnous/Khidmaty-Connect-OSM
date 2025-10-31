@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import L from "leaflet";
+import { useMapEvents } from "react-leaflet";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,6 +127,28 @@ export default function CreateServiceWizardPage() {
   const lngNum = typeof lng === 'number' ? lng : (lng ? Number(lng) : undefined);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
 
+  function MapClickWatcher() {
+    useMapEvents({
+      click(e: any) {
+        const { lat, lng } = e?.latlng || {};
+        if (typeof lat === 'number' && typeof lng === 'number') {
+          form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
+          form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
+        }
+      }
+    });
+    return null;
+  }
+
+  function extractAreaFromDisplayName(name: string): string {
+    try {
+      const parts = String(name || '').split(/،|,/).map((p) => p.trim()).filter(Boolean);
+      return parts[0] || '';
+    } catch {
+      return '';
+    }
+  }
+
   useEffect(() => {
     if (latNum == null || lngNum == null) { setSelectedAddress(''); return; }
     const ac = new AbortController();
@@ -135,6 +158,8 @@ export default function CreateServiceWizardPage() {
         setSelectedAddress(r.displayName);
         try {
           form.setValue('location.address', r.displayName, { shouldValidate: false, shouldDirty: true });
+          const areaName = extractAreaFromDisplayName(r.displayName);
+          if (areaName) form.setValue('area', areaName, { shouldValidate: false });
         } catch {}
       })
       .catch((e) => {
@@ -344,7 +369,11 @@ export default function CreateServiceWizardPage() {
                       onSelect={({ lat, lng, displayName }: any) => {
                         form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
                         form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
-                        if (displayName) form.setValue('location.address', displayName, { shouldValidate: false });
+                        if (displayName) {
+                          form.setValue('location.address', displayName, { shouldValidate: false });
+                          const areaName = extractAreaFromDisplayName(displayName);
+                          if (areaName) form.setValue('area', areaName, { shouldValidate: false });
+                        }
                       }}
                     />
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -364,18 +393,17 @@ export default function CreateServiceWizardPage() {
                       )} />
                     </div>
                     <div className="rounded border">
-                      <MapContainer center={[latNum ?? 32.8872, lngNum ?? 13.1913]} zoom={13} scrollWheelZoom={false} style={{ height: 280, width: '100%'}}
-                        whenCreated={(map: any) => {
-                          map.on('click', (e: any) => {
-                            const { lat, lng } = e.latlng || {};
-                            if (typeof lat === 'number' && typeof lng === 'number') {
-                              form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
-                              form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
-                            }
-                          });
+                      <MapContainer center={[latNum ?? 32.8872, lngNum ?? 13.1913]} zoom={13} scrollWheelZoom={false} className="cursor-crosshair" style={{ height: 280, width: '100%'}}
+                        onClick={(e: any) => {
+                          const { lat, lng } = e?.latlng || {};
+                          if (typeof lat === 'number' && typeof lng === 'number') {
+                            form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
+                            form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
+                          }
                         }}
                       >
                         <TileLayer url={tileUrl} attribution={tileAttribution} />
+                        <MapClickWatcher />
                         {latNum != null && lngNum != null && (
                           <Marker position={[latNum, lngNum]} icon={markerIcon} draggable={true}
                             eventHandlers={{

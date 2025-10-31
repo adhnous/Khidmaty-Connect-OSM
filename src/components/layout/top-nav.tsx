@@ -7,11 +7,13 @@ import { getClientLocale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Globe, User as UserIcon, Menu } from "lucide-react";
+import { LogOut, Globe, User as UserIcon, Menu, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
+import { getFcmToken, saveFcmToken } from "@/lib/messaging";
 
 function cx(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -23,6 +25,36 @@ export default function TopNav() {
   const locale = getClientLocale();
   const { user, userProfile } = useAuth();
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  const enableNotifications = async () => {
+    if (!user) return;
+    try {
+      setNotifLoading(true);
+      const token = await getFcmToken();
+      if (!token) {
+        const granted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+        toast({
+          variant: 'destructive',
+          title: (getClientLocale() === 'ar' ? 'لم يتم تفعيل الإشعارات' : 'Notifications not enabled'),
+          description: granted
+            ? (getClientLocale() === 'ar' ? 'مشكلة إعدادات على الخادم.' : 'Server configuration issue (VAPID).')
+            : (getClientLocale() === 'ar' ? 'تم رفض الإذن أو غير مدعوم.' : 'Permission denied or unsupported.')
+        });
+        return;
+      }
+      await saveFcmToken(user.uid, token);
+      toast({
+        title: (getClientLocale() === 'ar' ? 'تم تفعيل الإشعارات' : 'Notifications enabled'),
+        description: (getClientLocale() === 'ar' ? 'ستتلقى تنبيهات عند وجود نشاط جديد.' : 'You will receive alerts for new activity.')
+      });
+    } catch {
+      toast({ variant: 'destructive', title: (getClientLocale() === 'ar' ? 'فشل التفعيل' : 'Enable failed') });
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   const links = useMemo(() => {
     const items = [
@@ -103,6 +135,19 @@ export default function TopNav() {
 
         {/* Actions: language + user menu + mobile hamburger */}
         <div className="ml-auto flex items-center gap-2">
+          {user && (userProfile?.role === 'provider' || userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={enableNotifications}
+              disabled={notifLoading}
+              className="text-white hover:bg-white/10 focus-visible:ring-white focus-visible:ring-offset-black min-h-[44px]"
+              title={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
+              aria-label={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
+            >
+              <Bell className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

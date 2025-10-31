@@ -51,6 +51,15 @@ const EditSchema = serviceSchema; // reuse same fields
 
 type EditFormData = z.infer<typeof EditSchema>;
 
+function extractAreaFromDisplayName(name: string): string {
+  try {
+    const parts = String(name || '').split(/،|,/).map((p) => p.trim()).filter(Boolean);
+    return parts[0] || '';
+  } catch {
+    return '';
+  }
+}
+
 // Client-only react-leaflet components to avoid double-init in dev
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
 const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false }) as any;
@@ -192,7 +201,13 @@ export default function EditServicePage() {
     const ac = new AbortController();
     const lang = getLangFromDocument();
     reverseGeocodeNominatim(lat, lng, lang, ac.signal)
-      .then((r) => setSelectedAddress(r.displayName))
+      .then((r) => {
+        setSelectedAddress(r.displayName);
+        try {
+          const areaName = extractAreaFromDisplayName(r.displayName);
+          if (areaName) form.setValue('area' as any, areaName, { shouldValidate: false });
+        } catch {}
+      })
       .catch((e) => {
         if ((e as any)?.name === 'AbortError') return;
         setSelectedAddress('');
@@ -201,17 +216,16 @@ export default function EditServicePage() {
   }, [lat, lng]);
 
   // Keep lat/lng synced to the map center when zooming or panning (edit form)
-  function CenterWatcher() {
-    const map: any = useMapEvents({
-      zoomend() {
-        const c = map.getCenter();
-        setLat(Number(c.lat.toFixed(6)));
-        setLng(Number(c.lng.toFixed(6)));
-      },
-      moveend() {
-        const c = map.getCenter();
-        setLat(Number(c.lat.toFixed(6)));
-        setLng(Number(c.lng.toFixed(6)));
+  function CenterWatcher() { return null; }
+
+  function MapClickWatcher() {
+    useMapEvents({
+      click(e: any) {
+        const { lat: la, lng: ln } = e?.latlng || {};
+        if (typeof la === 'number' && typeof ln === 'number') {
+          setLat(Number(la.toFixed(6)));
+          setLng(Number(ln.toFixed(6)));
+        }
       },
     });
     return null;
@@ -788,9 +802,14 @@ export default function EditServicePage() {
                   placeholder={tr(locale, 'form.placeholders.searchAddress')}
                   countryCodes="ly"
                   city={String(form.getValues('city') || '')}
-                  onSelect={({ lat, lng }) => {
+                  onSelect={({ lat, lng, displayName }) => {
                     setLat(Number(lat.toFixed(6)));
                     setLng(Number(lng.toFixed(6)));
+                    if (displayName) {
+                      setSelectedAddress(displayName);
+                      const areaName = extractAreaFromDisplayName(displayName);
+                      if (areaName) form.setValue('area' as any, areaName, { shouldValidate: false });
+                    }
                   }}
                 />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -861,6 +880,7 @@ export default function EditServicePage() {
                       }}
                     >
                       <CenterWatcher />
+                      <MapClickWatcher />
                       <TileLayer attribution={tileAttrib} url={tileUrl} />
                       <ScaleControl position="bottomleft" />
                       {(lat != null && lng != null) && (
