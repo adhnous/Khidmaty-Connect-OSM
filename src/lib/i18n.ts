@@ -312,8 +312,8 @@ export const dict = {
       switch: 'تغيير اللغة',
     },
     footer:{
-      aboutUs: 'عننا',
-      contactUs: 'اتصل بنا',
+      about: 'عننا',
+      contact: 'اتصل بنا',
       terms: 'الشروط والأحكام',
       privacy: 'سياسة الخصوصية',
       help: 'المساعدة',
