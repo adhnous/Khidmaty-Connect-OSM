@@ -182,7 +182,7 @@ export default function CreateServiceWizardPage() {
       }
     }
     await persistDraft();
-    setStep((s) => Math.min(5, (s + 1) as Step));
+    setStep((s): Step => (s >= 5 ? 5 : ((s + 1) as Step)));
   };
 
   const goPrev = async () => {
@@ -190,9 +190,9 @@ export default function CreateServiceWizardPage() {
     setStep((s) => {
       if (s === 1) {
         router.push('/dashboard/services');
-        return s;
+        return s as Step;
       }
-      return Math.max(1, (s - 1) as Step);
+      return ((s - 1) as Step);
     });
   };
 
