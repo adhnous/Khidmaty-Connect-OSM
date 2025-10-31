@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -17,6 +17,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import { getClientLocale, tr } from '@/lib/i18n';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ArrowUp, ArrowDown, MoreHorizontal, Pencil, Link as LinkIcon, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -78,16 +85,21 @@ export default function EditServicePage() {
   const [submitting, setSubmitting] = useState(false);
   const [images, setImages] = useState<ServiceImage[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [imageUrlError, setImageUrlError] = useState('');
   const [lat, setLat] = useState<number | undefined>(undefined);
   const [lng, setLng] = useState<number | undefined>(undefined);
   const [mapMounted, setMapMounted] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const isRTL = locale === 'ar';
   const form = useForm<EditFormData>({
     resolver: zodResolver(EditSchema),
     defaultValues: {
       title: '',
       description: '',
       price: 0,
+      priceMode: 'firm',
       category: '',
       city: 'Tripoli',
       area: '',
@@ -140,6 +152,7 @@ export default function EditServicePage() {
         title: doc.title,
         description: doc.description,
         price: doc.price,
+        priceMode: (doc as any).priceMode ?? 'firm',
         category: doc.category,
         city: doc.city,
         area: doc.area,
@@ -292,6 +305,7 @@ export default function EditServicePage() {
     if (files.length === 0) return;
     const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
     try {
+      setUploading(true);
       let added: ServiceImage[] = [];
       if (mode === 'local') {
         added = await uploadImagesLocal(files);
@@ -307,12 +321,15 @@ export default function EditServicePage() {
       toast({ title: tr(locale, 'form.toasts.imagesAdded') });
     } catch (e: any) {
       toast({ variant: 'destructive', title: tr(locale, 'form.toasts.addImagesFailed'), description: e?.message || '' });
+    } finally {
+      setUploading(false);
     }
   }
 
   async function handleReplaceFile(index: number, file: File) {
     const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
     try {
+      setUploading(true);
       let next: ServiceImage;
       if (mode === 'local') {
         const [img] = await uploadImagesLocal([file]);
@@ -328,13 +345,22 @@ export default function EditServicePage() {
       toast({ title: tr(locale, 'form.toasts.imageReplaced') });
     } catch (e: any) {
       toast({ variant: 'destructive', title: tr(locale, 'form.toasts.replaceFailed'), description: e?.message || '' });
+    } finally {
+      setUploading(false);
     }
   }
 
   function handleReplaceUrl(index: number) {
     const url = window.prompt(tr(locale, 'form.images.pasteUrlPlaceholder'));
     if (!url) return;
-    setImages((prev) => prev.map((it, i) => (i === index ? { url } : it)));
+    const v = String(url).trim();
+    const isOk = /^https?:\/\//i.test(v)
+      && (/(\.(jpe?g|png|webp)(\?.*)?$)/i.test(v) || /res\.cloudinary\.com|firebasestorage\.googleapis\.com/.test(v) || /^data:image\/(png|jpeg|webp);base64,/i.test(v));
+    if (!isOk) {
+      toast({ variant: 'destructive', title: tr(locale, 'form.images.urlInvalid') });
+      return;
+    }
+    setImages((prev) => prev.map((it, i) => (i === index ? { url: v } : it)));
     toast({ title: tr(locale, 'form.toasts.imageReplaced') });
   }
 
@@ -351,12 +377,23 @@ export default function EditServicePage() {
   }
 
   function removeImage(index: number) {
+    if (typeof window !== 'undefined') {
+      const ok = window.confirm(tr(locale, 'form.images.confirmDelete'));
+      if (!ok) return;
+    }
     setImages((prev) => prev.filter((_, i) => i !== index));
   }
 
   function handleAddUrl() {
     const v = newImageUrl.trim();
     if (!v) return;
+    const isOk = /^https?:\/\//i.test(v)
+      && (/(\.(jpe?g|png|webp)(\?.*)?$)/i.test(v) || /res\.cloudinary\.com|firebasestorage\.googleapis\.com/.test(v) || /^data:image\/(png|jpeg|webp);base64,/i.test(v));
+    if (!isOk) {
+      setImageUrlError(tr(locale, 'form.images.urlInvalid'));
+      return;
+    }
+    setImageUrlError('');
     setImages((prev) => [...prev, { url: v }]);
     setNewImageUrl('');
   }
@@ -389,6 +426,7 @@ export default function EditServicePage() {
         title: data.title,
         description: data.description,
         price: data.price,
+        priceMode: (data as any).priceMode,
         category: data.category,
         city: data.city,
         availabilityNote: data.availabilityNote,
@@ -504,6 +542,28 @@ export default function EditServicePage() {
                   )}
                 />
                 <div className="space-y-3">
+                  <FormField
+                    control={form.control}
+                    name="priceMode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{tr(locale, 'form.labels.priceMode')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || 'firm'}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={tr(locale, 'form.labels.priceMode')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="firm">{locale === 'ar' ? 'ثابت' : 'Firm'}</SelectItem>
+                            <SelectItem value="negotiable">{locale === 'ar' ? 'قابل للتفاوض' : 'Negotiable'}</SelectItem>
+                            <SelectItem value="call">{locale === 'ar' ? 'اتصل بي' : 'Call me'}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="price"
@@ -911,27 +971,36 @@ export default function EditServicePage() {
                 )}
               </div>
 
-              <div className="space-y-3">
-                <FormLabel>{tr(locale, 'form.images.label')}</FormLabel>
-                <div className="flex flex-wrap gap-3">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleAddFiles(Array.from(e.target.files ?? []))}
-                    />
+              <div className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
+                <FormLabel className={isRTL ? 'text-right' : ''}>{tr(locale, 'form.images.label')}</FormLabel>
+                <div className={`flex flex-col gap-2 sm:items-center sm:gap-3 ${isRTL ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleAddFiles(Array.from(e.target.files ?? []))}
+                  />
+                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading} aria-label={tr(locale, 'form.images.addFiles')}>
                     {tr(locale, 'form.images.addFiles')}
-                  </label>
-                  <div className="flex items-center gap-2">
+                  </Button>
+                  <div className={`flex w-full sm:w-auto items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <Input
+                      className="w-full sm:w-72"
                       placeholder={tr(locale, 'form.images.pasteUrlPlaceholder')}
                       value={newImageUrl}
                       onChange={(e) => setNewImageUrl(e.target.value)}
+                      aria-label={tr(locale, 'form.images.pasteUrlPlaceholder')}
                     />
-                    <Button type="button" variant="outline" onClick={handleAddUrl}>{tr(locale, 'form.images.addUrl')}</Button>
+                    <Button type="button" variant="outline" onClick={handleAddUrl} disabled={uploading} aria-label={tr(locale, 'form.images.addUrl')}>
+                      {tr(locale, 'form.images.addUrl')}
+                    </Button>
                   </div>
+                  <div className={`text-xs text-muted-foreground ${isRTL ? 'text-right' : ''}`}>{tr(locale, 'form.images.helper')}</div>
+                  {imageUrlError && (
+                    <div className={`text-xs text-destructive ${isRTL ? 'text-right' : ''}`}>{imageUrlError}</div>
+                  )}
                 </div>
 
                 {images.length > 0 ? (
@@ -943,14 +1012,40 @@ export default function EditServicePage() {
                           alt={`Image ${i + 1}`}
                           width={400}
                           height={300}
-                          className="aspect-video w-full object-cover"
+                          className="aspect-square w-full object-cover"
                         />
-                        <div className="flex items-center justify-between gap-2 p-2">
+                        <div className={`flex items-center justify-between gap-2 p-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                           <div className="flex gap-1">
-                            <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, -1)} disabled={i === 0}>{tr(locale, 'form.images.moveUp')}</Button>
-                            <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1}>{tr(locale, 'form.images.moveDown')}</Button>
+                            {images.length > 1 && (
+                              <>
+                                <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, -1)} disabled={i === 0} aria-label={tr(locale, 'form.images.moveUp')}>
+                                  <ArrowUp className="h-4 w-4" />
+                                </Button>
+                                <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1} aria-label={tr(locale, 'form.images.moveDown')}>
+                                  <ArrowDown className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
-                          <div className="flex gap-1">
+                          <div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button type="button" variant="outline" size="sm" aria-label="More">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                                <DropdownMenuItem onSelect={() => setTimeout(() => document.getElementById(`replace-file-${i}`)?.click(), 0)}>
+                                  <Pencil className="h-4 w-4" /> {tr(locale, 'form.images.replace')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleReplaceUrl(i)}>
+                                  <LinkIcon className="h-4 w-4" /> {tr(locale, 'form.images.replaceUrl')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => removeImage(i)} className="text-destructive focus:text-destructive">
+                                  <Trash2 className="h-4 w-4" /> {tr(locale, 'form.images.remove')}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             <input
                               id={`replace-file-${i}`}
                               type="file"
@@ -959,13 +1054,9 @@ export default function EditServicePage() {
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
                                 if (f) handleReplaceFile(i, f);
-                                // allow selecting the same file again later
                                 e.currentTarget.value = '';
                               }}
                             />
-                            <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`replace-file-${i}`)?.click()}>{tr(locale, 'form.images.replace')}</Button>
-                            <Button type="button" variant="outline" size="sm" onClick={() => handleReplaceUrl(i)}>{tr(locale, 'form.images.replaceUrl')}</Button>
-                            <Button type="button" variant="destructive" size="sm" onClick={() => removeImage(i)}>{tr(locale, 'form.images.remove')}</Button>
                           </div>
                         </div>
                       </div>
@@ -976,9 +1067,13 @@ export default function EditServicePage() {
                 )}
               </div>
 
-              <Button type="submit" disabled={submitting}>
-                {submitting ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}
-              </Button>
+              <div className="sticky bottom-0 z-10 -mb-6 mt-4 border-t bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-3">
+                <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}
+                  </Button>
+                </div>
+              </div>
             </form>
           </Form>
         </CardContent>

@@ -241,6 +241,7 @@ export const dict = {
     },
 
     form: {
+        
       labels: {
         title: 'Service Title',
         description: 'Description',
@@ -264,14 +265,37 @@ export const dict = {
         images: 'Service Images (1-8)',
         coverImage: 'Cover Image (optional)',
       },
+      images: {
+        label: 'Images',
+        addFiles: 'Upload image',
+        pasteUrlPlaceholder: 'Paste image URL',
+        addUrl: 'Add image via URL',
+        moveUp: 'Move up',
+        moveDown: 'Move down',
+        replace: 'Replace',
+        replaceUrl: 'Replace URL',
+        remove: 'Remove',
+        none: 'No images',
+        helper: 'PNG/JPG/WebP up to 5MB',
+        urlInvalid: 'Invalid image URL',
+        confirmDelete: 'Delete this image?',
+      },
       priceModeOptions: {
         firm: 'Firm',
         negotiable: 'Negotiable',
         call: 'Call me',
       },
+      toasts: {
+        imagesAdded: 'Images added',
+        addImagesFailed: 'Could not add images',
+        imageReplaced: 'Image replaced',
+        replaceFailed: 'Could not replace image',
+        updateSuccess: 'Changes saved',
+        updateFailedTitle: 'Update failed',
+      },
     },
   },
-
+  
   /* =========================
    * ARABIC
    * ========================= */
@@ -288,6 +312,49 @@ export const dict = {
       switch: 'تغيير اللغة',
     },
    dashboard: {
+    serviceForm: {
+      editSubtitle: 'إضافة خدمة',
+      subtitle: 'أدخل معلومات الخدمة',
+      fields: {
+        title: 'العنوان',
+        description: 'الوصف',
+        price: 'السعر',
+        priceMode: 'طريقة تحديد السعر',
+        category: 'الفئة',
+        city: 'المدينة',
+        area: 'المنطقة',
+        availabilityNote: 'ملاحظة عن المتاحة',
+        images: 'الصور',
+        contactPhone: 'رقم الهاتف',
+        contactWhatsapp: 'واتساب',
+        videoUrl: 'رابط الفيديو',
+        facebookUrl: 'رابط الفيسبوك',
+        telegramUrl: 'رابط التيليجرام',
+        mapUrl: 'رابط الخريطة',
+        providerId: 'معرف المزود',
+        providerName: 'اسم المزود',
+        providerEmail: 'بريد المزود',
+        subservices: 'الخدمات الفرعية',
+        status: 'الحالة',
+        lat: 'الatitude',
+        editSubtitle: 'تعديل الخدمة',
+        lng: 'الطول',
+        featured: 'مميز',
+        priority: 'الأولوية',
+        shareCount: 'عدد المشares',
+      },
+      createSubtitle: 'إضافة خدمة',
+      createTitle: 'إضافة خدمة',
+      editTitle: 'تعديل الخدمة',
+      saving: 'جارٍ الحفظ…',
+      finish: 'إتمام',
+      cancel: 'إلغاء',
+      reviewHint: 'مراجعة المعلومات قبل الانتهاء.',
+      saveChanges: 'حفظ التغييرات',
+      
+      
+
+    },
       sidebar: {
         services: 'خدماتي',
         analytics: 'تحليلاتي',
@@ -296,6 +363,7 @@ export const dict = {
         logout: 'تسجيل الخروج',
         addService: 'إضافة خدمة جديدة',
       },
+      
       welcome: {
         title: 'مرحبًا في لوحة التحكم',
         subtitle: 'أنت الآن في لوحة التحكم الخاصة بك.',
@@ -334,6 +402,7 @@ export const dict = {
             providerPriority: 'الأولوية',
             providerShareCount: 'عدد المشares',
           },
+          
         },
         actions: {
           view: 'عرض',
@@ -350,6 +419,7 @@ export const dict = {
        
       
     },
+  
     login: {
       welcome: 'أهلًا وسهلًا',
       subtitle: 'سجل دخولك أو أنشئ حسابًا جديدًا للمتابعة',
@@ -433,7 +503,7 @@ export const dict = {
       sortPriceLow: 'السعر: من الأقل إلى الأعلى',
       sortPriceHigh: 'السعر: من الأعلى إلى الأقل',
     },
-
+   
     categories: {
       sales: 'المبيعات والتجارة',
       digitalMarketing: 'التسويق الرقمي',
@@ -575,6 +645,18 @@ export const dict = {
     },
 
     form: {
+     placeholders:{
+      searchAddress: 'بحث عن العنوان',
+     contactPhone: 'رقم الهاتف',
+     contactWhatsapp: 'رقم واتساب',
+     videoUrl: 'رابط فيديو يوتيوب',
+     videoUrls: 'روابط يوتيوب إضافية',
+     facebookUrl: 'رابط فيسبوك',
+     telegramUrl: 'رابط تيليغرام',
+     mapUrl: 'رابط الخريطة',
+     availabilityNote: 'ملاحظة التوفر',
+     availability: 'ملاحظة التوفر',
+     },
       labels: {
         title: 'عنوان الخدمة',
         description: 'الوصف',
@@ -598,6 +680,23 @@ export const dict = {
         images: 'صور الخدمة (1-8)',
         coverImage: 'صورة الغلاف (اختياري)',
       },
+      actions:{ clearLocation: 'مسح الموقع',  useMyLocation: 'استخدام موقعي الحالي',},
+      images:{
+        placeholder: 'أدخل الصورة',
+        addFiles: 'إضافة صورة',
+        pasteUrlPlaceholder: 'لصق رابط الصورة',
+        addUrl: 'إضافة صورة عبر رابط',
+        moveUp: 'تحريك الصورة للأعلى',
+        moveDown: 'تحريك الصورة للأسفل',
+        label: 'الصور',
+        replace: 'استبدال',
+        replaceUrl: 'استبدال الرابط',
+        remove: 'حذف',
+        none: 'لا توجد صور',
+        helper: 'PNG/JPG/WebP حتى 5MB',
+        urlInvalid: 'رابط الصورة غير صالح',
+        confirmDelete: 'هل تريد حذف هذه الصورة؟',
+      },
       priceModeOptions: {
         firm: 'ثابت',
         negotiable: 'قابل للتفاوض',
@@ -616,6 +715,14 @@ export const dict = {
         cancel: 'إلغاء',
         
 
+      },
+      toasts: {
+        imagesAdded: 'تمت إضافة الصور',
+        addImagesFailed: 'تعذر إضافة الصور',
+        imageReplaced: 'تم استبدال الصورة',
+        replaceFailed: 'تعذر استبدال الصورة',
+        updateSuccess: 'تم حفظ التغييرات',
+        updateFailedTitle: 'فشل التحديث',
       }
     },
   },
