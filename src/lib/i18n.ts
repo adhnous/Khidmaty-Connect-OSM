@@ -312,7 +312,7 @@ export const dict = {
       switch: 'تغيير اللغة',
     },
     footer:{
-      about: 'عننا',
+      about: 'من نحن',
       contact: 'اتصل بنا',
       terms: 'الشروط والأحكام',
       privacy: 'سياسة الخصوصية',
