@@ -602,7 +602,7 @@ export const dict = {
     wizard: {
       title: 'إنشاء خدمة',
       subtitle4: '٤ خطوات: الفئة، التفاصيل، التسعير، التأكيد',
-      subtitle5: '٥ خطوات: الفئة، التفاصيل، الوسائط، التسعير، التأكيد',
+      subtitle5: '',
       steps: {
         category: 'الفئة',
         details: 'التفاصيل',
