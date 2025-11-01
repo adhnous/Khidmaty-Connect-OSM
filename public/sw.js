@@ -29,11 +29,19 @@ self.addEventListener('fetch', (event) => {
 
   // For other requests, try network first, then cache fallback
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        return response;
-      })
-      .catch(() => caches.match(request))
+    (async () => {
+      try {
+        const res = await fetch(request);
+        return res;
+      } catch (err) {
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          const cached = await cache.match(request);
+          if (cached) return cached;
+        } catch {}
+        return new Response('Network error', { status: 502, statusText: 'Bad Gateway' });
+      }
+    })()
   );
 });
 

@@ -124,6 +124,10 @@ export const dict = {
       misrata: 'Misrata',
     },
 
+    map: {
+      usingOSMBadge: 'Using OpenStreetMap (dev)'
+    },
+
     common: {
       loading: 'Loading...',
       error: 'An error occurred',
@@ -284,6 +288,9 @@ export const dict = {
         firm: 'Firm',
         negotiable: 'Negotiable',
         call: 'Call me',
+      },
+      map: {
+        openInOSM: 'Open in OpenStreetMap',
       },
       toasts: {
         imagesAdded: 'Images added',
@@ -536,6 +543,10 @@ export const dict = {
       misrata: 'مصراتة',
     },
 
+    map: {
+      usingOSMBadge: 'نستخدم خرائط OpenStreetMap (وضع التطوير)'
+    },
+
     common: {
       loading: 'جار التحميل...',
       error: 'حدث خطأ',
@@ -710,6 +721,9 @@ export const dict = {
         negotiable: 'قابل للتفاوض',
         call: 'اتصل بي',
       },
+      map: {
+        openInOSM: 'فتح في OpenStreetMap',
+      },
       subservices: {
         titlePlural: 'الخدمات',
         titleSingular: 'الخدمة',
@@ -721,6 +735,12 @@ export const dict = {
         remove: 'إزالة خدمة',
         save: 'حفظ الخدمة',
         cancel: 'إلغاء',
+        unitPlaceholder: 'الوحدة',
+        unitLabel: 'الوحدة',
+        title: 'عنوان الخدمة',
+        price: 'السعر',
+        descriptionplaceholder: 'الوصف',
+        autoCalc: 'السعر التلقائي',
         
 
       },

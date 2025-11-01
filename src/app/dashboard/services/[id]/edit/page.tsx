@@ -53,6 +53,7 @@ import {
 } from '@/components/ui/card';
 import AddressSearch from '@/components/address-search';
 import { libyanCities, cityLabel, cityCenter } from '@/lib/cities';
+import CategoryCombobox from '@/components/category-combobox';
 
 const EditSchema = serviceSchema; // reuse same fields
 
@@ -525,18 +526,12 @@ export default function EditServicePage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{tr(locale, 'form.labels.category')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={tr(locale, 'form.labels.category')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {['Plumbing','Home Services','Automotive','Education','Electrical','Carpentry','Gardening'].map(c => (
-                            <SelectItem key={c} value={c}>{c}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <CategoryCombobox
+                        value={field.value}
+                        onChange={(v) => field.onChange(v)}
+                        placeholder={tr(locale, 'form.labels.category') as string}
+                        mergeCommunity
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
