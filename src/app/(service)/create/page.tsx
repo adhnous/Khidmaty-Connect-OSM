@@ -10,7 +10,7 @@ import L from "leaflet";
 import { useMapEvents } from "react-leaflet";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -256,31 +256,15 @@ export default function CreateServiceWizardPage() {
     }
   };
 
-  const Stepper = () => (
-    <div className="mb-4 flex items-center gap-2 text-sm">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <div key={n} className={`flex items-center gap-2 ${step === n ? "font-semibold" : "text-muted-foreground"}`}>
-          <div className={`grid h-6 w-6 place-items-center rounded-full border ${step >= n ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-            {n}
-          </div>
-          <span>
-            {n === 1 ? wiz.category : n === 2 ? wiz.details : n === 3 ? wiz.media : n === 4 ? wiz.pricing : wiz.confirm}
-          </span>
-          {n < 5 && <span className="mx-2 text-muted-foreground">›</span>}
-        </div>
-      ))}
-    </div>
-  );
+  
 
   return (
     <div className="mx-auto max-w-3xl">
       <Card>
         <CardHeader>
           <CardTitle>{wiz.title}</CardTitle>
-          <CardDescription>{wiz.subtitle}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Stepper />
           <Form {...form}>
             <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
               {step === 1 && (
@@ -290,8 +274,14 @@ export default function CreateServiceWizardPage() {
                     name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{wiz.category}</FormLabel>
-                        <CategoryCards locale={locale} selectedId={String(field.value || "")} onSelect={(id) => field.onChange(id)} />
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>{wiz.category}</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <CategoryCards locale={locale} selectedId={String(field.value || "")} onSelect={(id) => field.onChange(id)} />
+                          </CardContent>
+                        </Card>
                         <FormMessage />
                       </FormItem>
                     )}

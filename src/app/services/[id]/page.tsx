@@ -575,76 +575,8 @@ export default function ServiceDetailPage() {
           <div className="lg:col-span-4">
             
 
-            <Card className="mb-6">
-              <CardHeader className="pb-3">
-                <CardTitle id="reviews" className="scroll-mt-24 text-2xl font-bold font-headline">
-                  {tr(locale, 'details.reviews')}
-                </CardTitle>
-                <div className="mt-1 flex items-center gap-3">
-                  <StarRating value={Math.round(avgRating)} readOnly size="lg" />
-                  <span className="text-sm text-muted-foreground">({reviews.length})</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {reviews.length > 0 ? (
-                  <div className="space-y-3">
-                    {reviews.map((r, idx) => (
-                      <div key={r.id || idx} className="rounded border bg-background p-3">
-                        <StarRating value={r.rating || 0} readOnly size="sm" />
-                        {r.text ? (
-                          <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/80">{r.text}</p>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.empty')}</p>
-                )}
-                <div className="mt-4">
-                  {isOwner ? (
-                    <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.ownerBlocked')}</p>
-                  ) : service.providerId === 'demo' ? (
-                    <p className="text-sm text-muted-foreground">التقييمات معطلة للخدمات التجريبية.</p>
-                  ) : (
-                    <div className="rounded border bg-background p-4">
-                      <label className="mb-2 block text-sm font-medium">{tr(locale, 'reviews.ratingLabel')}</label>
-                      <StarRating value={myRating} onChange={user ? setMyRating : undefined} size="lg" />
-                      {!user && (
-                        <p className="mt-2 text-xs text-muted-foreground">{tr(locale, 'reviews.signInPrompt')}</p>
-                      )}
-                      <label className="mb-2 mt-4 block text-sm font-medium">{tr(locale, 'reviews.writeReview')}</label>
-                      <Textarea
-                        value={myText}
-                        onChange={(e) => user && setMyText(e.target.value)}
-                        placeholder={tr(locale, 'reviews.placeholder')}
-                        className="min-h-[100px]"
-                        disabled={!user}
-                      />
-                      <div className="mt-3 flex gap-2">
-                        {user ? (
-                          <>
-                            <Button onClick={handleSaveReview} disabled={saving}>
-                              {tr(locale, myRating > 0 ? 'reviews.update' : 'reviews.submit')}
-                            </Button>
-                            {reviews.some((r) => r.id === user.uid || (r as any).authorId === user.uid) && (
-                              <Button variant="outline" onClick={handleDeleteReview} disabled={saving}>
-                                {tr(locale, 'reviews.delete')}
-                              </Button>
-                            )}
-                          </>
-                        ) : (
-                          <Button asChild>
-                            <Link href="/login">{tr(locale, 'header.login')}</Link>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="sticky top-24">
+            
+<Card className="sticky top-24 mb-6">
               {!hidePrice && (
                 <CardHeader>
                   <CardTitle className="text-center text-muted-foreground">
@@ -787,6 +719,76 @@ export default function ServiceDetailPage() {
                 <Button size="lg" variant="outline" className="h-12 w-full text-lg" asChild>
                   <a href="#reviews">{tr(locale, 'reviews.writeReview')}</a>
                 </Button>
+              </CardContent>
+            </Card>
+            
+
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle id="reviews" className="scroll-mt-24 text-2xl font-bold font-headline">
+                  {tr(locale, 'details.reviews')}
+                </CardTitle>
+                <div className="mt-1 flex items-center gap-3">
+                  <StarRating value={Math.round(avgRating)} readOnly size="lg" />
+                  <span className="text-sm text-muted-foreground">({reviews.length})</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {reviews.length > 0 ? (
+                  <div className="space-y-3">
+                    {reviews.map((r, idx) => (
+                      <div key={r.id || idx} className="rounded border bg-background p-3">
+                        <StarRating value={r.rating || 0} readOnly size="sm" />
+                        {r.text ? (
+                          <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/80">{r.text}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.empty')}</p>
+                )}
+                <div className="mt-4">
+                  {isOwner ? (
+                    <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.ownerBlocked')}</p>
+                  ) : service.providerId === 'demo' ? (
+                    <p className="text-sm text-muted-foreground">التقييمات معطلة للخدمات التجريبية.</p>
+                  ) : (
+                    <div className="rounded border bg-background p-4">
+                      <label className="mb-2 block text-sm font-medium">{tr(locale, 'reviews.ratingLabel')}</label>
+                      <StarRating value={myRating} onChange={user ? setMyRating : undefined} size="lg" />
+                      {!user && (
+                        <p className="mt-2 text-xs text-muted-foreground">{tr(locale, 'reviews.signInPrompt')}</p>
+                      )}
+                      <label className="mb-2 mt-4 block text-sm font-medium">{tr(locale, 'reviews.writeReview')}</label>
+                      <Textarea
+                        value={myText}
+                        onChange={(e) => user && setMyText(e.target.value)}
+                        placeholder={tr(locale, 'reviews.placeholder')}
+                        className="min-h-[100px]"
+                        disabled={!user}
+                      />
+                      <div className="mt-3 flex gap-2">
+                        {user ? (
+                          <>
+                            <Button onClick={handleSaveReview} disabled={saving}>
+                              {tr(locale, myRating > 0 ? 'reviews.update' : 'reviews.submit')}
+                            </Button>
+                            {reviews.some((r) => r.id === user.uid || (r as any).authorId === user.uid) && (
+                              <Button variant="outline" onClick={handleDeleteReview} disabled={saving}>
+                                {tr(locale, 'reviews.delete')}
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <Button asChild>
+                            <Link href="/login">{tr(locale, 'header.login')}</Link>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>

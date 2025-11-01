@@ -16,15 +16,22 @@ type MediaItem =
   | { type: 'image'; url: string; hint?: string }
   | { type: 'video'; url: string };
 
-export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedUrls }: MediaGalleryProps) {
+export default function MediaGallery({
+  title,
+  images,
+  videoEmbedUrl,
+  videoEmbedUrls,
+}: MediaGalleryProps) {
   const media: MediaItem[] = useMemo(() => {
-    const pics: MediaItem[] = (images && images.length > 0 ? images : [{ url: 'https://placehold.co/800x600.png' }]).map(
-      (img) => ({
-        type: 'image',
-        url: img.url,
-        hint: (img as any).hint as string | undefined,
-      })
-    );
+    const pics: MediaItem[] = (images && images.length > 0
+      ? images
+      : [{ url: 'https://placehold.co/800x600.png' }]
+    ).map((img) => ({
+      type: 'image',
+      url: img.url,
+      hint: (img as any).hint as string | undefined,
+    }));
+
     const items: MediaItem[] = [...pics];
     const vids: string[] = [];
     if (videoEmbedUrl) vids.push(videoEmbedUrl);
@@ -39,7 +46,12 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
     if (!embedUrl) return null;
     try {
       const u = new URL(embedUrl);
-      const id = u.pathname.split('/').pop() || '';
+      // works for /embed/VIDEO_ID and /watch?v=VIDEO_ID (fallback)
+      let id = u.pathname.split('/').pop() || '';
+      if (!id || id === 'watch') {
+        const v = u.searchParams.get('v');
+        if (v) id = v;
+      }
       if (!id) return null;
       return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
     } catch {
@@ -50,7 +62,7 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
   const isVideo = media[active]?.type === 'video';
 
   return (
-    <div className="grid gap-3 md:grid-cols-[60px_1fr]">
+    <div className="grid gap-3 md:grid-cols-[84px_1fr]">
       {/* Thumbnails */}
       <div className="order-2 flex gap-2 overflow-x-auto md:order-1 md:flex-col md:overflow-y-auto">
         {media.map((m, idx) => (
@@ -58,24 +70,29 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
             key={idx}
             type="button"
             onClick={() => setActive(idx)}
-            className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded border bg-background transition ${
+            className={`relative h-14 w-14 flex-shrink-0 overflow-hidden rounded border bg-background transition ${
               active === idx ? 'ring-2 ring-primary' : 'hover:border-primary/40'
             }`}
             aria-label={m.type === 'image' ? `Thumbnail ${idx + 1}` : 'Video thumbnail'}
           >
             {m.type === 'image' ? (
               <Image
-                src={transformCloudinary(m.url, { w: 120, q: 'auto' })}
+                src={transformCloudinary(m.url, { w: 140, q: 'auto' })}
                 alt={title}
-                width={48}
-                height={48}
+                width={56}
+                height={56}
                 className="h-full w-full object-cover"
               />
             ) : getYoutubeThumb(m.url) ? (
-              // Use normal img tag to avoid Next.js remotePatterns issues
-              <img src={getYoutubeThumb(m.url) as string} alt={title} className="h-full w-full object-cover" />
+              <img
+                src={getYoutubeThumb(m.url) as string}
+                alt={title}
+                className="h-full w-full object-cover"
+              />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-black/80 text-white">Video</div>
+              <div className="flex h-full w-full items-center justify-center bg-black/80 text-white">
+                Video
+              </div>
             )}
             {m.type === 'video' && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -87,9 +104,9 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
       </div>
 
       {/* Main viewer */}
-      <div className="order-1 md:order-2 md:flex md:justify-center">
+      <div className="order-1 md:order-2">
         {isVideo ? (
-          <div className="aspect-[16/9] w-full md:w-2/3 overflow-hidden rounded-2xl bg-muted">
+          <div className="aspect-video w-full md:max-w-[1000px] mx-auto overflow-hidden rounded-2xl bg-muted">
             <iframe
               src={String(media[active].url)}
               className="h-full w-full"
@@ -100,12 +117,12 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
             />
           </div>
         ) : (
-          <div className="aspect-[16/9] w-full md:w-2/3 overflow-hidden rounded-2xl bg-muted">
+          <div className="aspect-video w-full md:max-w-[1000px] mx-auto overflow-hidden rounded-2xl bg-muted">
             <Image
-              src={transformCloudinary(String(media[active].url), { w: 800, q: 'auto' })}
+              src={transformCloudinary(String(media[active].url), { w: 1200, q: 'auto' })}
               alt={title}
-              width={800}
-              height={450}
+              width={1200}
+              height={675}
               className="h-full w-full object-cover"
             />
           </div>
