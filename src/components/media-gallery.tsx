@@ -50,7 +50,7 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
   const isVideo = media[active]?.type === 'video';
 
   return (
-    <div className="grid gap-3 md:grid-cols-[84px_1fr]">
+    <div className="grid gap-3 md:grid-cols-[60px_1fr]">
       {/* Thumbnails */}
       <div className="order-2 flex gap-2 overflow-x-auto md:order-1 md:flex-col md:overflow-y-auto">
         {media.map((m, idx) => (
@@ -58,17 +58,17 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
             key={idx}
             type="button"
             onClick={() => setActive(idx)}
-            className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded border bg-background transition ${
+            className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded border bg-background transition ${
               active === idx ? 'ring-2 ring-primary' : 'hover:border-primary/40'
             }`}
             aria-label={m.type === 'image' ? `Thumbnail ${idx + 1}` : 'Video thumbnail'}
           >
             {m.type === 'image' ? (
               <Image
-                src={transformCloudinary(m.url, { w: 160, q: 'auto' })}
+                src={transformCloudinary(m.url, { w: 120, q: 'auto' })}
                 alt={title}
-                width={64}
-                height={64}
+                width={48}
+                height={48}
                 className="h-full w-full object-cover"
               />
             ) : getYoutubeThumb(m.url) ? (
@@ -87,9 +87,9 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
       </div>
 
       {/* Main viewer */}
-      <div className="order-1 md:order-2">
+      <div className="order-1 md:order-2 md:flex md:justify-center">
         {isVideo ? (
-          <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-muted">
+          <div className="aspect-[16/9] w-full md:w-2/3 overflow-hidden rounded-2xl bg-muted">
             <iframe
               src={String(media[active].url)}
               className="h-full w-full"
@@ -100,12 +100,12 @@ export default function MediaGallery({ title, images, videoEmbedUrl, videoEmbedU
             />
           </div>
         ) : (
-          <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-muted">
+          <div className="aspect-[16/9] w-full md:w-2/3 overflow-hidden rounded-2xl bg-muted">
             <Image
-              src={transformCloudinary(String(media[active].url), { w: 1200, q: 'auto' })}
+              src={transformCloudinary(String(media[active].url), { w: 800, q: 'auto' })}
               alt={title}
-              width={1200}
-              height={675}
+              width={800}
+              height={450}
               className="h-full w-full object-cover"
             />
           </div>

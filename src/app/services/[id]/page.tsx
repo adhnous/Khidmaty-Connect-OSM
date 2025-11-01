@@ -2,17 +2,16 @@
 import {
   Calendar,
   MapPin,
-  MessageCircle,
   Phone,
   ExternalLink,
   Share2,
+  MessageCircle,
 } from 'lucide-react';
 
 import { Footer } from '@/components/layout/footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import MediaGallery from '@/components/media-gallery';
 import StarRating from '@/components/star-rating';
 import { Textarea } from '@/components/ui/textarea';
@@ -245,10 +244,6 @@ export default function ServiceDetailPage() {
     const arr = (service as any)?.subservices;
     return Array.isArray(arr) ? arr : [];
   }, [service?.subservices]);
-
-  const subservicesTotal = useMemo(() => {
-    return subservicesList.reduce((sum: number, s: any) => sum + (Number(s?.price) || 0), 0);
-  }, [subservicesList]);
 
   const isOwner = useMemo(() => {
     return !!(user && service && service.providerId === user.uid);
@@ -485,84 +480,65 @@ export default function ServiceDetailPage() {
           {!loading && service && (
           <>
           <div className="lg:col-span-8">
-            <MediaGallery
-              title={service.title}
-              images={service.images || []}
-              videoEmbedUrl={videoEmbedUrl}
-              videoEmbedUrls={videoEmbedUrls}
-            />
+            <Card className="mb-6 md:w-2/3 mx-auto">
+              <CardContent className="p-3 md:p-4">
+                <MediaGallery
+                  title={service.title}
+                  images={service.images || []}
+                  videoEmbedUrl={videoEmbedUrl}
+                  videoEmbedUrls={videoEmbedUrls}
+                />
+              </CardContent>
+            </Card>
 
-            <h1 className="mb-4 text-3xl font-bold font-headline md:text-4xl">
-              {service.title}
-            </h1>
-            <div className="mb-6 flex flex-wrap items-center gap-4 text-muted-foreground">
-              <Badge variant="secondary" className="text-base ps-2 pe-2">
-                {tr(locale, `categories.${categoryKey(service.category)}`)}
-              </Badge>
-              <div className={`flex items-center gap-1.5 ${locale === 'ar' ? 'flex-row-reverse' : ''}`}>
-                <MapPin className="h-5 w-5" />
-                <span>
-                  {tr(locale, `cities.${cityKey(service.city)}`)}{service.area ? `${sep}${service.area}` : ''}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <StarRating value={Math.round(avgRating)} readOnly size="md" />
-                <span className="text-sm">({reviews.length})</span>
-              </div>
-            </div>
-
-            <h2 className="border-t pt-6 text-2xl font-bold font-headline mb-3">
-              {tr(locale, 'details.description')}
-            </h2>
-            <p className="whitespace-pre-wrap text-lg text-foreground/80">
-              {service.description}
-            </p>
-
-            <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
-              {tr(locale, 'details.availability')}
-            </h2>
-            <div className="flex items-center gap-2 text-lg">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <p>{service.availabilityNote}</p>
-            </div>
-
-            {subservicesList.length > 0 && (
-              <>
-                <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">{tr(locale, 'details.subservices')}</h2>
-                <div className="rounded border bg-background p-3">
-                  <ul className="space-y-2">
-                    {subservicesList.map((s: any) => (
-                      <li key={s.id} className="flex items-start justify-between gap-3 text-sm">
-                        <div>
-                          <div className="font-medium">
-                            {s.title}{' '}
-                            {s.unit ? <span className="text-muted-foreground">({s.unit})</span> : null}
-                          </div>
-                          {s.description ? (
-                            <div className="text-muted-foreground">{s.description}</div>
-                          ) : null}
-                        </div>
-                        {!hidePrice && (
-                          <div className="whitespace-nowrap font-semibold">LYD {Number(s.price ?? 0)}</div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                  {!hidePrice && (
-                    <div className="mt-3 flex items-center justify-end text-sm">
-                      <span className="text-muted-foreground mr-2">{tr(locale, 'details.total')}</span>
-                      <span className="font-semibold">LYD {subservicesTotal}</span>
-                    </div>
-                  )}
+            <Card className="mb-6 md:w-2/3 mx-auto">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-3xl font-bold font-headline md:text-4xl">
+                  {service.title}
+                </CardTitle>
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-muted-foreground">
+                  <Badge variant="secondary" className="text-base ps-2 pe-2">
+                    {tr(locale, `categories.${categoryKey(service.category)}`)}
+                  </Badge>
+                  <div className={`${locale === 'ar' ? 'flex-row-reverse' : ''} flex items-center gap-1.5`}>
+                    <MapPin className="h-5 w-5" />
+                    <span>
+                      {tr(locale, `cities.${cityKey(service.city)}`)}{service.area ? `${sep}${service.area}` : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <StarRating value={Math.round(avgRating)} readOnly size="md" />
+                    <span className="text-sm">({reviews.length})</span>
+                  </div>
                 </div>
-              </>
-            )}
-
-            {coords && (
-              <>
-                <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <h2 className="text-2xl font-bold font-headline mb-2">
+                    {tr(locale, 'details.description')}
+                  </h2>
+                  <p className="whitespace-pre-wrap text-lg text-foreground/80">
+                    {service.description}
+                  </p>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold font-headline mb-2">
+                    {tr(locale, 'details.availability')}
+                  </h2>
+                  <div className="flex items-center gap-2 text-lg">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <p>{service.availabilityNote}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="mt-6 md:w-2/3 mx-auto">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-2xl font-bold font-headline">
                   {tr(locale, 'details.location')}
-                </h2>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-3">
                   <div className="text-muted-foreground">
                     {tr(locale, 'details.approxIn')} {service.city}
@@ -581,85 +557,93 @@ export default function ServiceDetailPage() {
                       </a>
                     </div>
                   )}
-                  <ServiceMap
-                    lat={coords.lat}
-                    lng={coords.lng}
-                    title={service.title}
-                    city={service.city}
-                    area={service.area}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Reviews & Ratings */}
-            <h2 id="reviews" className="scroll-mt-24 mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">
-              {tr(locale, 'details.reviews')}
-            </h2>
-            <div className="mb-3 flex items-center gap-3">
-              <StarRating value={Math.round(avgRating)} readOnly size="lg" />
-              <span className="text-sm text-muted-foreground">({reviews.length})</span>
-            </div>
-            {reviews.length > 0 ? (
-              <div className="space-y-3">
-                {reviews.map((r, idx) => (
-                  <div key={r.id || idx} className="rounded border bg-background p-3">
-                    <StarRating value={r.rating || 0} readOnly size="sm" />
-                    {r.text ? (
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/80">{r.text}</p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.empty')}</p>
-            )}
-
-            {/* Review form */}
-            <div className="mt-4">
-              {isOwner ? (
-                <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.ownerBlocked')}</p>
-              ) : service.providerId === 'demo' ? (
-                <p className="text-sm text-muted-foreground">التقييمات معطلة للخدمات التجريبية.</p>
-              ) : (
-                <div className="rounded border bg-background p-4">
-                  <label className="mb-2 block text-sm font-medium">{tr(locale, 'reviews.ratingLabel')}</label>
-                  <StarRating value={myRating} onChange={user ? setMyRating : undefined} size="lg" />
-                  {!user && (
-                    <p className="mt-2 text-xs text-muted-foreground">{tr(locale, 'reviews.signInPrompt')}</p>
+                  {coords && (
+                    <ServiceMap
+                      lat={coords.lat}
+                      lng={coords.lng}
+                      title={service.title}
+                      city={service.city}
+                      area={service.area}
+                    />
                   )}
-                  <label className="mb-2 mt-4 block text-sm font-medium">{tr(locale, 'reviews.writeReview')}</label>
-                  <Textarea
-                    value={myText}
-                    onChange={(e) => user && setMyText(e.target.value)}
-                    placeholder={tr(locale, 'reviews.placeholder')}
-                    className="min-h-[100px]"
-                    disabled={!user}
-                  />
-                  <div className="mt-3 flex gap-2">
-                    {user ? (
-                      <>
-                        <Button onClick={handleSaveReview} disabled={saving}>
-                          {tr(locale, myRating > 0 ? 'reviews.update' : 'reviews.submit')}
-                        </Button>
-                        {reviews.some((r) => r.id === user.uid || (r as any).authorId === user.uid) && (
-                          <Button variant="outline" onClick={handleDeleteReview} disabled={saving}>
-                            {tr(locale, 'reviews.delete')}
-                          </Button>
-                        )}
-                      </>
-                    ) : (
-                      <Button asChild>
-                        <Link href="/login">{tr(locale, 'header.login')}</Link>
-                      </Button>
-                    )}
-                  </div>
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
+            
           </div>
 
           <div className="lg:col-span-4">
+            
+
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle id="reviews" className="scroll-mt-24 text-2xl font-bold font-headline">
+                  {tr(locale, 'details.reviews')}
+                </CardTitle>
+                <div className="mt-1 flex items-center gap-3">
+                  <StarRating value={Math.round(avgRating)} readOnly size="lg" />
+                  <span className="text-sm text-muted-foreground">({reviews.length})</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {reviews.length > 0 ? (
+                  <div className="space-y-3">
+                    {reviews.map((r, idx) => (
+                      <div key={r.id || idx} className="rounded border bg-background p-3">
+                        <StarRating value={r.rating || 0} readOnly size="sm" />
+                        {r.text ? (
+                          <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/80">{r.text}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.empty')}</p>
+                )}
+                <div className="mt-4">
+                  {isOwner ? (
+                    <p className="text-sm text-muted-foreground">{tr(locale, 'reviews.ownerBlocked')}</p>
+                  ) : service.providerId === 'demo' ? (
+                    <p className="text-sm text-muted-foreground">التقييمات معطلة للخدمات التجريبية.</p>
+                  ) : (
+                    <div className="rounded border bg-background p-4">
+                      <label className="mb-2 block text-sm font-medium">{tr(locale, 'reviews.ratingLabel')}</label>
+                      <StarRating value={myRating} onChange={user ? setMyRating : undefined} size="lg" />
+                      {!user && (
+                        <p className="mt-2 text-xs text-muted-foreground">{tr(locale, 'reviews.signInPrompt')}</p>
+                      )}
+                      <label className="mb-2 mt-4 block text-sm font-medium">{tr(locale, 'reviews.writeReview')}</label>
+                      <Textarea
+                        value={myText}
+                        onChange={(e) => user && setMyText(e.target.value)}
+                        placeholder={tr(locale, 'reviews.placeholder')}
+                        className="min-h-[100px]"
+                        disabled={!user}
+                      />
+                      <div className="mt-3 flex gap-2">
+                        {user ? (
+                          <>
+                            <Button onClick={handleSaveReview} disabled={saving}>
+                              {tr(locale, myRating > 0 ? 'reviews.update' : 'reviews.submit')}
+                            </Button>
+                            {reviews.some((r) => r.id === user.uid || (r as any).authorId === user.uid) && (
+                              <Button variant="outline" onClick={handleDeleteReview} disabled={saving}>
+                                {tr(locale, 'reviews.delete')}
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <Button asChild>
+                            <Link href="/login">{tr(locale, 'header.login')}</Link>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="sticky top-24">
               {!hidePrice && (
                 <CardHeader>
@@ -706,52 +690,6 @@ export default function ServiceDetailPage() {
                     </a>
                   </Button>
                 )}
-                {subservicesList.length > 0 && (
-                  <div className="rounded border bg-background p-3">
-                    <div className="mb-2 text-sm font-medium text-muted-foreground">{tr(locale, 'details.subservices')}</div>
-                    <ul className="space-y-1">
-                      {subservicesList.slice(0, 3).map((s: any) => (
-                        <li key={s.id} className="flex items-center justify-between text-sm">
-                          <span className="truncate">
-                            {s.title}
-                            {s.unit ? <span className="text-muted-foreground"> ({s.unit})</span> : null}
-                          </span>
-                          {!hidePrice && (
-                            <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                    {subservicesList.length > 3 && (
-                      <Accordion type="single" collapsible className="mt-2">
-                        <AccordionItem value="all">
-                          <AccordionTrigger className="text-sm">{tr(locale, 'details.showAll')} {subservicesList.length} {tr(locale, 'details.items')}</AccordionTrigger>
-                          <AccordionContent>
-                            <ul className="space-y-1">
-                              {subservicesList.slice(3).map((s: any) => (
-                                <li key={s.id} className="flex items-center justify-between text-sm">
-                                  <span className="truncate">
-                                    {s.title}
-                                    {s.unit ? <span className="text-muted-foreground"> ({s.unit})</span> : null}
-                                  </span>
-                                  {!hidePrice && (
-                                    <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    )}
-                    {!hidePrice && (
-                      <div className="mt-2 flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{tr(locale, 'details.total')}</span>
-                        <span className="font-semibold">LYD {subservicesTotal}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
                 {/* Social links */}
                 {((service as any)?.facebookUrl || (service as any)?.telegramUrl) && (
                   <div className="rounded border bg-background p-3">
@@ -770,6 +708,25 @@ export default function ServiceDetailPage() {
                         </a>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {subservicesList.length > 0 && (
+                  <div className="rounded border bg-background p-3">
+                    <div className="mb-2 text-sm font-medium text-muted-foreground">{tr(locale, 'details.subservices')}</div>
+                    <ul className="space-y-1">
+                      {subservicesList.map((s: any) => (
+                        <li key={s.id} className="flex items-center justify-between text-sm">
+                          <span className="truncate">
+                            {s.title}
+                            {s.unit ? <span className="text-muted-foreground"> ({s.unit})</span> : null}
+                          </span>
+                          {!hidePrice && (
+                            <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
@@ -827,6 +784,9 @@ export default function ServiceDetailPage() {
                     {tr(locale, 'details.noContact')}
                   </p>
                 )}
+                <Button size="lg" variant="outline" className="h-12 w-full text-lg" asChild>
+                  <a href="#reviews">{tr(locale, 'reviews.writeReview')}</a>
+                </Button>
               </CardContent>
             </Card>
           </div>

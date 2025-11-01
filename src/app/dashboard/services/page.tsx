@@ -7,14 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -151,35 +143,33 @@ export default function MyServicesPage() {
             <Button variant="outline" onClick={seedSampleServices} className="mt-3">{tr(locale, 'dashboard.services.seedSampleServices')}</Button>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tr(locale, 'dashboard.services.table.headers.title')}</TableHead>
-                <TableHead>{tr(locale, 'dashboard.services.table.headers.category')}</TableHead>
-                <TableHead>{tr(locale, 'dashboard.services.table.headers.city')}</TableHead>
-                <TableHead>{tr(locale, 'dashboard.services.table.headers.price')}</TableHead>
-                <TableHead>{tr(locale, 'dashboard.services.table.headers.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {services.map((service) => (
-                <TableRow key={service.id}>
-                  <TableCell className="font-medium">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {services.map((service) => (
+              <Card key={service.id} className="overflow-hidden">
+                <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                  <img
+                    src={(service as any)?.images?.[0]?.url || 'https://placehold.co/800x600.png'}
+                    alt={service.title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="line-clamp-2 text-base font-semibold">{service.title}</h3>
+                    {((service as any).pendingDelete === true) ? (
+                      <Badge variant="destructive">{locale === 'ar' ? 'قيد الحذف' : 'Pending deletion'}</Badge>
+                    ) : (service as any).status === 'pending' ? (
+                      <Badge variant="secondary">{locale === 'ar' ? 'قيد الموافقة' : 'Waiting for approval'}</Badge>
+                    ) : null}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <span>{service.title}</span>
-                      {((service as any).pendingDelete === true) ? (
-                        <Badge variant="destructive">{locale === 'ar' ? 'قيد الحذف' : 'Pending deletion'}</Badge>
-                      ) : (service as any).status === 'pending' ? (
-                        <Badge variant="secondary">{locale === 'ar' ? 'قيد الموافقة' : 'Waiting for approval'}</Badge>
-                      ) : null}
+                      <Badge variant="secondary">{service.category}</Badge>
+                      <span>{service.city}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{service.category}</Badge>
-                  </TableCell>
-                  <TableCell>{service.city}</TableCell>
-                  <TableCell>{service.price}</TableCell>
-                  <TableCell className="space-x-2">
+                    <span className="font-semibold text-primary">LYD {service.price}</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/services/${service.id}`}>{tr(locale, 'dashboard.services.actions.view')}</Link>
                     </Button>
@@ -194,11 +184,11 @@ export default function MyServicesPage() {
                     >
                       {tr(locale, 'dashboard.services.actions.delete')}
                     </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
