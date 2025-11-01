@@ -42,12 +42,27 @@ self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = {}; }
 
+  const hasContent = data && (data.title || data.body);
+  if (!hasContent) {
+    // Notification payload likely provided by FCM webpush; let the browser show it.
+    return;
+  }
+
   const title = data.title || 'Khidmaty';
+  const actions = [{ action: 'open', title: 'View request' }];
+  if (data?.whatsapp) actions.push({ action: 'whatsapp', title: 'WhatsApp' });
+  if (data?.phone) actions.push({ action: 'call', title: 'Call' });
   const options = {
     body: data.body || '',
     icon: data.icon || '/favicon.ico',
     badge: data.badge || '/favicon.ico',
-    data: { url: data.url || '/', ts: Date.now() },
+    requireInteraction: true,
+    tag: data.serviceId ? `request-${data.serviceId}` : 'khidmaty-push',
+    renotify: true,
+    actions,
+    data: { url: data.url || '/', ts: Date.now(), ...data },
+    vibrate: [100, 50, 100],
+    timestamp: Date.now(),
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -55,19 +70,34 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = (event.notification && event.notification.data && event.notification.data.url) || '/';
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientsArr) => {
-      for (const client of clientsArr) {
-        try {
-          const href = client.url || '';
-          if (href.includes(url)) {
-            client.focus();
-            return;
-          }
-        } catch {}
+  const data = (event.notification && event.notification.data) || {};
+  const action = event.action || 'open';
+  const go = (url) => self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientsArr) => {
+    for (const client of clientsArr) {
+      try {
+        const href = client.url || '';
+        if (href.includes(url)) {
+          client.focus();
+          return;
+        }
+      } catch {}
+    }
+    return self.clients.openWindow(url);
+  });
+
+  event.waitUntil((async () => {
+    try {
+      if (action === 'whatsapp' && data.whatsapp) {
+        const num = String(data.whatsapp).replace(/\+/g, '');
+        const url = `https://wa.me/${num}`;
+        return await go(url);
       }
-      return self.clients.openWindow(url);
-    })
-  );
+      if (action === 'call' && data.phone) {
+        const tel = `tel:${String(data.phone).replace(/\s+/g, '')}`;
+        return await go(tel);
+      }
+      const url = data.url || '/';
+      return await go(url);
+    } catch {}
+  })());
 });

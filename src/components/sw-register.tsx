@@ -15,14 +15,14 @@ export default function SwRegister() {
 
     const register = async () => {
       try {
-        // Check if we're in production (service worker should only run in production)
+        // Register SW in prod by default; allow dev on localhost if env flag is set
         const isProduction = process.env.NODE_ENV === "production";
         const isLocalhost = window.location.hostname === "localhost" || 
                            window.location.hostname === "127.0.0.1";
+        const allowDev = (process.env.NEXT_PUBLIC_SW_DEV || "0") === "1";
 
-        // Don't register service worker in development on localhost
-        if (!isProduction && isLocalhost) {
-          console.log("[sw] Skipping service worker registration in development");
+        if (!isProduction && isLocalhost && !allowDev) {
+          console.log("[sw] Skipping service worker registration in development (set NEXT_PUBLIC_SW_DEV=1 to enable)");
           return;
         }
 

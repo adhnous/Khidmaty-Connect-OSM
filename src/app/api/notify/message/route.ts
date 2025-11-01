@@ -57,9 +57,20 @@ export async function POST(req: NextRequest) {
     const url = `/messages/${conversationId}`;
     const res = await messaging.sendEachForMulticast({
       tokens,
-      data: {
-        title: 'New message',
+      notification: {
+        title: 'Khidmaty',
         body: text || 'You have a new message',
+      },
+      webpush: {
+        fcmOptions: {
+          link: url,
+        },
+        notification: {
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+        },
+      },
+      data: {
         url,
       },
     });

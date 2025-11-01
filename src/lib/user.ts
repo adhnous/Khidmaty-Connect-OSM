@@ -12,6 +12,14 @@ import type { FieldValue } from 'firebase/firestore';
 
 export type UserRole = 'seeker' | 'provider' | 'admin' | 'owner';
 
+export type UserSettings = {
+  theme?: 'system' | 'light' | 'dark';
+  language?: 'en' | 'ar';
+  emailNotif?: boolean;
+  pushNotif?: boolean;
+  tips?: boolean;
+} | null;
+
 export interface UserProfile {
   uid: string;
   email: string | null;
@@ -24,6 +32,7 @@ export interface UserProfile {
   createdAt?: Timestamp | FieldValue | null;
   plan?: 'free' | 'basic' | 'pro' | 'enterprise';
   status?: 'active' | 'disabled' | 'pending';
+  settings?: UserSettings;
   pricingGate?: {
     mode?: 'force_show' | 'force_hide' | null;
     showAt?: Timestamp | null;

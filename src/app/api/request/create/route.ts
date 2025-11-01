@@ -37,11 +37,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'cannot_request_own_service' }, { status: 400 });
     }
 
-    // Create request document
+    // Requester profile snapshot (for provider context)
+    const requesterSnap = await db.collection('users').doc(requesterId).get();
+    const requester = requesterSnap.exists ? requesterSnap.data() || {} : {};
+
+    // Create request document with helpful snapshots
     const reqDocRef = await db.collection('requests').add({
       serviceId,
+      serviceTitle: String(service?.title || ''),
       providerId,
       requesterId,
+      requesterName: String(requester?.displayName || requester?.email || requesterId),
+      requesterEmail: requester?.email || null,
+      requesterPhone: requester?.phone || null,
+      requesterWhatsapp: requester?.whatsapp || null,
       note: note || null,
       status: 'new',
       createdAt: FieldValue.serverTimestamp(),
@@ -54,19 +63,41 @@ export async function POST(req: NextRequest) {
 
     let successCount = 0, failureCount = 0;
     if (tokens.length) {
-      const title = 'New service request';
-      const bodyText = service?.title ? `Request for: ${String(service.title).slice(0, 60)}` : 'You have a new request';
+      const title = 'Khidmaty';
+      const who = String((requester?.displayName || requester?.email || '') || '').slice(0, 40);
+      const noteSnippet = note ? ` — "${note.slice(0, 80)}${note.length > 80 ? '…' : ''}"` : '';
+      const bodyText = service?.title
+        ? `New request${who ? ` from ${who}` : ''}: ${String(service.title).slice(0, 60)}${noteSnippet}`
+        : `You have a new request${who ? ` from ${who}` : ''}${noteSnippet}`;
       const url = `/services/${serviceId}`;
       const res = await messaging.sendEachForMulticast({
         tokens,
+        notification: {
+          title,
+          body: bodyText,
+        },
+        webpush: {
+          fcmOptions: { link: url },
+          notification: { icon: '/favicon.ico', badge: '/favicon.ico' },
+        },
         data: {
           title,
           body: bodyText,
           url,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          requestId: reqDocRef.id,
+          serviceId,
+          requesterName: String((requester?.displayName || requester?.email || '') || ''),
+          note: note || '',
+          whatsapp: requester?.whatsapp || '',
+          phone: requester?.phone || '',
         },
       });
       successCount = res.successCount;
       failureCount = res.failureCount;
+    } else {
+      return NextResponse.json({ ok: true, requestId: reqDocRef.id, info: 'no_tokens' });
     }
 
     return NextResponse.json({ ok: true, requestId: reqDocRef.id, successCount, failureCount });

@@ -1,7 +1,7 @@
 "use client";
 
 import { app, db } from './firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, updateDoc, deleteField } from 'firebase/firestore';
 
 export async function getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration | null> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
@@ -74,4 +74,39 @@ export async function saveFcmToken(uid: string, token: string): Promise<void> {
     },
     { merge: true }
   );
+}
+
+export async function revokeFcmToken(uid: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const raw = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+  const vapidKey = (raw || '').trim().replace(/^['"]|['"]$/g, '');
+  const { getMessaging, getToken, isSupported, deleteToken } = await import('firebase/messaging');
+  const supported = await isSupported();
+  if (!supported) return;
+
+  const reg = await getServiceWorkerRegistration();
+  if (!reg) return;
+
+  const messaging = getMessaging(app);
+  let currentToken: string | null = null;
+  try {
+    currentToken = await getToken(messaging, { vapidKey, serviceWorkerRegistration: reg });
+  } catch {}
+
+  try {
+    await deleteToken(messaging);
+  } catch {}
+
+  try {
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) await sub.unsubscribe();
+  } catch {}
+
+  if (currentToken) {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      [`fcmTokens.${currentToken}`]: deleteField(),
+      fcmTokenUpdatedAt: serverTimestamp(),
+    });
+  }
 }
