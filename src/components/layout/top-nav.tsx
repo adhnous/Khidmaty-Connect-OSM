@@ -7,7 +7,7 @@ import { getClientLocale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Globe, User as UserIcon, Menu, Bell } from "lucide-react";
+import { LogOut, Globe, User as UserIcon, Menu, Bell, Shield, Handshake } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
@@ -115,7 +115,13 @@ export default function TopNav() {
     >
       <div className="mx-auto flex h-full max-w-7xl items-center gap-3 px-4 sm:px-6">
         {/* Brand on the right (RTL) */}
-        <div className="font-bold tracking-wide truncate max-w-[40vw] text-orange-400">Khidmaty · خدمتي</div>
+        <div className="flex items-center gap-2 max-w-[40vw]">
+          <div className="relative h-8 w-8 text-orange-400" aria-hidden="true">
+            <Shield className="h-8 w-8" />
+            <Handshake className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <div className="font-bold tracking-wide truncate text-orange-400">Khidmaty · خدمتي</div>
+        </div>
 
         {/* Primary nav links (hidden on mobile) */}
         <nav className="hidden md:flex flex-1 items-center gap-1 sm:gap-2">
