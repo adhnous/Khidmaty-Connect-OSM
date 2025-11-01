@@ -528,7 +528,7 @@ export default function ServiceDetailPage() {
 
             {subservicesList.length > 0 && (
               <>
-                <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">Sub-services</h2>
+                <h2 className="mt-6 border-t pt-6 text-2xl font-bold font-headline mb-3">{tr(locale, 'details.subservices')}</h2>
                 <div className="rounded border bg-background p-3">
                   <ul className="space-y-2">
                     {subservicesList.map((s: any) => (
@@ -550,7 +550,7 @@ export default function ServiceDetailPage() {
                   </ul>
                   {!hidePrice && (
                     <div className="mt-3 flex items-center justify-end text-sm">
-                      <span className="text-muted-foreground mr-2">Total</span>
+                      <span className="text-muted-foreground mr-2">{tr(locale, 'details.total')}</span>
                       <span className="font-semibold">LYD {subservicesTotal}</span>
                     </div>
                   )}
@@ -685,7 +685,7 @@ export default function ServiceDetailPage() {
                   onClick={handleShare}
                   disabled={sharing}
                 >
-                  <Share2 className="mr-2" /> {isOwner ? 'Share app (boost your service)' : 'Share this service'}
+                  <Share2 className="mr-2" /> {isOwner ? tr(locale, 'details.shareAppOwner') : tr(locale, 'details.shareService')}
                 </Button>
                 {service.providerId !== 'demo' && !isOwner && (
                   <Button
@@ -708,7 +708,7 @@ export default function ServiceDetailPage() {
                 )}
                 {subservicesList.length > 0 && (
                   <div className="rounded border bg-background p-3">
-                    <div className="mb-2 text-sm font-medium text-muted-foreground">Sub-services</div>
+                    <div className="mb-2 text-sm font-medium text-muted-foreground">{tr(locale, 'details.subservices')}</div>
                     <ul className="space-y-1">
                       {subservicesList.slice(0, 3).map((s: any) => (
                         <li key={s.id} className="flex items-center justify-between text-sm">
@@ -725,7 +725,7 @@ export default function ServiceDetailPage() {
                     {subservicesList.length > 3 && (
                       <Accordion type="single" collapsible className="mt-2">
                         <AccordionItem value="all">
-                          <AccordionTrigger className="text-sm">Show all {subservicesList.length} items</AccordionTrigger>
+                          <AccordionTrigger className="text-sm">{tr(locale, 'details.showAll')} {subservicesList.length} {tr(locale, 'details.items')}</AccordionTrigger>
                           <AccordionContent>
                             <ul className="space-y-1">
                               {subservicesList.slice(3).map((s: any) => (
@@ -746,7 +746,7 @@ export default function ServiceDetailPage() {
                     )}
                     {!hidePrice && (
                       <div className="mt-2 flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Total</span>
+                        <span className="text-muted-foreground">{tr(locale, 'details.total')}</span>
                         <span className="font-semibold">LYD {subservicesTotal}</span>
                       </div>
                     )}
@@ -755,7 +755,7 @@ export default function ServiceDetailPage() {
                 {/* Social links */}
                 {((service as any)?.facebookUrl || (service as any)?.telegramUrl) && (
                   <div className="rounded border bg-background p-3">
-                    <div className="mb-2 text-sm font-medium text-muted-foreground">Social</div>
+                    <div className="mb-2 text-sm font-medium text-muted-foreground">{tr(locale, 'details.social')}</div>
                     <div className="flex flex-col gap-2 text-sm">
                       {(service as any)?.facebookUrl && (
                         <a className="underline inline-flex items-center gap-2" href={(service as any).facebookUrl} target="_blank" rel="noopener noreferrer">

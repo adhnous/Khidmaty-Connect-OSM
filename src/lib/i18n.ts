@@ -213,6 +213,13 @@ export const dict = {
       requestSent: 'Request sent',
       requestFailed: 'Could not send request',
       reviews: 'Reviews & Ratings',
+      subservices: 'Sub-services',
+      total: 'Total',
+      social: 'Social',
+      shareAppOwner: 'Share app (boost your service)',
+      shareService: 'Share this service',
+      showAll: 'Show all',
+      items: 'items',
     },
 
     chat: {
@@ -610,6 +617,8 @@ export const dict = {
 
     details: {
       loading: 'جارٍ تحميل الخدمة…',
+      shareAppOwner: 'شارك التطبيق (عزّز خدمتك)',
+      shareService: 'شارك هذه الخدمة',
       notFoundTitle: 'الخدمة غير موجودة',
       notFoundBodyError: 'حدثت مشكلة أثناء تحميل هذه الخدمة.',
       notFoundBodyRemoved: 'قد تكون هذه الخدمة قد أزيلت.',
@@ -632,6 +641,11 @@ export const dict = {
       requestSent: 'تم إرسال الطلب',
       requestFailed: 'تعذر إرسال الطلب',
       reviews: 'المراجعات والتقييمات',
+      subservices: 'الخدمات الفرعية',
+      total: 'الإجمالي',
+      social: 'التواصل الاجتماعي',
+      showAll: 'عرض الكل',
+      items: 'عناصر',
     },
 
     chat: {
