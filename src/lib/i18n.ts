@@ -743,6 +743,7 @@ export const dict = {
         autoCalc: 'السعر التلقائي',
         total: 'الإجمالي',
         descriptionLabel: 'الوصف',
+        unit:'الوحدة',
         
 
       },
