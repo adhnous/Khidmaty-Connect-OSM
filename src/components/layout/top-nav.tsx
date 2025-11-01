@@ -115,7 +115,7 @@ export default function TopNav() {
     >
       <div className="mx-auto flex h-full max-w-7xl items-center gap-3 px-4 sm:px-6">
         {/* Brand on the right (RTL) */}
-        <div className="font-semibold tracking-wide truncate max-w-[40vw]">Khidmaty Connect</div>
+        <div className="font-bold tracking-wide truncate max-w-[40vw] text-orange-400">Khidmaty · خدمتي</div>
 
         {/* Primary nav links (hidden on mobile) */}
         <nav className="hidden md:flex flex-1 items-center gap-1 sm:gap-2">
