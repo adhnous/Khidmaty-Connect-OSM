@@ -741,6 +741,8 @@ export const dict = {
         price: 'السعر',
         descriptionplaceholder: 'الوصف',
         autoCalc: 'السعر التلقائي',
+        total: 'الإجمالي',
+        descriptionLabel: 'الوصف',
         
 
       },
