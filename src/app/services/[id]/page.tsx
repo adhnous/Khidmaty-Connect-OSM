@@ -577,7 +577,7 @@ export default function ServiceDetailPage() {
 
             
 <Card className="sticky top-24 mb-6">
-              {!hidePrice && (
+              {!hidePrice && !!((service as any)?.showPriceInContact) && (
                 <CardHeader>
                   <CardTitle className="text-center text-muted-foreground">
                     {tr(locale, 'details.servicePrice')}

@@ -179,6 +179,7 @@ export const dict = {
       subtitle5: '5 steps: category, details, media, pricing, confirm',
       steps: {
         category: 'Category',
+        location: 'Location',
         details: 'Details',
         media: 'Media',
         pricing: 'Pricing',
@@ -259,6 +260,7 @@ export const dict = {
         category: 'Category',
         price: 'Price (in LYD)',
         priceMode: 'Price option',
+        showPriceInContact: 'Show price in contact card',
         city: 'City',
         area: 'Area / Neighborhood',
         latitude: 'Latitude (optional)',
@@ -605,6 +607,7 @@ export const dict = {
       subtitle5: '',
       steps: {
         category: 'الفئة',
+        location: 'الموقع',
         details: 'التفاصيل',
         media: 'وسائط',
         pricing: 'التسعير',
@@ -696,6 +699,7 @@ export const dict = {
         category: 'الفئة',
         price: 'السعر (بالدينار الليبي)',
         priceMode: 'خيار السعر',
+        showPriceInContact: 'عرض السعر في بطاقة التواصل',
         city: 'المدينة',
         area: 'المنطقة / الحي',
         latitude: 'خط العرض (اختياري)',

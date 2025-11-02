@@ -15,15 +15,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { serviceSchema, type ServiceFormData } from "@/lib/schemas";
 import { getClientLocale, tr } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { libyanCities, cityLabel } from "@/lib/cities";
 import { createService, uploadServiceImages } from "@/lib/services";
 import { getServiceDraft, saveServiceDraft, deleteServiceDraft } from "@/lib/service-drafts";
 import { tileUrl, tileAttribution, markerHtml } from "@/lib/map";
-import AddressSearch from "@/components/address-search";
 import { reverseGeocodeNominatim, getLangFromDocument } from "@/lib/geocode";
 import { CategoryCards, CATEGORY_DEFS } from "@/components/category-cards";
 
@@ -39,15 +40,6 @@ const catSchema = z.object({ category: serviceSchema.shape.category });
 const detailsStepSchema = z.object({
   title: serviceSchema.shape.title,
   description: serviceSchema.shape.description,
-  city: serviceSchema.shape.city,
-  area: serviceSchema.shape.area,
-  location: serviceSchema.shape.location,
-  availabilityNote: serviceSchema.shape.availabilityNote,
-  contactPhone: serviceSchema.shape.contactPhone,
-  contactWhatsapp: serviceSchema.shape.contactWhatsapp,
-  mapUrl: serviceSchema.shape.mapUrl,
-  facebookUrl: serviceSchema.shape.facebookUrl,
-  telegramUrl: serviceSchema.shape.telegramUrl,
 });
 const mediaSchema = z.object({
   images: serviceSchema.shape.images,
@@ -55,14 +47,20 @@ const mediaSchema = z.object({
   videoUrls: serviceSchema.shape.videoUrls.optional(),
 });
 const pricingSchema = z.object({ price: serviceSchema.shape.price, priceMode: serviceSchema.shape.priceMode, subservices: serviceSchema.shape.subservices });
+const locationSchema = z.object({
+  location: serviceSchema.shape.location,
+  city: serviceSchema.shape.city,
+  area: serviceSchema.shape.area,
+});
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 export default function CreateServiceWizardPage() {
   const { user } = useAuth();
   const uid = user?.uid;
   const locale = getClientLocale();
   const router = useRouter();
+  const { toast } = useToast();
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -75,6 +73,7 @@ export default function CreateServiceWizardPage() {
       area: "",
       price: 0,
       priceMode: 'firm',
+      showPriceInContact: false,
       subservices: [],
       location: { lat: 32.8872, lng: 13.1913 },
       images: [],
@@ -97,6 +96,7 @@ export default function CreateServiceWizardPage() {
       title: tr(locale, 'wizard.title'),
       subtitle: tr(locale, 'wizard.subtitle5'),
       category: tr(locale, 'wizard.steps.category'),
+      location: tr(locale, 'wizard.steps.location'),
       details: tr(locale, 'wizard.steps.details'),
       media: tr(locale, 'wizard.steps.media'),
       pricing: tr(locale, 'wizard.steps.pricing'),
@@ -105,6 +105,20 @@ export default function CreateServiceWizardPage() {
       finish: tr(locale, 'wizard.finish'),
     };
   }, [locale]);
+
+  // Auto-calculate total price from subservices (except when priceMode is 'call')
+  const subsForCalc: any[] = form.watch('subservices') || [];
+  const priceModeValue: string = String(form.watch('priceMode') || 'firm');
+  const computedTotal = useMemo(() => {
+    try {
+      const arr = Array.isArray(subsForCalc) ? subsForCalc : [];
+      return arr.reduce((sum: number, it: any) => sum + Number(it?.price || 0), 0);
+    } catch { return 0; }
+  }, [JSON.stringify(subsForCalc)]);
+  useEffect(() => {
+    const eff = priceModeValue === 'call' ? 0 : computedTotal;
+    form.setValue('price', eff, { shouldValidate: true });
+  }, [computedTotal, priceModeValue]);
 
   // Load existing draft
   useEffect(() => {
@@ -127,6 +141,7 @@ export default function CreateServiceWizardPage() {
   const latNum = typeof lat === 'number' ? lat : (lat ? Number(lat) : undefined);
   const lngNum = typeof lng === 'number' ? lng : (lng ? Number(lng) : undefined);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
+  const [userSetLocation, setUserSetLocation] = useState(false);
 
   function MapClickWatcher() {
     useMapEvents({
@@ -135,6 +150,7 @@ export default function CreateServiceWizardPage() {
         if (typeof lat === 'number' && typeof lng === 'number') {
           form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
           form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
+          setUserSetLocation(true);
         }
       }
     });
@@ -156,19 +172,36 @@ export default function CreateServiceWizardPage() {
     const lang = getLangFromDocument();
     reverseGeocodeNominatim(latNum, lngNum, lang, ac.signal)
       .then((r) => {
+        // Show in popup
         setSelectedAddress(r.displayName);
-        try {
-          form.setValue('location.address', r.displayName, { shouldValidate: false, shouldDirty: true });
-          const areaName = extractAreaFromDisplayName(r.displayName);
-          if (areaName) form.setValue('area', areaName, { shouldValidate: false });
-        } catch {}
+        // If the user just chose a location, also try to fill area/city from the label
+        if (userSetLocation) {
+          try {
+            const areaName = extractAreaFromDisplayName(r.displayName);
+            if (areaName) form.setValue('area', areaName, { shouldValidate: true });
+            const dn = r.displayName || '';
+            const found = libyanCities.find((c) => dn.includes(c.ar) || dn.toLowerCase().includes(String(c.value).toLowerCase()));
+            if (found) form.setValue('city', found.value, { shouldValidate: true });
+          } catch {}
+        }
       })
       .catch((e) => {
         if ((e as any)?.name === 'AbortError') return;
         setSelectedAddress('');
       });
     return () => ac.abort();
-  }, [latNum, lngNum, form]);
+  }, [latNum, lngNum, form, userSetLocation]);
+
+  // When entering Step 3, if address is empty, prefill it from previous step (area + city)
+  useEffect(() => {
+    if (step !== 3) return;
+    const current = String(form.getValues('location.address') || '').trim();
+    if (current) return;
+    const area = String(form.getValues('area') || '').trim();
+    const city = String(form.getValues('city') || '').trim();
+    const composed = [area, city].filter(Boolean).join(', ');
+    if (composed) form.setValue('location.address', composed, { shouldValidate: false });
+  }, [step, form]);
 
   // Save draft helper
   const persistDraft = async () => {
@@ -183,19 +216,20 @@ export default function CreateServiceWizardPage() {
       2: [
         "title",
         "description",
+      ],
+      3: [
         "city",
         "area",
-        "location" as any,
         "availabilityNote",
         "contactPhone",
         "contactWhatsapp",
-        "mapUrl" as any,
         "facebookUrl" as any,
         "telegramUrl" as any,
+        "location" as any,
       ],
-      3: ["images" as any, "videoUrl" as any, "videoUrls" as any],
-      4: ["price", "subservices"],
-      5: [],
+      4: ["images" as any, "videoUrl" as any, "videoUrls" as any],
+      5: ["price", "subservices"],
+      6: [],
     };
     const fields = fieldsByStep[step];
     if (fields.length) {
@@ -208,7 +242,7 @@ export default function CreateServiceWizardPage() {
       }
     }
     await persistDraft();
-    setStep((s): Step => (s >= 5 ? 5 : ((s + 1) as Step)));
+    setStep((s): Step => (s >= 6 ? 6 : ((s + 1) as Step)));
   };
 
   const goPrev = async () => {
@@ -225,8 +259,9 @@ export default function CreateServiceWizardPage() {
   const disableNext = useMemo(() => {
     if (step === 1) return !catSchema.safeParse(form.watch()).success;
     if (step === 2) return !detailsStepSchema.safeParse(form.watch()).success;
-    if (step === 3) return !mediaSchema.safeParse(form.watch()).success;
-    if (step === 4) return !pricingSchema.safeParse(form.watch()).success;
+    if (step === 3) return !locationSchema.safeParse(form.watch()).success;
+    if (step === 4) return !mediaSchema.safeParse(form.watch()).success;
+    if (step === 5) return !pricingSchema.safeParse(form.watch()).success;
     return false;
   }, [step, form.watch()]);
 
@@ -258,15 +293,15 @@ export default function CreateServiceWizardPage() {
 
   const Stepper = () => (
     <div className="mb-4 flex items-center gap-2 text-sm">
-      {[1, 2, 3, 4, 5].map((n) => (
+      {[1, 2, 3, 4, 5, 6].map((n) => (
         <div key={n} className={`flex items-center gap-2 ${step === n ? "font-semibold" : "text-muted-foreground"}`}>
           <div className={`grid h-6 w-6 place-items-center rounded-full border ${step >= n ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
             {n}
           </div>
           <span>
-            {n === 1 ? wiz.category : n === 2 ? wiz.details : n === 3 ? wiz.media : n === 4 ? wiz.pricing : wiz.confirm}
+            {n === 1 ? wiz.category : n === 2 ? wiz.details : n === 3 ? wiz.location : n === 4 ? wiz.media : n === 5 ? wiz.pricing : wiz.confirm}
           </span>
-          {n < 5 && <span className="mx-2 text-muted-foreground">›</span>}
+          {n < 6 && <span className="mx-2 text-muted-foreground">›</span>}
         </div>
       ))}
     </div>
@@ -300,7 +335,8 @@ export default function CreateServiceWizardPage() {
               )}
 
               {step === 2 && (
-                <div className="space-y-4">
+                <Card>
+                  <CardContent className="space-y-4">
                   <FormField
                     control={form.control}
                     name="title"
@@ -327,206 +363,187 @@ export default function CreateServiceWizardPage() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{tr(locale, "form.labels.city")}</FormLabel>
-                          <FormControl>
-                            <select className="w-full rounded border bg-background p-2" value={field.value} onChange={field.onChange}>
-                              {libyanCities.map((c) => (
-                                <option key={c.value} value={c.value}>{cityLabel(locale, c.value)}</option>
-                              ))}
-                            </select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="area"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{tr(locale, "form.labels.area")}</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
-                    <AddressSearch
-                      value={(form.watch('location.address') as string) || selectedAddress}
-                      placeholder={tr(locale, 'form.placeholders.searchAddress') as string}
-                      countryCodes="ly"
-                      city={String(form.watch('city') || '')}
-                      onSelect={({ lat, lng, displayName }: any) => {
-                        form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
-                        form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
-                        if (displayName) {
-                          form.setValue('location.address', displayName, { shouldValidate: false });
-                          const areaName = extractAreaFromDisplayName(displayName);
-                          if (areaName) form.setValue('area', areaName, { shouldValidate: false });
-                        }
-                      }}
-                    />
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <FormField control={form.control} name="location.lat" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{tr(locale, 'form.labels.latitude')}</FormLabel>
-                          <FormControl><Input type="number" step="0.000001" {...field} onChange={(e)=>field.onChange(Number(e.target.value))} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="location.lng" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{tr(locale, 'form.labels.longitude')}</FormLabel>
-                          <FormControl><Input type="number" step="0.000001" {...field} onChange={(e)=>field.onChange(Number(e.target.value))} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-                    <div className="rounded border">
-                      <MapContainer center={[latNum ?? 32.8872, lngNum ?? 13.1913]} zoom={13} scrollWheelZoom={false} className="cursor-crosshair" style={{ height: 280, width: '100%'}}
-                        onClick={(e: any) => {
-                          const { lat, lng } = e?.latlng || {};
-                          if (typeof lat === 'number' && typeof lng === 'number') {
-                            form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
-                            form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
-                          }
-                        }}
-                      >
-                        <TileLayer url={tileUrl} attribution={tileAttribution} />
-                        <MapClickWatcher />
-                        {latNum != null && lngNum != null && (
-                          <Marker position={[latNum, lngNum]} icon={markerIcon} draggable={true}
-                            eventHandlers={{
-                              dragend: (e: any) => {
-                                const m = e?.target;
-                                if (m?.getLatLng) {
-                                  const p = m.getLatLng();
-                                  form.setValue('location.lat', Number(p.lat.toFixed(6)), { shouldValidate: true });
-                                  form.setValue('location.lng', Number(p.lng.toFixed(6)), { shouldValidate: true });
-                                }
-                              }
-                            }}
-                          >
-                            <Popup>{selectedAddress || tr(locale, 'form.map.selected')}</Popup>
-                          </Marker>
-                        )}
-                        <ScaleControl imperial={false} position="bottomleft" />
-                      </MapContainer>
-                    </div>
-                    {selectedAddress && (
-                      <div className="text-sm text-muted-foreground">{selectedAddress}</div>
-                    )}
-                  </div>
-
-                  {/* Contact & social */}
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FormField control={form.control} name="contactPhone" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel>
-                        <FormControl><Input type="tel" placeholder={tr(locale, 'form.placeholders.contactPhone') as string} {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="contactWhatsapp" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel>
-                        <FormControl><Input type="tel" placeholder={tr(locale, 'form.placeholders.contactWhatsapp') as string} {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FormField control={form.control} name="availabilityNote" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.labels.availabilityNote')}</FormLabel>
-                        <FormControl><Textarea rows={2} placeholder={tr(locale, 'form.placeholders.availability') as string} {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="mapUrl" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.labels.mapUrl')}</FormLabel>
-                        <FormControl><Input type="url" placeholder="https://maps.google.com/..." {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FormField control={form.control} name="facebookUrl" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.labels.facebookUrl')}</FormLabel>
-                        <FormControl><Input type="url" placeholder="https://facebook.com/yourpage" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="telegramUrl" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.labels.telegramUrl')}</FormLabel>
-                        <FormControl><Input type="url" placeholder="https://t.me/yourchannel" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               )}
 
               {step === 3 && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <FormLabel>{tr(locale, 'form.labels.images')}</FormLabel>
-                    <Input type="file" accept="image/*" multiple onChange={async (e) => {
-                      const files = Array.from(e.target.files ?? []);
-                      if (!files.length || !uid) return;
-                      try {
-                        const uploaded = await uploadServiceImages(uid, files as File[]);
-                        const mapped = uploaded.map((u) => ({ url: u.url }));
-                        const prev = form.getValues('images') || [];
-                        form.setValue('images', [...prev, ...mapped], { shouldValidate: true });
-                        await persistDraft();
-                      } catch (err) {
-                        console.error('Image upload failed', err);
-                      }
-                    }} />
-                    {Array.isArray(form.watch('images')) && form.watch('images')!.length > 0 && (
-                      <div className="mt-2 grid grid-cols-3 gap-2 md:grid-cols-4">
-                        {form.watch('images')!.map((img, i) => (
-                          <div key={`${img.url}_${i}`} className="relative">
-                            <img src={img.url} alt="" className="h-24 w-full rounded object-cover" />
-                            <button type="button" className="absolute right-1 top-1 rounded bg-black/60 px-1 text-xs text-white" onClick={() => {
-                              const next = (form.getValues('images') || []).filter((_, idx) => idx !== i);
-                              form.setValue('images', next, { shouldValidate: true });
-                            }}>×</button>
-                          </div>
-                        ))}
+                <Card>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{tr(locale, "form.labels.city")}</FormLabel>
+                            <FormControl>
+                              <select className="w-full rounded border bg-background p-2" value={field.value} onChange={field.onChange}>
+                                {libyanCities.map((c) => (
+                                  <option key={c.value} value={c.value}>{cityLabel(locale, c.value)}</option>
+                                ))}
+                              </select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="area"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{tr(locale, "form.labels.area")}</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
+                      <div className="rounded border">
+                        <MapContainer center={[latNum ?? 32.8872, lngNum ?? 13.1913]} zoom={13} scrollWheelZoom={false} className="cursor-crosshair" style={{ height: 280, width: '100%'}}
+                          onClick={(e: any) => {
+                            const { lat, lng } = e?.latlng || {};
+                            if (typeof lat === 'number' && typeof lng === 'number') {
+                              form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
+                              form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
+                            }
+                          }}
+                        >
+                          <TileLayer url={tileUrl} attribution={tileAttribution} />
+                          <MapClickWatcher />
+                          {latNum != null && lngNum != null && (
+                            <Marker position={[latNum, lngNum]} icon={markerIcon} draggable={true}
+                              eventHandlers={{
+                                dragend: (e: any) => {
+                                  const m = e?.target;
+                                  if (m?.getLatLng) {
+                                    const p = m.getLatLng();
+                                    form.setValue('location.lat', Number(p.lat.toFixed(6)), { shouldValidate: true });
+                                    form.setValue('location.lng', Number(p.lng.toFixed(6)), { shouldValidate: true });
+                                    setUserSetLocation(true);
+                                  }
+                                }
+                              }}
+                            >
+                              <Popup>{selectedAddress || tr(locale, 'form.map.selected')}</Popup>
+                            </Marker>
+                          )}
+                          <ScaleControl imperial={false} position="bottomleft" />
+                        </MapContainer>
                       </div>
-                    )}
-                  </div>
-                  <FormField control={form.control} name="youtubeUrl" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.videoUrl')}</FormLabel>
-                      <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <div className="space-y-2">
-                    <FormLabel>{tr(locale, 'form.labels.videoUrls')}</FormLabel>
-                    <VideoUrlsEditor form={form} />
-                  </div>
-                </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField control={form.control} name="availabilityNote" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{tr(locale, 'form.labels.availabilityNote')}</FormLabel>
+                          <FormControl><Textarea rows={2} placeholder={tr(locale, 'form.placeholders.availability') as string} {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <FormField control={form.control} name="facebookUrl" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{tr(locale, 'form.labels.facebookUrl')}</FormLabel>
+                            <FormControl><Input type="url" placeholder="https://facebook.com/yourpage" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="telegramUrl" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{tr(locale, 'form.labels.telegramUrl')}</FormLabel>
+                            <FormControl><Input type="url" placeholder="https://t.me/yourchannel" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {step === 4 && (
+                <Card>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <FormLabel>{tr(locale, 'form.labels.images')}</FormLabel>
+                      <Input type="file" accept="image/*" multiple onChange={async (e) => {
+                        const files = Array.from(e.target.files ?? []);
+                        if (!files.length) return;
+                        const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
+                        try {
+                          let mapped: { url: string }[] = [];
+                          if (mode === 'local') {
+                            const fd = new FormData();
+                            files.forEach((f) => fd.append('files', f));
+                            const res = await fetch('/api/uploads', { method: 'POST', body: fd });
+                            if (!res.ok) throw new Error('local_upload_failed');
+                            const data = await res.json();
+                            mapped = (data.urls || []).map((u: string) => ({ url: u }));
+                          } else {
+                            if (!uid) throw new Error('no_uid');
+                            const uploaded = await uploadServiceImages(uid, files as File[]);
+                            mapped = uploaded.map((u) => ({ url: u.url }));
+                          }
+                          const prev = form.getValues('images') || [];
+                          form.setValue('images', [...prev, ...mapped], { shouldValidate: true });
+                          await persistDraft();
+                        } catch (err) {
+                          try {
+                            const limited = files.slice(0, 2);
+                            const dataUrls = await Promise.all(limited.map(async (f) => {
+                              const raw = await new Promise<string>((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = () => resolve(String(reader.result));
+                                reader.onerror = reject;
+                                reader.readAsDataURL(f);
+                              });
+                              return raw;
+                            }));
+                            const mapped = dataUrls.map((u) => ({ url: u }));
+                            const prev = form.getValues('images') || [];
+                            form.setValue('images', [...prev, ...mapped], { shouldValidate: true });
+                            toast({ title: tr(locale, 'form.toasts.imagesAdded') });
+                            await persistDraft();
+                          } catch (e2) {
+                            toast({ variant: 'destructive', title: tr(locale, 'form.toasts.addImagesFailed') });
+                          }
+                        }
+                      }} />
+                      {Array.isArray(form.watch('images')) && form.watch('images')!.length > 0 && (
+                        <div className="mt-2 grid grid-cols-3 gap-2 md:grid-cols-4">
+                          {form.watch('images')!.map((img, i) => (
+                            <div key={`${img.url}_${i}`} className="relative">
+                              <img src={img.url} alt="" className="h-24 w-full rounded object-cover" />
+                              <button type="button" className="absolute right-1 top-1 rounded bg-black/60 px-1 text-xs text-white" onClick={() => {
+                                const next = (form.getValues('images') || []).filter((_, idx) => idx !== i);
+                                form.setValue('images', next, { shouldValidate: true });
+                              }}>×</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <FormField control={form.control} name="youtubeUrl" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{tr(locale, 'form.labels.videoUrl')}</FormLabel>
+                        <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <div className="space-y-2">
+                      <FormLabel>{tr(locale, 'form.labels.videoUrls')}</FormLabel>
+                      <VideoUrlsEditor form={form} />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {step === 5 && (
                 <div className="space-y-4">
                   <FormField
                     control={form.control}
@@ -552,8 +569,21 @@ export default function CreateServiceWizardPage() {
                       <FormItem>
                         <FormLabel>{tr(locale, "form.labels.price")}</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} step="1" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          <Input type="number" min={0} step="1" value={Number(form.watch('price') || 0)} readOnly />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="showPriceInContact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-2">
+                          <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} id="showPriceInContact" />
+                          <FormLabel htmlFor="showPriceInContact" className="!mt-0">{tr(locale, 'form.labels.showPriceInContact')}</FormLabel>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -589,7 +619,7 @@ export default function CreateServiceWizardPage() {
                 </div>
               )}
 
-              {step === 5 && (
+              {step === 6 && (
                 <div className="space-y-4">
                   <div className="text-sm text-muted-foreground">{wiz.reviewHint}</div>
                   <div className="space-y-2 rounded border p-3 text-sm">
@@ -647,7 +677,7 @@ export default function CreateServiceWizardPage() {
 
               <div className="flex items-center justify-between pt-2">
                 <Button type="button" variant="outline" onClick={goPrev} disabled={step === 1}>{tr(locale, "common.previous")}</Button>
-                {step < 5 ? (
+                {step < 6 ? (
                   <Button type="button" onClick={goNext} disabled={disableNext}>{tr(locale, "common.next")}</Button>
                 ) : (
                   <Button type="button" onClick={handleFinish}>{wiz.finish}</Button>

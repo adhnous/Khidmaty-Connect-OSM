@@ -11,7 +11,7 @@ import L from 'leaflet';
 import { useMapEvents } from 'react-leaflet';
 import { reverseGeocodeNominatim, getLangFromDocument } from '@/lib/geocode';
 
-import { getServiceById, updateService, type Service, type ServiceImage } from '@/lib/services';
+import { getServiceById, updateService, uploadServiceImages, type Service, type ServiceImage } from '@/lib/services';
 import { serviceSchema } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -313,15 +313,19 @@ export default function EditServicePage() {
       } else if (mode === 'cloudinary') {
         added = await uploadImagesCloudinary(files);
       } else {
-        // inline fallback
-        const limited = files.slice(0, 4);
-        const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f)));
-        added = dataUrls.map((u) => ({ url: u }));
+        if (!user?.uid) throw new Error('no_uid');
+        added = await uploadServiceImages(user.uid, files);
       }
       setImages((prev) => [...prev, ...added]);
       toast({ title: tr(locale, 'form.toasts.imagesAdded') });
     } catch (e: any) {
       toast({ variant: 'destructive', title: tr(locale, 'form.toasts.addImagesFailed'), description: e?.message || '' });
+      try {
+        const limited = files.slice(0, 4);
+        const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f)));
+        const added = dataUrls.map((u) => ({ url: u }));
+        setImages((prev) => [...prev, ...added]);
+      } catch {}
     } finally {
       setUploading(false);
     }
@@ -339,13 +343,19 @@ export default function EditServicePage() {
         const [img] = await uploadImagesCloudinary([file]);
         next = img;
       } else {
-        const url = await compressToDataUrl(file);
-        next = { url };
+        if (!user?.uid) throw new Error('no_uid');
+        const [img] = await uploadServiceImages(user.uid, [file]);
+        next = img;
       }
       setImages((prev) => prev.map((it, i) => (i === index ? next : it)));
       toast({ title: tr(locale, 'form.toasts.imageReplaced') });
     } catch (e: any) {
       toast({ variant: 'destructive', title: tr(locale, 'form.toasts.replaceFailed'), description: e?.message || '' });
+      try {
+        const url = await compressToDataUrl(file);
+        const next = { url } as ServiceImage;
+        setImages((prev) => prev.map((it, i) => (i === index ? next : it)));
+      } catch {}
     } finally {
       setUploading(false);
     }

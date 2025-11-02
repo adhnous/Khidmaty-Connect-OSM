@@ -13,6 +13,7 @@ export const serviceSchema = z.object({
   description: z.string().min(30, 'يجب أن يتكون الوصف من 30 حرفًا على الأقل').max(800, 'لا يمكن أن يتجاوز الوصف 800 حرف'),
   price: z.coerce.number().min(0, 'يجب أن يكون السعر 0 أو أكثر'),
   priceMode: z.enum(['firm', 'negotiable', 'call']).default('firm'),
+  showPriceInContact: z.boolean().default(false),
   category: z.string({required_error: "يرجى اختيار فئة"}).min(1, 'يرجى اختيار فئة'),
   city: z.string({required_error: "يرجى اختيار مدينة"}).min(1, 'يرجى اختيار مدينة'),
   area: z
