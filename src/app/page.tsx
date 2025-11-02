@@ -25,7 +25,7 @@ import { useEffect, useState } from 'react';
 import { listServicesFiltered, type Service, type ListFilters } from '@/lib/services';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { libyanCities, cityLabel } from '@/lib/cities';
-import { CategoryCards, type CategoryCardId } from '@/components/category-cards';
+import { CategoryCards, type CategoryCardId, CATEGORY_DEFS } from '@/components/category-cards';
 
 
 const featuredCategories = [
@@ -59,10 +59,17 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Auto-refetch on filter changes except text query (which requires pressing Search)
+    // Auto-refetch on filter changes
     void fetchServices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, category, maxPrice, sort]);
+
+  // Debounced search when typing
+  useEffect(() => {
+    const t = setTimeout(() => void fetchServices(), 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
 
   async function fetchServices() {
     try {
@@ -71,9 +78,10 @@ export default function Home() {
       const baseFilters: ListFilters = {};
       if (city && city !== ALL_CITIES) baseFilters.city = city;
       if (maxPrice) baseFilters.maxPrice = Number(maxPrice);
-      const data = await listServicesFiltered({ ...baseFilters, limit: isGroup ? 120 : 24 });
-
       const needle = q.trim().toLowerCase();
+      const take = needle ? 300 : (isGroup ? 120 : 24);
+      const data = await listServicesFiltered({ ...baseFilters, limit: take });
+      
 
       const belongsToGroup = (raw: string, g: string): boolean => {
         const s = String(raw || '').toLowerCase();
@@ -99,11 +107,16 @@ export default function Home() {
       }
 
       if (needle) {
+        const catLabelIds = Object.entries(CATEGORY_DEFS)
+          .filter(([_, def]) => def.ar.toLowerCase().includes(needle) || def.en.toLowerCase().includes(needle))
+          .map(([id]) => id as CategoryCardId);
+        const matchCategoryLabels = (s: Service) => catLabelIds.some((id) => belongsToGroup(s.category, String(id)));
         filtered = filtered.filter((s) =>
           (s.title || '').toLowerCase().includes(needle) ||
           (s.description || '').toLowerCase().includes(needle) ||
           (s.category || '').toLowerCase().includes(needle) ||
-          (s.city || '').toLowerCase().includes(needle)
+          (s.city || '').toLowerCase().includes(needle) ||
+          matchCategoryLabels(s)
         );
       }
 
@@ -169,6 +182,7 @@ export default function Home() {
                       onChange={(e) => setQ(e.target.value)}
                       onFocus={() => setSearchFocused(true)}
                       onBlur={() => setSearchFocused(false)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void fetchServices(); } }}
                     />
                   </div>
                   <Select value={city} onValueChange={setCity}>

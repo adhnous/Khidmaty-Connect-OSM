@@ -51,7 +51,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import AddressSearch from '@/components/address-search';
+import { Checkbox } from '@/components/ui/checkbox';
 import { libyanCities, cityLabel, cityCenter } from '@/lib/cities';
 import CategoryCombobox from '@/components/category-combobox';
 
@@ -101,10 +101,10 @@ export default function EditServicePage() {
       description: '',
       price: 0,
       priceMode: 'firm',
+      showPriceInContact: false,
       category: '',
       city: 'Tripoli',
       area: '',
-      mapUrl: '',
       availabilityNote: '',
       contactPhone: '',
       contactWhatsapp: '',
@@ -154,10 +154,10 @@ export default function EditServicePage() {
         description: doc.description,
         price: doc.price,
         priceMode: (doc as any).priceMode ?? 'firm',
+        showPriceInContact: !!(doc as any).showPriceInContact,
         category: doc.category,
         city: doc.city,
         area: doc.area,
-        mapUrl: (doc as any).mapUrl ?? '',
         availabilityNote: doc.availabilityNote ?? '',
         contactPhone: (doc as any).contactPhone ?? '',
         contactWhatsapp: (doc as any).contactWhatsapp ?? '',
@@ -438,6 +438,7 @@ export default function EditServicePage() {
         description: data.description,
         price: data.price,
         priceMode: (data as any).priceMode,
+        showPriceInContact: !!(data as any).showPriceInContact,
         category: data.category,
         city: data.city,
         availabilityNote: data.availabilityNote,
@@ -447,7 +448,6 @@ export default function EditServicePage() {
       // Handle optional coordinates: set values if present, otherwise delete fields
       if (typeof lat === 'number') payload.lat = lat; else payload.lat = deleteField();
       if (typeof lng === 'number') payload.lng = lng; else payload.lng = deleteField();
-      if (typeof (data as any).mapUrl === 'string' && (data as any).mapUrl.trim()) payload.mapUrl = (data as any).mapUrl.trim(); else payload.mapUrl = deleteField();
       if (typeof data.videoUrl === 'string' && data.videoUrl.trim()) payload.videoUrl = data.videoUrl.trim(); else payload.videoUrl = deleteField();
       // Additional video links
       if (Array.isArray((data as any).videoUrls) && (data as any).videoUrls.filter(Boolean).length > 0) {
@@ -501,588 +501,190 @@ export default function EditServicePage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{tr(locale, 'form.labels.title')}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <div className="mt-1 text-xs text-muted-foreground">{(form.watch('title')?.length || 0)}/100 · {locale === 'ar' ? 'الحد الأدنى 6 أحرف' : 'min 6 chars'}</div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{tr(locale, 'form.labels.description')}</FormLabel>
-                    <FormControl>
-                      <Textarea className="min-h-[150px]" {...field} />
-                    </FormControl>
-                    <div className="mt-1 text-xs text-muted-foreground">{(form.watch('description')?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}</div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.category')}</FormLabel>
-                      <CategoryCombobox
-                        value={field.value}
-                        onChange={(v) => field.onChange(v)}
-                        placeholder={tr(locale, 'form.labels.category') as string}
-                        mergeCommunity
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="space-y-3">
-                  <FormField
-                    control={form.control}
-                    name="priceMode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.labels.priceMode')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || 'firm'}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={tr(locale, 'form.labels.priceMode')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="firm">{locale === 'ar' ? 'ثابت' : 'Firm'}</SelectItem>
-                            <SelectItem value="negotiable">{locale === 'ar' ? 'قابل للتفاوض' : 'Negotiable'}</SelectItem>
-                            <SelectItem value="call">{locale === 'ar' ? 'اتصل بي' : 'Call me'}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
-                        <FormControl>
-                          <Input type="number" readOnly {...field} />
-                        </FormControl>
-                        <FormDescription>{tr(locale, 'form.subservices.autoCalc')}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {/* Sub-services repeater */}
-                  {subFieldArray.fields.length === 0 && (
-                    <p className="text-sm text-muted-foreground">{tr(locale, 'form.subservices.empty')}</p>
-                  )}
-                  {subFieldArray.fields.map((field, index) => (
-                    <div key={field.id} className="rounded border p-3 space-y-2">
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                        <FormField
-                          control={form.control}
-                          name={`subservices.${index}.title` as const}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{tr(locale, 'form.subservices.title')}</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`subservices.${index}.price` as const}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{tr(locale, 'form.subservices.price')}</FormLabel>
-                              <FormControl>
-                                <Input type="number" min={0} step="1" placeholder="50" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`subservices.${index}.unit` as const}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{tr(locale, 'form.subservices.unit')}</FormLabel>
-                              <FormControl>
-                                <Input placeholder={tr(locale, 'form.subservices.unitPlaceholder')} {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="flex items-end">
-                          <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>
-                            {tr(locale, 'form.subservices.remove')}
-                          </Button>
-                        </div>
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name={`subservices.${index}.description` as const}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{tr(locale, 'form.subservices.description')}</FormLabel>
-                            <FormControl>
-                              <Textarea rows={2} placeholder={tr(locale, 'form.subservices.descriptionPlaceholder')} {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div>
-                    <div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() =>
-                      subFieldArray.append({
-                        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                        title: '',
-                        price: 0,
-                        unit: '',
-                        description: '',
-                      })
-                    }
-                  >
-                    + {tr(locale, 'form.subservices.add')}
-                  </Button>
-                </div>
-              </div>
+              <FormField control={form.control} name="title" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{tr(locale, 'form.labels.title')}</FormLabel>
+                  <FormControl><Input {...field} /></FormControl>
+                  <div className="mt-1 text-xs text-muted-foreground">{(form.watch('title')?.length || 0)}/100 · {locale === 'ar' ? 'الحد الأدنى 6 أحرف' : 'min 6 chars'}</div>
+                
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>{tr(locale, 'form.labels.description')}</FormLabel>
+                <FormControl><Textarea className="min-h-[150px]" {...field} /></FormControl>
+                <div className="mt-1 text-xs text-muted-foreground">{(form.watch('description')?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}</div>
+                <FormMessage />
+              </FormItem>
+            )} />
 
-              <FormField
-                control={form.control}
-                name="videoUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{tr(locale, 'form.labels.videoUrl')}</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://www.youtube.com/watch?v=..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Additional YouTube links */}
-              <div className="space-y-2">
-                <FormLabel>{tr(locale, 'form.labels.videoUrls')}</FormLabel>
-                <div className="space-y-2">
-                  {(form.watch('videoUrls') as any[] || []).map((url: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <Input
-                        value={url}
-                        onChange={(e) => {
-                          const next = [...((form.getValues('videoUrls') as any[]) || [])];
-                          next[idx] = e.target.value;
-                          form.setValue('videoUrls' as any, next, { shouldValidate: true });
-                        }}
-                        placeholder="https://www.youtube.com/watch?v=..."
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          const next = ((form.getValues('videoUrls') as any[]) || []).filter((_, i) => i !== idx);
-                          form.setValue('videoUrls' as any, next, { shouldValidate: true });
-                        }}
-                      >
-                        {tr(locale, 'form.subservices.remove')}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    value={(form as any)._newVideoUrl || ''}
-                    onChange={(e) => ((form as any)._newVideoUrl = e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      const v = String((form as any)._newVideoUrl || '').trim();
-                      if (!v) return;
-                      const next = [...((form.getValues('videoUrls') as any[]) || []), v];
-                      form.setValue('videoUrls' as any, next, { shouldValidate: true });
-                      (form as any)._newVideoUrl = '';
-                    }}
-                  >
-                    + Add
-                  </Button>
-                </div>
-              </div>
-
-              {/* Social links */}
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="facebookUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.facebookUrl')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://facebook.com/yourpage" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="telegramUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.telegramUrl')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://t.me/yourchannel" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.city')}</FormLabel>
-                      <Select onValueChange={(v) => {
-                        field.onChange(v);
-                        const c = cityCenter(v);
-                        if (c) { setLat(c.lat); setLng(c.lng); }
-                      }} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {libyanCities.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>{cityLabel(locale, c.value)}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="area"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.area')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="mapUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{tr(locale, 'form.labels.mapUrl')}</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://maps.google.com/?q=... or https://www.openstreetmap.org/..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="availabilityNote"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{tr(locale, 'form.labels.availabilityNote')}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="contactPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={tr(locale, 'form.placeholders.contactPhone')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="contactWhatsapp"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={tr(locale, 'form.placeholders.contactWhatsapp')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <FormField control={form.control} name="category" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{tr(locale, 'form.labels.category')}</FormLabel>
+                  <CategoryCombobox value={field.value} onChange={field.onChange} placeholder={tr(locale, 'form.labels.category') as string} mergeCommunity />
+                  <FormMessage />
+                </FormItem>
+              )} />
               <div className="space-y-3">
-                <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
-                <AddressSearch
-                  className="max-w-md"
-                  placeholder={tr(locale, 'form.placeholders.searchAddress')}
-                  countryCodes="ly"
-                  city={String(form.getValues('city') || '')}
-                  onSelect={({ lat, lng, displayName }) => {
-                    setLat(Number(lat.toFixed(6)));
-                    setLng(Number(lng.toFixed(6)));
-                    if (displayName) {
-                      setSelectedAddress(displayName);
-                      const areaName = extractAreaFromDisplayName(displayName);
-                      if (areaName) form.setValue('area' as any, areaName, { shouldValidate: false });
-                    }
-                  }}
-                />
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div>
-                    <FormLabel className="text-xs">{tr(locale, 'form.labels.latitude')}</FormLabel>
-                    <Input
-                      placeholder="e.g., 32.8872"
-                      value={lat ?? ''}
-                      onChange={(e) => {
-                        const v = e.target.value.trim();
-                        setLat(v === '' ? undefined : Number(v));
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <FormLabel className="text-xs">{tr(locale, 'form.labels.longitude')}</FormLabel>
-                    <Input
-                      placeholder="e.g., 13.1913"
-                      value={lng ?? ''}
-                      onChange={(e) => {
-                        const v = e.target.value.trim();
-                        setLng(v === '' ? undefined : Number(v));
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleUseMyLocation}
-                    >
-                      {tr(locale, 'form.actions.useMyLocation')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setLat(undefined);
-                        setLng(undefined);
-                      }}
-                    >
-                      {tr(locale, 'form.actions.clearLocation')}
-                    </Button>
-                  </div>
-                </div>
+                <FormField control={form.control} name="priceMode" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{tr(locale, 'form.labels.priceMode')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || 'firm'}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={tr(locale, 'form.labels.priceMode')} /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="firm">{locale === 'ar' ? 'ثابت' : 'Firm'}</SelectItem>
+                        <SelectItem value="negotiable">{locale === 'ar' ? 'قابل للتفاوض' : 'Negotiable'}</SelectItem>
+                        <SelectItem value="call">{locale === 'ar' ? 'اتصل بي' : 'Call me'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="price" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
+                    <FormControl><Input type="number" readOnly {...field} /></FormControl>
+                    <FormDescription>{tr(locale, 'form.subservices.autoCalc')}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="showPriceInContact" render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-2">
+                      <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} id="edit_showPriceInContact" />
+                      <FormLabel htmlFor="edit_showPriceInContact" className="!mt-0">{tr(locale, 'form.labels.showPriceInContact')}</FormLabel>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )} />
 
-                {/* Map picker (client-only) */}
+                {subFieldArray.fields.length === 0 && (<p className="text-sm text-muted-foreground">{tr(locale, 'form.subservices.empty')}</p>)}
+                {subFieldArray.fields.map((field, index) => (
+                  <div key={field.id} className="rounded border p-3 space-y-2">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                      <FormField control={form.control} name={`subservices.${index}.title` as const} render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.subservices.title')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name={`subservices.${index}.price` as const} render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.subservices.price')}</FormLabel><FormControl><Input type="number" min={0} step="1" placeholder="50" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name={`subservices.${index}.unit` as const} render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.subservices.unit')}</FormLabel><FormControl><Input placeholder={tr(locale, 'form.subservices.unitPlaceholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <div className="flex items-end"><Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>{tr(locale, 'form.subservices.remove')}</Button></div>
+                    </div>
+                    <FormField control={form.control} name={`subservices.${index}.description` as const} render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.subservices.description')}</FormLabel><FormControl><Textarea rows={2} placeholder={tr(locale, 'form.subservices.descriptionPlaceholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                ))}
+                <div className="flex items-center justify-between text-sm"><div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div><div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div></div>
+                <Button type="button" variant="secondary" onClick={() => subFieldArray.append({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, title: '', price: 0, unit: '', description: '' })}>+ {tr(locale, 'form.subservices.add')}</Button>
+              </div>
+            </div>
+
+            <FormField control={form.control} name="videoUrl" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.videoUrl')}</FormLabel><FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <div className="space-y-2">
+              <FormLabel>{tr(locale, 'form.labels.videoUrls')}</FormLabel>
+              <div className="space-y-2">
+                {(form.watch('videoUrls') as any[] || []).map((url: string, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input value={url} onChange={(e) => { const next = [...((form.getValues('videoUrls') as any[]) || [])]; next[idx] = e.target.value; form.setValue('videoUrls' as any, next, { shouldValidate: true }); }} placeholder="https://www.youtube.com/watch?v=..." />
+                    <Button type="button" variant="outline" onClick={() => { const next = ((form.getValues('videoUrls') as any[]) || []).filter((_, i) => i !== idx); form.setValue('videoUrls' as any, next, { shouldValidate: true }); }}>{tr(locale, 'form.subservices.remove')}</Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <Input placeholder="https://www.youtube.com/watch?v=..." value={(form as any)._newVideoUrl || ''} onChange={(e) => ((form as any)._newVideoUrl = e.target.value)} />
+                <Button type="button" variant="secondary" onClick={() => { const v = String((form as any)._newVideoUrl || '').trim(); if (!v) return; const next = [...((form.getValues('videoUrls') as any[]) || []), v]; form.setValue('videoUrls' as any, next, { shouldValidate: true }); (form as any)._newVideoUrl = ''; }}>+ Add</Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <FormField control={form.control} name="facebookUrl" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.facebookUrl')}</FormLabel><FormControl><Input placeholder="https://facebook.com/yourpage" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="telegramUrl" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.telegramUrl')}</FormLabel><FormControl><Input placeholder="https://t.me/yourchannel" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            </div>
+
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <FormField control={form.control} name="city" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{tr(locale, 'form.labels.city')}</FormLabel>
+                  <Select onValueChange={(v) => { field.onChange(v); const c = cityCenter(v); if (c) { setLat(c.lat); setLng(c.lng); } }} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} /></SelectTrigger></FormControl>
+                    <SelectContent>{libyanCities.map((c) => (<SelectItem key={c.value} value={c.value}>{cityLabel(locale, c.value)}</SelectItem>))}</SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="area" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.area')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+            </div>
+
+            <FormField control={form.control} name="availabilityNote" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.availabilityNote')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <FormField control={form.control} name="contactPhone" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel><FormControl><Input placeholder={tr(locale, 'form.placeholders.contactPhone')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="contactWhatsapp" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel><FormControl><Input placeholder={tr(locale, 'form.placeholders.contactWhatsapp')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+            </div>
+
+            <Card>
+              <CardContent className="space-y-3">
+                <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
                 {mapMounted && (
                   <div className="h-64 w-full overflow-hidden rounded border">
-                    <MapContainer
-                      key={`${lat ?? 'city'}-${lng ?? 'city'}`}
-                      center={(lat != null && lng != null)
-                        ? [lat, lng]
-                        : (() => { const c = cityCenter(String(form.getValues('city') || '')); return [c?.lat ?? 32.8872, c?.lng ?? 13.1913] as [number, number]; })()}
-                      zoom={13}
-                      className="h-full w-full cursor-crosshair"
-                      scrollWheelZoom={true}
-                      whenReady={(e: any) => {
-                        // Ensure proper pane positions after mount/layout
-                        setTimeout(() => e.target.invalidateSize(), 0);
-                      }}
-                      onClick={(e: any) => {
-                        const { lat: la, lng: ln } = e.latlng || {};
-                        if (typeof la === 'number' && typeof ln === 'number') {
-                          setLat(Number(la.toFixed(6)));
-                          setLng(Number(ln.toFixed(6)));
-                        }
-                      }}
-                    >
+                    <MapContainer key={`${lat ?? 'city'}-${lng ?? 'city'}`} center={(lat != null && lng != null) ? [lat, lng] : (() => { const c = cityCenter(String(form.getValues('city') || '')); return [c?.lat ?? 32.8872, c?.lng ?? 13.1913] as [number, number]; })()} zoom={13} className="h-full w-full cursor-crosshair" scrollWheelZoom={true} whenReady={(e: any) => { setTimeout(() => e.target.invalidateSize(), 0); }} onClick={(e: any) => { const { lat: la, lng: ln } = e.latlng || {}; if (typeof la === 'number' && typeof ln === 'number') { setLat(Number(la.toFixed(6))); setLng(Number(ln.toFixed(6))); } }}>
                       <CenterWatcher />
                       <MapClickWatcher />
                       <TileLayer attribution={tileAttrib} url={tileUrl} />
                       <ScaleControl position="bottomleft" />
-                      {(lat != null && lng != null) && (
-                        <Marker
-                          position={[lat, lng] as any}
-                          draggable={true}
-                          icon={markerIcon as any}
-                          eventHandlers={{
-                            dragend: (e: any) => {
-                              const p = e.target.getLatLng();
-                              setLat(Number(p.lat.toFixed(6)));
-                              setLng(Number(p.lng.toFixed(6)));
-                            },
-                          }}
-                        >
-                          <Popup>{tr(locale, 'form.map.selected')}</Popup>
-                        </Marker>
-                      )}
+                      {(lat != null && lng != null) && (<Marker position={[lat, lng] as any} draggable={true} icon={markerIcon as any} eventHandlers={{ dragend: (e: any) => { const p = e.target.getLatLng(); setLat(Number(p.lat.toFixed(6))); setLng(Number(p.lng.toFixed(6))); } }}><Popup>{tr(locale, 'form.map.selected')}</Popup></Marker>)}
                     </MapContainer>
-                    <div className="px-2 py-1 text-xs text-muted-foreground">
-                      {lat != null && lng != null ? (
-                        <span>{tr(locale, 'form.map.selected')}: {lat.toFixed(6)}, {lng.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}</span>
-                      ) : (
-                        <span>{tr(locale, 'form.map.clickToSet')}</span>
-                      )}
-                    </div>
+                    <div className="px-2 py-1 text-xs text-muted-foreground">{lat != null && lng != null ? (<span>{tr(locale, 'form.map.selected')}: {lat.toFixed(6)}, {lng.toFixed(6)}{selectedAddress ? ` — ${selectedAddress}` : ''}</span>) : (<span>{tr(locale, 'form.map.clickToSet')}</span>)}</div>
                   </div>
                 )}
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
+            <Card>
+              <CardContent className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
                 <FormLabel className={isRTL ? 'text-right' : ''}>{tr(locale, 'form.images.label')}</FormLabel>
                 <div className={`flex flex-col gap-2 sm:items-center sm:gap-3 ${isRTL ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleAddFiles(Array.from(e.target.files ?? []))}
-                  />
-                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading} aria-label={tr(locale, 'form.images.addFiles')}>
-                    {tr(locale, 'form.images.addFiles')}
-                  </Button>
+                  <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleAddFiles(Array.from(e.target.files ?? []))} />
+                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading} aria-label={tr(locale, 'form.images.addFiles')}>{tr(locale, 'form.images.addFiles')}</Button>
                   <div className={`flex w-full sm:w-auto items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <Input
-                      className="w-full sm:w-72"
-                      placeholder={tr(locale, 'form.images.pasteUrlPlaceholder')}
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      aria-label={tr(locale, 'form.images.pasteUrlPlaceholder')}
-                    />
-                    <Button type="button" variant="outline" onClick={handleAddUrl} disabled={uploading} aria-label={tr(locale, 'form.images.addUrl')}>
-                      {tr(locale, 'form.images.addUrl')}
-                    </Button>
+                    <Input className="w-full sm:w-72" placeholder={tr(locale, 'form.images.pasteUrlPlaceholder')} value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} aria-label={tr(locale, 'form.images.pasteUrlPlaceholder')} />
+                    <Button type="button" variant="outline" onClick={handleAddUrl} disabled={uploading} aria-label={tr(locale, 'form.images.addUrl')}>{tr(locale, 'form.images.addUrl')}</Button>
                   </div>
                   <div className={`text-xs text-muted-foreground ${isRTL ? 'text-right' : ''}`}>{tr(locale, 'form.images.helper')}</div>
-                  {imageUrlError && (
-                    <div className={`text-xs text-destructive ${isRTL ? 'text-right' : ''}`}>{imageUrlError}</div>
-                  )}
+                  {imageUrlError && (<div className={`text-xs text-destructive ${isRTL ? 'text-right' : ''}`}>{imageUrlError}</div>)}
                 </div>
-
                 {images.length > 0 ? (
                   <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                     {images.map((img, i) => (
                       <div key={i} className="relative overflow-hidden rounded border">
-                        <Image
-                          src={img.url}
-                          alt={`Image ${i + 1}`}
-                          width={400}
-                          height={300}
-                          className="aspect-square w-full object-cover"
-                        />
+                        <Image src={img.url} alt={`Image ${i + 1}`} width={400} height={300} className="aspect-square w-full object-cover" />
                         <div className={`flex items-center justify-between gap-2 p-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <div className="flex gap-1">
-                            {images.length > 1 && (
-                              <>
-                                <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, -1)} disabled={i === 0} aria-label={tr(locale, 'form.images.moveUp')}>
-                                  <ArrowUp className="h-4 w-4" />
-                                </Button>
-                                <Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1} aria-label={tr(locale, 'form.images.moveDown')}>
-                                  <ArrowDown className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
+                          <div className="flex gap-1">{images.length > 1 && (<><Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, -1)} disabled={i === 0} aria-label={tr(locale, 'form.images.moveUp')}><ArrowUp className="h-4 w-4" /></Button><Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1} aria-label={tr(locale, 'form.images.moveDown')}><ArrowDown className="h-4 w-4" /></Button></>)}</div>
                           <div>
                             <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button type="button" variant="outline" size="sm" aria-label="More">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
+                              <DropdownMenuTrigger asChild><Button type="button" variant="outline" size="sm" aria-label="More"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                               <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
-                                <DropdownMenuItem onSelect={() => setTimeout(() => document.getElementById(`replace-file-${i}`)?.click(), 0)}>
-                                  <Pencil className="h-4 w-4" /> {tr(locale, 'form.images.replace')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleReplaceUrl(i)}>
-                                  <LinkIcon className="h-4 w-4" /> {tr(locale, 'form.images.replaceUrl')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => removeImage(i)} className="text-destructive focus:text-destructive">
-                                  <Trash2 className="h-4 w-4" /> {tr(locale, 'form.images.remove')}
-                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setTimeout(() => document.getElementById(`replace-file-${i}`)?.click(), 0)}><Pencil className="h-4 w-4" /> {tr(locale, 'form.images.replace')}</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleReplaceUrl(i)}><LinkIcon className="h-4 w-4" /> {tr(locale, 'form.images.replaceUrl')}</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => removeImage(i)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> {tr(locale, 'form.images.remove')}</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                            <input
-                              id={`replace-file-${i}`}
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                if (f) handleReplaceFile(i, f);
-                                e.currentTarget.value = '';
-                              }}
-                            />
+                            <input id={`replace-file-${i}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleReplaceFile(i, f); e.currentTarget.value = ''; }} />
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{tr(locale, 'form.images.none')}</p>
-                )}
-              </div>
+                ) : (<p className="text-sm text-muted-foreground">{tr(locale, 'form.images.none')}</p>)}
+              </CardContent>
+            </Card>
 
-              <div className="sticky bottom-0 z-10 -mb-6 mt-4 border-t bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-3">
-                <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}
-                  </Button>
-                </div>
+            <div className="sticky bottom-0 z-10 -mb-6 mt-4 border-t bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-3">
+              <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
+                <Button type="submit" disabled={submitting}>{submitting ? tr(locale, 'dashboard.serviceForm.saving') : tr(locale, 'dashboard.serviceForm.saveChanges')}</Button>
               </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  </div>
+);
 }

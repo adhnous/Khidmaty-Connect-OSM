@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import L from "leaflet";
-import { useMapEvents } from "react-leaflet";
+import { useMap, useMapEvents } from "react-leaflet";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +21,7 @@ import { serviceSchema, type ServiceFormData } from "@/lib/schemas";
 import { getClientLocale, tr } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { libyanCities, cityLabel } from "@/lib/cities";
+import { libyanCities, cityLabel, cityCenter } from "@/lib/cities";
 import { createService, uploadServiceImages } from "@/lib/services";
 import { getServiceDraft, saveServiceDraft, deleteServiceDraft } from "@/lib/service-drafts";
 import { tileUrl, tileAttribution, markerHtml } from "@/lib/map";
@@ -154,6 +154,16 @@ export default function CreateServiceWizardPage() {
         }
       }
     });
+    return null;
+  }
+
+  function RecenterOnMarker({ lat, lng }: { lat?: number; lng?: number }) {
+    const map = useMap();
+    useEffect(() => {
+      if (typeof lat === 'number' && typeof lng === 'number') {
+        try { map.setView([lat, lng]); } catch {}
+      }
+    }, [lat, lng, map]);
     return null;
   }
 
@@ -378,7 +388,15 @@ export default function CreateServiceWizardPage() {
                           <FormItem>
                             <FormLabel>{tr(locale, "form.labels.city")}</FormLabel>
                             <FormControl>
-                              <select className="w-full rounded border bg-background p-2" value={field.value} onChange={field.onChange}>
+                              <select className="w-full rounded border bg-background p-2" value={field.value} onChange={(e) => {
+                                const v = e.target.value;
+                                field.onChange(v);
+                                const center = cityCenter(v);
+                                if (center) {
+                                  form.setValue('location.lat', Number(center.lat.toFixed(6)), { shouldValidate: true });
+                                  form.setValue('location.lng', Number(center.lng.toFixed(6)), { shouldValidate: true });
+                                }
+                              }}>
                                 {libyanCities.map((c) => (
                                   <option key={c.value} value={c.value}>{cityLabel(locale, c.value)}</option>
                                 ))}
@@ -415,6 +433,7 @@ export default function CreateServiceWizardPage() {
                           }}
                         >
                           <TileLayer url={tileUrl} attribution={tileAttribution} />
+                          <RecenterOnMarker lat={latNum} lng={lngNum} />
                           <MapClickWatcher />
                           {latNum != null && lngNum != null && (
                             <Marker position={[latNum, lngNum]} icon={markerIcon} draggable={true}
@@ -436,6 +455,22 @@ export default function CreateServiceWizardPage() {
                           <ScaleControl imperial={false} position="bottomleft" />
                         </MapContainer>
                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField control={form.control} name="contactPhone" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel>
+                          <FormControl><Input placeholder={tr(locale, 'form.placeholders.contactPhone') as string} {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="contactWhatsapp" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel>
+                          <FormControl><Input placeholder={tr(locale, 'form.placeholders.contactWhatsapp') as string} {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="availabilityNote" render={({ field }) => (
