@@ -203,6 +203,8 @@ export default function EditServicePage() {
   const subFieldArray = useFieldArray({ control: form.control, name: 'subservices' as const });
   const subWatch = form.watch('subservices') as any[] | undefined;
   const subTotal = (subWatch || []).reduce((sum, s) => sum + (Number(s?.price) || 0), 0);
+  const priceModeValue = String(form.watch('priceMode') || 'firm');
+  const isSales = String(form.watch('category') || '').toLowerCase().includes('sales');
 
   // Keep price synced to subservices total
   useEffect(() => {
@@ -545,38 +547,56 @@ export default function EditServicePage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="price" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
-                    <FormControl><Input type="number" readOnly {...field} /></FormControl>
-                    <FormDescription>{tr(locale, 'form.subservices.autoCalc')}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="showPriceInContact" render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center gap-2">
-                      <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} id="edit_showPriceInContact" />
-                      <FormLabel htmlFor="edit_showPriceInContact" className="!mt-0">{tr(locale, 'form.labels.showPriceInContact')}</FormLabel>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                {subFieldArray.fields.length === 0 && (<p className="text-sm text-muted-foreground">{tr(locale, 'form.subservices.empty')}</p>)}
+                <div className="text-sm font-medium">{isSales ? (locale === 'ar' ? 'المبيعات' : 'Sales') : tr(locale, 'form.subservices.titlePlural')}</div>
+                {subFieldArray.fields.length === 0 && (
+                  <p className="text-sm text-muted-foreground">{isSales ? (locale === 'ar' ? 'لا توجد مبيعات' : 'No sales yet.') : tr(locale, 'form.subservices.empty')}</p>
+                )}
                 {subFieldArray.fields.map((field, index) => (
                   <div key={field.id} className="rounded border p-3 space-y-2">
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                      <FormField control={form.control} name={`subservices.${index}.title` as const} render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.subservices.title')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name={`subservices.${index}.price` as const} render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.subservices.price')}</FormLabel><FormControl><Input type="number" min={0} step="1" placeholder="50" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name={`subservices.${index}.title` as const} render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{isSales ? (locale === 'ar' ? 'عنوان المنتج' : 'Product title') : tr(locale, 'form.subservices.title')}</FormLabel>
+                          <FormControl><Input {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name={`subservices.${index}.price` as const} render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{isSales ? (locale === 'ar' ? 'سعر البيع' : 'Sale price') : tr(locale, 'form.subservices.price')}</FormLabel>
+                          <FormControl><Input type="number" min={0} step="1" placeholder="50" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
                       <FormField control={form.control} name={`subservices.${index}.unit` as const} render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.subservices.unit')}</FormLabel><FormControl><Input placeholder={tr(locale, 'form.subservices.unitPlaceholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <div className="flex items-end"><Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>{tr(locale, 'form.subservices.remove')}</Button></div>
+                      <div className="flex items-end"><Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>{isSales ? (locale === 'ar' ? 'إزالة بيع' : 'Remove sale') : tr(locale, 'form.subservices.remove')}</Button></div>
                     </div>
                     <FormField control={form.control} name={`subservices.${index}.description` as const} render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.subservices.description')}</FormLabel><FormControl><Textarea rows={2} placeholder={tr(locale, 'form.subservices.descriptionPlaceholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 ))}
                 <div className="flex items-center justify-between text-sm"><div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div><div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div></div>
-                <Button type="button" variant="secondary" onClick={() => subFieldArray.append({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, title: '', price: 0, unit: '', description: '' })}>+ {tr(locale, 'form.subservices.add')}</Button>
+                <Button type="button" variant="secondary" onClick={() => subFieldArray.append({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, title: '', price: 0, unit: '', description: '' })}>+ {isSales ? (locale === 'ar' ? 'إضافة بيع' : 'Add sale') : tr(locale, 'form.subservices.add')}</Button>
+
+                {(subTotal > 0 && subFieldArray.fields.length > 0 && priceModeValue !== 'call') && (
+                  <>
+                    <FormField control={form.control} name="price" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{tr(locale, 'form.labels.price')}</FormLabel>
+                        <FormControl><Input type="number" readOnly {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="showPriceInContact" render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-2">
+                          <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} id="edit_showPriceInContact" />
+                          <FormLabel htmlFor="edit_showPriceInContact" className="!mt-0">{tr(locale, 'form.labels.showPriceInContact')}</FormLabel>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </>
+                )}
               </div>
             </div>
 

@@ -818,60 +818,72 @@ useEffect(() => {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, "form.labels.price")}</FormLabel>
-                        <FormControl>
-                          <Input type="number" min={0} step="1" value={Number(form.watch('price') || 0)} readOnly />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="showPriceInContact"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-2">
-                          <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} id="showPriceInContact" />
-                          <FormLabel htmlFor="showPriceInContact" className="!mt-0">{tr(locale, 'form.labels.showPriceInContact')}</FormLabel>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                   <div className="space-y-2">
-                    <div className="text-sm font-medium">{tr(locale, "form.subservices.titlePlural")}</div>
+                    <div className="text-sm font-medium">{(String(form.watch('category') || '') === 'sales') ? (locale === 'ar' ? 'المبيعات' : 'Sales') : tr(locale, "form.subservices.titlePlural")}</div>
                     {subFieldArray.fields.length === 0 && (
-                      <div className="text-sm text-muted-foreground">{tr(locale, "form.subservices.empty")}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {(String(form.watch('category') || '') === 'sales')
+                          ? (locale === 'ar' ? 'لا توجد مبيعات' : 'No sales yet.')
+                          : tr(locale, 'form.subservices.empty')}
+                      </div>
                     )}
                     {subFieldArray.fields.map((f, index) => (
                       <div key={f.id} className="grid grid-cols-1 gap-3 rounded border p-3 sm:grid-cols-5">
                         <FormField control={form.control} name={`subservices.${index}.title` as const} render={({ field }) => (
                           <FormItem className="sm:col-span-3">
-                            <FormLabel>{tr(locale, 'form.subservices.title')}</FormLabel>
+                            <FormLabel>{(String(form.watch('category') || '') === 'sales') ? (locale === 'ar' ? 'عنوان المنتج' : 'Product title') : tr(locale, 'form.subservices.title')}</FormLabel>
                             <FormControl><Input {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name={`subservices.${index}.price` as const} render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{tr(locale, 'form.subservices.price')}</FormLabel>
+                            <FormLabel>{(String(form.watch('category') || '') === 'sales') ? (locale === 'ar' ? 'سعر البيع' : 'Sale price') : tr(locale, 'form.subservices.price')}</FormLabel>
                             <FormControl><Input type="number" min={0} step="1" {...field} onChange={(e)=>field.onChange(Number(e.target.value))} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <div className="flex items-end">
-                          <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>{tr(locale, 'form.subservices.remove')}</Button>
+                          <Button type="button" variant="outline" onClick={() => subFieldArray.remove(index)}>
+                            {(String(form.watch('category') || '') === 'sales') ? (locale === 'ar' ? 'إزالة بيع' : 'Remove sale') : tr(locale, 'form.subservices.remove')}
+                          </Button>
                         </div>
                       </div>
                     ))}
-                    <Button type="button" variant="secondary" onClick={() => subFieldArray.append({ id: `${Date.now()}`, title: "", price: 0 })}>+ {tr(locale, 'form.subservices.add')}</Button>
+                    <Button type="button" variant="secondary" onClick={() => subFieldArray.append({ id: `${Date.now()}`, title: "", price: 0 })}>
+                      + {(String(form.watch('category') || '') === 'sales') ? (locale === 'ar' ? 'إضافة بيع' : 'Add sale') : tr(locale, 'form.subservices.add')}
+                    </Button>
                   </div>
+                  {(computedTotal > 0 && subFieldArray.fields.length > 0 && priceModeValue !== 'call') && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="price"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{tr(locale, "form.labels.price")}</FormLabel>
+                            <FormControl>
+                              <Input type="number" min={0} step="1" value={Number(form.watch('price') || 0)} readOnly />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="showPriceInContact"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-2">
+                              <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} id="showPriceInContact" />
+                              <FormLabel htmlFor="showPriceInContact" className="!mt-0">{tr(locale, 'form.labels.showPriceInContact')}</FormLabel>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
                 </div>
               )}
 
