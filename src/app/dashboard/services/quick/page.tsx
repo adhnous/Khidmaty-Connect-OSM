@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createService, uploadServiceImages, type ServiceImage } from '@/lib/services';
+import { createService, uploadServiceImages, updateService, getServiceById, type ServiceImage } from '@/lib/services';
 
 const QuickSchema = z.object({
   title: z.string().min(6).max(100),
@@ -157,10 +157,18 @@ export default function QuickCreateServicePage() {
         images,
         providerId: user.uid,
       } as any);
-
+      // Force-persist images in case the server sanitized them
+      if (Array.isArray(images) && images.length > 0) {
+        try { await updateService(id, { images }); } catch {}
+      }
+      try {
+        const doc = await getServiceById(id);
+        const n = Array.isArray((doc as any)?.images) ? (doc as any).images.length : 0;
+        toast({ title: tr(locale, 'form.toasts.createdTitle'), description: `${n} image(s) saved` });
+      } catch {
+        toast({ title: tr(locale, 'form.toasts.createdTitle'), description: tr(locale, 'form.toasts.createdDesc') });
+      }
       try { localStorage.removeItem(draftKey); } catch {}
-
-      toast({ title: tr(locale, 'form.toasts.createdTitle'), description: tr(locale, 'form.toasts.createdDesc') });
       router.push(`/services/${id}`);
     } catch (e: any) {
       toast({ variant: 'destructive', title: tr(locale, 'form.toasts.createFailedTitle'), description: e?.message || '' });

@@ -18,7 +18,6 @@ import {
   Megaphone,
   ShoppingCart,
 } from 'lucide-react';
-import { Footer } from '@/components/layout/footer';
 import { ServiceCard } from '@/components/service-card';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -271,8 +270,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <Footer />
     </div>
   );
 }
-

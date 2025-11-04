@@ -8,7 +8,6 @@ import {
   MessageCircle,
 } from 'lucide-react';
 
-import { Footer } from '@/components/layout/footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -796,7 +795,7 @@ export default function ServiceDetailPage() {
           )}
         </div>
       </main>
-      <Footer />
+    
     </div>
   );
 }

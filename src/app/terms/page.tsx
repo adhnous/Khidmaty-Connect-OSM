@@ -46,7 +46,6 @@ export default async function TermsPage() {
           </div>
         </section>
       </main>
-      <Footer />
     </div>
   );
 }

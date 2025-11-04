@@ -23,7 +23,7 @@ export default async function ContactPage() {
         </p>
         <ContactForm />
       </main>
-      <Footer />
+  
     </div>
   );
 }

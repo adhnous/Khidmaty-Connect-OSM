@@ -34,7 +34,8 @@ export function ServiceCard({
   aiHint,
   href,
 }: ServiceCardProps) {
-  const displayUrl = transformCloudinary(imageUrl, { w: 500, q: 'auto' });
+  const isInline = typeof imageUrl === 'string' && (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:'));
+  const displayUrl = isInline ? imageUrl : transformCloudinary(imageUrl, { w: 500, q: 'auto' });
   const blur = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2U5ZTplZSIvPjwvc3ZnPg==';
   const locale = getClientLocale();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -79,16 +80,25 @@ export function ServiceCard({
   const content = (
     <Card className="group h-full w-full overflow-hidden rounded-xl border bg-background/60 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
       <div className="relative aspect-[16/9] w-full overflow-hidden">
-        <Image
-          src={displayUrl}
-          alt={title}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          data-ai-hint={aiHint}
-          placeholder="blur"
-          blurDataURL={blur}
-        />
+        {isInline ? (
+          <img
+            src={displayUrl}
+            alt={title}
+            className="absolute inset-0 h-full w-full object-cover"
+            data-ai-hint={aiHint}
+          />
+        ) : (
+          <Image
+            src={displayUrl}
+            alt={title}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            data-ai-hint={aiHint}
+            placeholder="blur"
+            blurDataURL={blur}
+          />
+        )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 md:h-16 bg-gradient-to-t from-black/60 to-transparent" />
         <Badge variant="secondary" className="absolute left-3 bottom-3 bg-background/90 text-xs shadow-sm">
           {tr(locale, `categories.${normalizeCategory(category)}`)}

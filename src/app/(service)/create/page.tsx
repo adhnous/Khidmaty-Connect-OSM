@@ -22,11 +22,87 @@ import { getClientLocale, tr } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { libyanCities, cityLabel, cityCenter } from "@/lib/cities";
-import { createService, uploadServiceImages } from "@/lib/services";
+import { createService, uploadServiceImages, updateService, getServiceById } from "@/lib/services";
 import { getServiceDraft, saveServiceDraft, deleteServiceDraft } from "@/lib/service-drafts";
 import { tileUrl, tileAttribution, markerHtml } from "@/lib/map";
 import { reverseGeocodeNominatim, getLangFromDocument } from "@/lib/geocode";
 import { CategoryCards, CATEGORY_DEFS } from "@/components/category-cards";
+import { transformCloudinary } from "@/lib/images";
+
+// -------------------- NEW HELPERS (ADD) --------------------
+function isHttpUrl(u?: string) {
+  try { const x = new URL(String(u)); return x.protocol === 'http:' || x.protocol === 'https:'; }
+  catch { return false; }
+}
+
+async function uploadToCloudinary(files: File[]): Promise<string[]> {
+  const cloud = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || "");
+  const preset = (process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || "");
+  if (!cloud || !preset) throw new Error('Cloudinary env missing (cloud/preset)');
+
+  const urls: string[] = [];
+  for (const f of files) {
+    const fd = new FormData();
+    fd.append('file', f);
+    fd.append('upload_preset', preset);
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/upload`, {
+      method: 'POST',
+      body: fd
+    });
+
+    // Try to read JSON safely (Cloudinary always returns JSON on errors)
+    let body: any = null;
+    try { body = await res.json(); } catch { /* ignore */ }
+
+    if (!res.ok) {
+      const msg =
+        (body && (body.error?.message || body.message)) ||
+        `HTTP ${res.status}`;
+      throw new Error(`Cloudinary upload failed: ${msg}`);
+    }
+
+    const url = body?.secure_url;
+    if (!url) throw new Error('Cloudinary response missing secure_url');
+    urls.push(url);
+  }
+  return urls;
+}
+
+
+// STRICT: only allow "cloudinary" when BOTH vars are present
+function getUploadMode(uid?: string | null) {
+  const envMode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || "").toLowerCase();
+  const hasCloud = !!(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD);
+  const hasPreset = !!process.env.NEXT_PUBLIC_CLOUDINARY_PRESET;
+  const storageDisabled =
+    process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === "1" ||
+    process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === "true";
+
+  // explicit modes
+  if (envMode === "inline") return "inline";
+  if (envMode === "local") return "local";
+  if (envMode === "cloudinary") return (hasCloud && hasPreset) ? "cloudinary" : "inline";
+  if (envMode === "storage")  return storageDisabled ? "inline" : "storage";
+
+  // default behavior
+  if (uid) {
+    // prefer storage for signed-in users unless disabled
+    return storageDisabled ? ((hasCloud && hasPreset) ? "cloudinary" : "inline") : "storage";
+  }
+  // no uid yet → only use cloudinary if fully configured, else inline preview
+  return (hasCloud && hasPreset) ? "cloudinary" : "inline";
+}
+
+
+
+
+async function dataUrlToFile(dataUrl: string, name = `image_${Date.now()}.jpg`): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], name, { type: blob.type || 'image/jpeg' });
+}
+// -----------------------------------------------------------
 
 // Client-only react-leaflet components
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
@@ -34,6 +110,54 @@ const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer)
 const Marker = dynamic(() => import('react-leaflet').then((m) => m.Marker), { ssr: false }) as any;
 const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr: false }) as any;
 const ScaleControl = dynamic(() => import('react-leaflet').then((m) => m.ScaleControl), { ssr: false }) as any;
+
+// Helper: compress File to JPEG data URL (approx width 800)
+async function compressToDataUrl(file: File, maxWidth = 800, quality = 0.6): Promise<string> {
+  const raw = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  const img = document.createElement('img');
+  await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = raw; });
+  const scale = Math.min(1, maxWidth / (img.width || maxWidth));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round((img.width || maxWidth) * scale);
+  canvas.height = Math.round((img.height || maxWidth) * scale);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return raw;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+function urlForPreview(raw: string): string {
+  try {
+    const u = new URL(raw, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    if (u.hostname === 'res.cloudinary.com') {
+      return transformCloudinary(u.toString(), { w: 800, q: 'auto' });
+    }
+  } catch {}
+  return raw;
+}
+
+function isHeic(file: File): boolean {
+  try {
+    const name = String((file as any)?.name || '').toLowerCase();
+    const type = String((file as any)?.type || '').toLowerCase();
+    return type.includes('heic') || type.includes('heif') || /\.(heic|heif)$/.test(name);
+  } catch {
+    return false;
+  }
+}
+
+function makeObjectUrl(file: File): string | undefined {
+  try { return URL.createObjectURL(file); } catch { return undefined; }
+}
+
+function revokeIfBlob(u?: string) {
+  try { if (u && u.startsWith('blob:')) URL.revokeObjectURL(u); } catch {}
+}
 
 // Step schemas
 const catSchema = z.object({ category: serviceSchema.shape.category });
@@ -60,7 +184,33 @@ export default function CreateServiceWizardPage() {
   const uid = user?.uid;
   const locale = getClientLocale();
   const router = useRouter();
-  const { toast } = useToast();
+ 
+// Warn ONLY if you explicitly chose cloudinary but didn't set the two vars.
+useEffect(() => {
+  const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
+  const missingCloud = !(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD);
+  const missingPreset = !process.env.NEXT_PUBLIC_CLOUDINARY_PRESET;
+  if (mode === 'cloudinary' && (missingCloud || missingPreset)) {
+    console.warn('⚠️ Cloudinary env missing: set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME (or NEXT_PUBLIC_CLOUDINARY_CLOUD) and NEXT_PUBLIC_CLOUDINARY_PRESET');
+  }
+}, []);
+ const { toast } = useToast();
+  // ✅ Add this block here (before const form = useForm(...))
+  if (typeof window !== 'undefined') {
+    if (!(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD) || !process.env.NEXT_PUBLIC_CLOUDINARY_PRESET) {
+      console.warn('⚠️ Cloudinary env missing: set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME (or NEXT_PUBLIC_CLOUDINARY_CLOUD) and NEXT_PUBLIC_CLOUDINARY_PRESET');
+    }
+  }
+
+  // (Optional) quick debug: see which upload mode is active
+  useEffect(() => {
+    // Safe to log NEXT_PUBLIC_* and uid
+    console.log('[CreateService] uploadMode =', getUploadMode(uid), {
+      hasCloud: !!(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD),
+      hasPreset: !!process.env.NEXT_PUBLIC_CLOUDINARY_PRESET,
+      uid: !!uid,
+    });
+  }, [uid]);
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -88,8 +238,20 @@ export default function CreateServiceWizardPage() {
     },
   });
 
+
   const [step, setStep] = useState<Step>(1);
   const subFieldArray = useFieldArray({ control: form.control, name: "subservices" });
+  // Keep images in local state and sync to form
+  const [imagesState, setImagesState] = useState<{ url: string; displayUrl?: string }[]>(form.getValues('images') || [] as any);
+  useEffect(() => {
+    form.setValue('images', imagesState, { shouldValidate: true });
+  }, [imagesState, form]);
+
+  useEffect(() => {
+    return () => {
+      try { (imagesState || []).forEach((it) => revokeIfBlob(it.displayUrl)); } catch {}
+    };
+  }, []);
 
   const wiz = useMemo(() => {
     return {
@@ -106,7 +268,7 @@ export default function CreateServiceWizardPage() {
     };
   }, [locale]);
 
-  // Auto-calculate total price from subservices (except when priceMode is 'call')
+  // Auto-calc total price
   const subsForCalc: any[] = form.watch('subservices') || [];
   const priceModeValue: string = String(form.watch('priceMode') || 'firm');
   const computedTotal = useMemo(() => {
@@ -182,9 +344,7 @@ export default function CreateServiceWizardPage() {
     const lang = getLangFromDocument();
     reverseGeocodeNominatim(latNum, lngNum, lang, ac.signal)
       .then((r) => {
-        // Show in popup
         setSelectedAddress(r.displayName);
-        // If the user just chose a location, also try to fill area/city from the label
         if (userSetLocation) {
           try {
             const areaName = extractAreaFromDisplayName(r.displayName);
@@ -202,7 +362,7 @@ export default function CreateServiceWizardPage() {
     return () => ac.abort();
   }, [latNum, lngNum, form, userSetLocation]);
 
-  // When entering Step 3, if address is empty, prefill it from previous step (area + city)
+  // When entering Step 3, if address is empty, prefill
   useEffect(() => {
     if (step !== 3) return;
     const current = String(form.getValues('location.address') || '').trim();
@@ -223,20 +383,8 @@ export default function CreateServiceWizardPage() {
   const goNext = async () => {
     const fieldsByStep: Record<Step, (keyof ServiceFormData)[]> = {
       1: ["category"],
-      2: [
-        "title",
-        "description",
-      ],
-      3: [
-        "city",
-        "area",
-        "availabilityNote",
-        "contactPhone",
-        "contactWhatsapp",
-        "facebookUrl" as any,
-        "telegramUrl" as any,
-        "location" as any,
-      ],
+      2: ["title", "description"],
+      3: ["city", "area", "availabilityNote", "contactPhone", "contactWhatsapp", "facebookUrl" as any, "telegramUrl" as any, "location" as any],
       4: ["images" as any, "videoUrl" as any, "videoUrls" as any],
       5: ["price", "subservices"],
       6: [],
@@ -279,25 +427,55 @@ export default function CreateServiceWizardPage() {
     if (!uid) return;
     const valid = await form.trigger(undefined, { shouldFocus: true });
     if (!valid) return;
+
+    let imgs = (form.getValues('images') || []) as { url: string; displayUrl?: string }[];
+    const mode = getUploadMode(uid);
+    if (mode === 'cloudinary') {
+      const dataUrls = imgs.filter((x) => !isHttpUrl(x.url));
+      if (dataUrls.length > 0) {
+        try {
+          const files = await Promise.all(dataUrls.map((x, i) => dataUrlToFile(x.url, `img_${Date.now()}_${i}.jpg`)));
+          const urls = await uploadToCloudinary(files);
+          let idx = 0;
+          imgs = imgs.map((x) => (isHttpUrl(x.url) ? x : { url: urls[idx++], displayUrl: x.displayUrl }));
+          form.setValue('images', imgs, { shouldValidate: true });
+        } catch (e) {
+          toast({ variant: 'destructive', title: tr(locale, 'form.toasts.addImagesFailed') });
+          return;
+        }
+      }
+    }
+
     const values = form.getValues();
     const payload = {
       ...values,
       providerId: uid,
       providerName: user?.displayName ?? null,
       providerEmail: user?.email ?? null,
-      images: (values.images || []).map((it) => ({ url: it.url })),
+      images: (imgs || []).map((it) => ({ url: it.url })),
       lat: values.location?.lat,
       lng: values.location?.lng,
       videoUrl: values.youtubeUrl || values.videoUrl,
       videoUrls: Array.isArray(values.videoUrls) ? values.videoUrls.filter(Boolean) : undefined,
       status: "pending" as const,
     } as any;
+
     try {
       const id = await createService(payload);
+      // Ensure images stick even if API trims
+      if (Array.isArray(payload.images) && payload.images.length > 0) {
+        try { await updateService(id, { images: payload.images }); } catch {}
+      }
+      try {
+        const doc = await getServiceById(id);
+        const n = Array.isArray((doc as any)?.images) ? (doc as any).images.length : 0;
+        toast({ title: locale === 'ar' ? 'تم إنشاء الخدمة' : 'Service created', description: `${n} image(s) saved` });
+      } catch {}
       await deleteServiceDraft(uid);
       router.push("/dashboard/services");
     } catch (e) {
       console.error(e);
+      toast({ variant: 'destructive', title: locale === 'ar' ? 'فشل إنشاء الخدمة' : 'Failed to create service' });
     }
   };
 
@@ -347,32 +525,32 @@ export default function CreateServiceWizardPage() {
               {step === 2 && (
                 <Card>
                   <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, "form.labels.title")}</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tr(locale, "form.labels.description")}</FormLabel>
-                        <FormControl>
-                          <Textarea rows={4} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{tr(locale, "form.labels.title")}</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{tr(locale, "form.labels.description")}</FormLabel>
+                          <FormControl>
+                            <Textarea rows={4} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </CardContent>
                 </Card>
               )}
@@ -506,58 +684,101 @@ export default function CreateServiceWizardPage() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <FormLabel>{tr(locale, 'form.labels.images')}</FormLabel>
-                      <Input type="file" accept="image/*" multiple onChange={async (e) => {
-                        const files = Array.from(e.target.files ?? []);
-                        if (!files.length) return;
-                        const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
-                        try {
-                          let mapped: { url: string }[] = [];
-                          if (mode === 'local') {
-                            const fd = new FormData();
-                            files.forEach((f) => fd.append('files', f));
-                            const res = await fetch('/api/uploads', { method: 'POST', body: fd });
-                            if (!res.ok) throw new Error('local_upload_failed');
-                            const data = await res.json();
-                            mapped = (data.urls || []).map((u: string) => ({ url: u }));
-                          } else {
-                            if (!uid) throw new Error('no_uid');
-                            const uploaded = await uploadServiceImages(uid, files as File[]);
-                            mapped = uploaded.map((u) => ({ url: u.url }));
-                          }
-                          const prev = form.getValues('images') || [];
-                          form.setValue('images', [...prev, ...mapped], { shouldValidate: true });
-                          await persistDraft();
-                        } catch (err) {
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={getUploadMode(uid) === 'storage' && !uid}
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files ?? []);
+                          if (!files.length) return;
+                          const mode = getUploadMode(uid);
                           try {
-                            const limited = files.slice(0, 2);
-                            const dataUrls = await Promise.all(limited.map(async (f) => {
-                              const raw = await new Promise<string>((resolve, reject) => {
-                                const reader = new FileReader();
-                                reader.onload = () => resolve(String(reader.result));
-                                reader.onerror = reject;
-                                reader.readAsDataURL(f);
-                              });
-                              return raw;
-                            }));
-                            const mapped = dataUrls.map((u) => ({ url: u }));
-                            const prev = form.getValues('images') || [];
-                            form.setValue('images', [...prev, ...mapped], { shouldValidate: true });
-                            toast({ title: tr(locale, 'form.toasts.imagesAdded') });
+                            let mapped: { url: string; displayUrl?: string }[] = [];
+                            const heic = files.filter((f) => isHeic(f));
+                            const rest = files.filter((f) => !isHeic(f));
+                            // HEIC/HEIF: convert to JPEG data URLs for preview; upload only in cloudinary mode
+                            if (heic.length > 0) {
+                              const limitedHeic = heic.slice(0, 4);
+                              const heicDataUrls = await Promise.all(limitedHeic.map((f) => compressToDataUrl(f, 800, 0.6)));
+                              if (mode === 'cloudinary') {
+                                const heicFiles = await Promise.all(heicDataUrls.map((u, i) => dataUrlToFile(u, `heic_${Date.now()}_${i}.jpg`)));
+                                const heicUrls = await uploadToCloudinary(heicFiles);
+                                mapped.push(...heicUrls.map((u, i) => ({ url: u, displayUrl: heicDataUrls[i] })));
+                              } else {
+                                mapped.push(...heicDataUrls.map((u) => ({ url: u, displayUrl: u })));
+                              }
+                            }
+                            if (rest.length > 0) {
+                              if (mode === 'inline') {
+                                const previews = await Promise.all(rest.map((f) => compressToDataUrl(f, 800, 0.6)));
+                                mapped.push(...previews.map((u) => ({ url: u, displayUrl: u })));
+                              } else if (mode === 'local') {
+                                const fd = new FormData();
+                                rest.forEach((f) => fd.append('files', f));
+                                const res = await fetch('/api/uploads', { method: 'POST', body: fd });
+                                if (!res.ok) throw new Error('local_upload_failed');
+                                const data = await res.json();
+                                const previews = await Promise.all(rest.map((f) => compressToDataUrl(f, 600, 0.6)));
+                                const urls = (data.urls || []) as string[];
+                                mapped.push(...urls.map((u, i) => ({ url: u, displayUrl: previews[i] || undefined })));
+                              } else if (mode === 'cloudinary') {
+                                const urls = await uploadToCloudinary(rest as File[]);
+                                const previews = await Promise.all(rest.map((f) => compressToDataUrl(f, 600, 0.6)));
+                                mapped.push(...urls.map((u, i) => ({ url: u, displayUrl: previews[i] || undefined })));
+                              } else {
+                                // 'storage' (Firebase)
+                                if (!uid) throw new Error('no_uid');
+                                const uploaded = await uploadServiceImages(uid, rest as File[]);
+                                const previews = await Promise.all(rest.map((f) => compressToDataUrl(f, 600, 0.6)));
+                                mapped.push(...uploaded.map((u, i) => ({ url: u.url, displayUrl: previews[i] || undefined })));
+                              }
+                            }
+                            const prev = imagesState || [];
+                            const next = [...prev, ...mapped];
+                            setImagesState(next);
                             await persistDraft();
-                          } catch (e2) {
-                            toast({ variant: 'destructive', title: tr(locale, 'form.toasts.addImagesFailed') });
+                          } catch (err: any) {
+                            const msg = (err?.message || String(err || '')).slice(0, 300);
+                            toast({
+                              variant: 'destructive',
+                              title: tr(locale, 'form.toasts.addImagesFailed'),
+                              description: msg,
+                            });
+                            // Optional fallback previews so user still sees something; submit-time safety will re-upload these.
+                            try {
+                              const limited = files.slice(0, 2);
+                              const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f, 800, 0.6)));
+                              const mapped = dataUrls.map((u) => ({ url: u, displayUrl: u }));
+                              const prev = imagesState || [];
+                              const next = [...prev, ...mapped];
+                              setImagesState(next);
+                              await persistDraft();
+                            } catch {
+                              // keep silent
+                            }
                           }
-                        }
-                      }} />
-                      {Array.isArray(form.watch('images')) && form.watch('images')!.length > 0 && (
+                        }}
+                      />
+                      {Array.isArray(imagesState) && imagesState.length > 0 && (
                         <div className="mt-2 grid grid-cols-3 gap-2 md:grid-cols-4">
-                          {form.watch('images')!.map((img, i) => (
+                          {imagesState.map((img, i) => (
                             <div key={`${img.url}_${i}`} className="relative">
-                              <img src={img.url} alt="" className="h-24 w-full rounded object-cover" />
-                              <button type="button" className="absolute right-1 top-1 rounded bg-black/60 px-1 text-xs text-white" onClick={() => {
-                                const next = (form.getValues('images') || []).filter((_, idx) => idx !== i);
-                                form.setValue('images', next, { shouldValidate: true });
-                              }}>×</button>
+                              <img
+                                src={img.displayUrl || urlForPreview(img.url)}
+                                alt=""
+                                className="h-24 w-full rounded object-cover"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = img.displayUrl || 'https://placehold.co/800x600.png'; }}
+                              />
+                              <button
+                                type="button"
+                                className="absolute right-1 top-1 rounded bg-black/60 px-1 text-xs text-white"
+                                onClick={() => {
+                                  try { revokeIfBlob(imagesState[i]?.displayUrl); } catch {}
+                                  const next = (imagesState || []).filter((_, idx) => idx !== i);
+                                  setImagesState(next);
+                                }}
+                              >×</button>
                             </div>
                           ))}
                         </div>
@@ -664,16 +885,91 @@ export default function CreateServiceWizardPage() {
                     <div><span className="font-medium">{tr(locale, "form.labels.city")}:</span> {cityLabel(locale, String(form.watch("city") || ""))}</div>
                     <div><span className="font-medium">{tr(locale, "form.labels.area")}:</span> {String(form.watch("area") || "-")}</div>
                     <div><span className="font-medium">{tr(locale, 'details.location')}:</span> {form.watch('location.address') || `${latNum ?? '-'}, ${lngNum ?? '-'}`}</div>
-                    {Array.isArray(form.watch('images')) && form.watch('images')!.length > 0 && (
-                      <div>
-                        <div className="font-medium mb-1">{tr(locale, 'form.labels.images')}</div>
+                    <div className="space-y-2">
+                      <FormLabel>{tr(locale, 'form.labels.images')}</FormLabel>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={getUploadMode(uid) === 'storage' && !uid}
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files ?? []);
+                          if (!files.length) return;
+                          const mode = getUploadMode(uid);
+                          try {
+                            let mapped: { url: string; displayUrl?: string }[] = [];
+                            const heic = files.filter((f) => isHeic(f));
+                            const rest = files.filter((f) => !isHeic(f));
+                            // HEIC/HEIF: preview as JPEG data URLs; upload only when using Cloudinary mode
+                            if (heic.length > 0) {
+                              const limitedHeic = heic.slice(0, 4);
+                              const heicDataUrls = await Promise.all(limitedHeic.map((f) => compressToDataUrl(f, 800, 0.6)));
+                              if (mode === 'cloudinary') {
+                                const heicFiles = await Promise.all(heicDataUrls.map((u, i) => dataUrlToFile(u, `heic_${Date.now()}_${i}.jpg`)));
+                                const heicUrls = await uploadToCloudinary(heicFiles);
+                                mapped.push(...heicUrls.map((u, i) => ({ url: u, displayUrl: heicDataUrls[i] })));
+                              } else {
+                                mapped.push(...heicDataUrls.map((u) => ({ url: u, displayUrl: u })));
+                              }
+                            }
+                            if (rest.length > 0) {
+                              if (mode === 'inline') {
+                                const previews = await Promise.all(rest.map((f) => compressToDataUrl(f, 800, 0.6)));
+                                mapped.push(...previews.map((u) => ({ url: u, displayUrl: u })));
+                              } else if (mode === 'local') {
+                                const fd = new FormData();
+                                rest.forEach((f) => fd.append('files', f));
+                                const res = await fetch('/api/uploads', { method: 'POST', body: fd });
+                                if (!res.ok) throw new Error('local_upload_failed');
+                                const data = await res.json();
+                                const previews = await Promise.all(rest.map((f) => compressToDataUrl(f, 600, 0.6)));
+                                const urls = (data.urls || []) as string[];
+                                mapped.push(...urls.map((u, i) => ({ url: u, displayUrl: previews[i] || undefined })));
+                              } else if (mode === 'cloudinary') {
+                                const urls = await uploadToCloudinary(rest as File[]);
+                                const previews = await Promise.all(rest.map((f) => compressToDataUrl(f, 600, 0.6)));
+                                mapped.push(...urls.map((u, i) => ({ url: u, displayUrl: previews[i] || undefined })));
+                              } else {
+                                if (!uid) throw new Error('no_uid');
+                                const uploaded = await uploadServiceImages(uid, rest as File[]);
+                                const previews = await Promise.all(rest.map((f) => compressToDataUrl(f, 600, 0.6)));
+                                mapped.push(...uploaded.map((u, i) => ({ url: u.url, displayUrl: previews[i] || undefined })));
+                              }
+                            }
+                            const prev = imagesState || [];
+                            const next = [...prev, ...mapped];
+                            setImagesState(next);
+                            await persistDraft();
+                          } catch (err: any) {
+                            const m = (err?.message || String(err || '')).slice(0, 300);
+                            toast({ variant: 'destructive', title: tr(locale, 'form.toasts.addImagesFailed'), description: m });
+                            // Optional fallback previews so user still sees something; submit-time safety will re-upload these.
+                            try {
+                              const limited = files.slice(0, 2);
+                              const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f, 800, 0.6)));
+                              const mapped = dataUrls.map((u) => ({ url: u, displayUrl: u }));
+                              const prev = imagesState || [];
+                              const next = [...prev, ...mapped];
+                              setImagesState(next);
+                              await persistDraft();
+                            } catch {}
+                          }
+                        }}
+                      />
+{Array.isArray(imagesState) && imagesState.length > 0 && (
                         <div className="mt-1 grid grid-cols-3 gap-2 md:grid-cols-4">
-                          {form.watch('images')!.map((im, i) => (
-                            <img key={`${im.url}_${i}`} src={im.url} alt="" className="h-20 w-full rounded object-cover" />
+                          {imagesState.map((im: any, i: number) => (
+                            <img
+                              key={`${im.url}_${i}`}
+                              src={(im as any).displayUrl || urlForPreview(im.url)}
+                              alt=""
+                              className="h-20 w-full rounded object-cover"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = (im as any).displayUrl || 'https://placehold.co/800x600.png'; }}
+                            />
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     {!!form.watch('youtubeUrl') && (
                       <div><a className="text-primary underline" href={String(form.watch('youtubeUrl'))} target="_blank" rel="noreferrer">{String(form.watch('youtubeUrl'))}</a></div>
                     )}

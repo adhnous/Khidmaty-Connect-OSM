@@ -22,6 +22,9 @@ export default function MediaGallery({
   videoEmbedUrl,
   videoEmbedUrls,
 }: MediaGalleryProps) {
+  function isInlineUrl(u: string): boolean {
+    return typeof u === 'string' && (u.startsWith('data:') || u.startsWith('blob:'));
+  }
   const media: MediaItem[] = useMemo(() => {
     const pics: MediaItem[] = (images && images.length > 0
       ? images
@@ -76,13 +79,22 @@ export default function MediaGallery({
             aria-label={m.type === 'image' ? `Thumbnail ${idx + 1}` : 'Video thumbnail'}
           >
             {m.type === 'image' ? (
-              <Image
-                src={transformCloudinary(m.url, { w: 140, q: 'auto' })}
-                alt={title}
-                width={56}
-                height={56}
-                className="h-full w-full object-cover"
-              />
+              isInlineUrl(m.url) ? (
+                // Use native img for inline/blob URLs
+                <img
+                  src={m.url}
+                  alt={title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Image
+                  src={transformCloudinary(m.url, { w: 140, q: 'auto' })}
+                  alt={title}
+                  width={56}
+                  height={56}
+                  className="h-full w-full object-cover"
+                />
+              )
             ) : getYoutubeThumb(m.url) ? (
               <img
                 src={getYoutubeThumb(m.url) as string}
@@ -118,13 +130,21 @@ export default function MediaGallery({
           </div>
         ) : (
           <div className="aspect-video w-full md:max-w-[1000px] mx-auto overflow-hidden rounded-2xl bg-muted">
-            <Image
-              src={transformCloudinary(String(media[active].url), { w: 1200, q: 'auto' })}
-              alt={title}
-              width={1200}
-              height={675}
-              className="h-full w-full object-cover"
-            />
+            {isInlineUrl(String(media[active].url)) ? (
+              <img
+                src={String(media[active].url)}
+                alt={title}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Image
+                src={transformCloudinary(String(media[active].url), { w: 1200, q: 'auto' })}
+                alt={title}
+                width={1200}
+                height={675}
+                className="h-full w-full object-cover"
+              />
+            )}
           </div>
         )}
       </div>

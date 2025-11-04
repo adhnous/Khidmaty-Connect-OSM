@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatMessage, success } from '@/lib/messages';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { useAuth } from '@/hooks/use-auth';
-import { createService, uploadServiceImages, type ServiceImage } from '@/lib/services';
+import { createService, uploadServiceImages, updateService, type ServiceImage } from '@/lib/services';
 import AddressSearch from '@/components/address-search';
 import { reverseGeocodeNominatim, getLangFromDocument } from '@/lib/geocode';
 import { tileUrl, tileAttribution, markerHtml } from '@/lib/map';
@@ -378,6 +378,7 @@ export function ServiceForm() {
             images = await uploadImagesCloudinary(selectedFiles);
           } else if (
             mode === 'inline' ||
+            !mode ||
             process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === '1' ||
             process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === 'true'
           ) {
@@ -385,22 +386,19 @@ export function ServiceForm() {
             const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f, 800, 0.6)));
             images = dataUrls.map((u: string) => ({ url: u }));
           } else {
+            // Explicit fallback to Firebase Storage only when requested via mode
             images = await uploadServiceImages(user.uid, selectedFiles);
           }
         } catch (err: any) {
           console.error('Image upload failed', err);
           toast({
             title: tr(locale, 'form.toasts.imageUploadFailed'),
-            description:
-              mode === 'local'
-                ? 'Local upload failed — please try again.'
-                : 'Saving compressed copies temporarily. You can re-upload later.',
+            description: 'Saving compressed copies temporarily. You can re-upload later.',
           });
-          if (mode !== 'local') {
-            const limited = selectedFiles.slice(0, 2);
-            const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f, 800, 0.6)));
-            images = dataUrls.map((u: string) => ({ url: u }));
-          }
+          // Always fall back to inline copies on any error
+          const limited = selectedFiles.slice(0, 2);
+          const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f, 800, 0.6)));
+          images = dataUrls.map((u: string) => ({ url: u }));
         }
       }
 
@@ -435,6 +433,15 @@ export function ServiceForm() {
         providerEmail,
         subservices: data.subservices ?? [],
       });
+
+      // Ensure images are persisted even if the API sanitized them out
+      if (images.length > 0) {
+        try {
+          await updateService(serviceId, { images });
+        } catch (e) {
+          console.warn('post-create image update failed', e);
+        }
+      }
 
       toast({ title: success(locale, 'submitted'), description: tr(locale, 'form.toasts.createdDesc') });
       router.push(`/services/${serviceId}`);

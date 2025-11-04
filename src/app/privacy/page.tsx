@@ -37,7 +37,6 @@ export default async function PrivacyPage() {
           </div>
         </section>
       </main>
-      <Footer />
     </div>
   );
 }

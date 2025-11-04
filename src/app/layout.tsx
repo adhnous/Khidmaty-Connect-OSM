@@ -10,8 +10,9 @@ import AdStrip from '@/components/ad-strip';
 import TopNav from '@/components/layout/top-nav';
 import AppGate from '@/components/app-gate';
 import MainShell from '@/components/main-shell';
-import BottomNav from '@/components/layout/bottom-nav';
+import BottomNavGate from '@/components/layout/bottom-nav-gate';
 import PwaInstall from '@/components/pwa-install';
+import { Footer } from '@/components/layout/footer';
 import { PT_Sans, Tajawal, Cairo } from 'next/font/google';
 
 // Cairo (default app font)
@@ -71,8 +72,9 @@ export default async function RootLayout({
             <main data-app className="min-h-screen" style={{ paddingTop: 'calc(var(--ad-height, 32px) + var(--navH, 56px))' }}>
               {children}
             </main>
+            <Footer />
             <PwaInstall />
-            <BottomNav />
+            <BottomNavGate />
           </AppGate>
           <Toaster />
           <SwRegister />

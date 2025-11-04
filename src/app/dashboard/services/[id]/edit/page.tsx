@@ -312,6 +312,10 @@ export default function EditServicePage() {
         added = await uploadImagesLocal(files);
       } else if (mode === 'cloudinary') {
         added = await uploadImagesCloudinary(files);
+      } else if (mode === 'inline' || !mode || process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === '1' || process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === 'true') {
+        const limited = files.slice(0, 4);
+        const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f)));
+        added = dataUrls.map((u) => ({ url: u }));
       } else {
         if (!user?.uid) throw new Error('no_uid');
         added = await uploadServiceImages(user.uid, files);
@@ -342,6 +346,9 @@ export default function EditServicePage() {
       } else if (mode === 'cloudinary') {
         const [img] = await uploadImagesCloudinary([file]);
         next = img;
+      } else if (mode === 'inline' || !mode || process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === '1' || process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === 'true') {
+        const url = await compressToDataUrl(file);
+        next = { url } as ServiceImage;
       } else {
         if (!user?.uid) throw new Error('no_uid');
         const [img] = await uploadServiceImages(user.uid, [file]);
@@ -445,40 +452,36 @@ export default function EditServicePage() {
         images,
         subservices: data.subservices ?? [],
       };
-      // Handle optional coordinates: set values if present, otherwise delete fields
-      if (typeof lat === 'number') payload.lat = lat; else payload.lat = deleteField();
-      if (typeof lng === 'number') payload.lng = lng; else payload.lng = deleteField();
-      if (typeof data.videoUrl === 'string' && data.videoUrl.trim()) payload.videoUrl = data.videoUrl.trim(); else payload.videoUrl = deleteField();
+      // Handle optional coordinates: set values if present; otherwise omit
+      if (typeof lat === 'number') payload.lat = lat;
+      if (typeof lng === 'number') payload.lng = lng;
+      if (typeof data.videoUrl === 'string' && data.videoUrl.trim()) payload.videoUrl = data.videoUrl.trim();
       // Additional video links
       if (Array.isArray((data as any).videoUrls) && (data as any).videoUrls.filter(Boolean).length > 0) {
         payload.videoUrls = (data as any).videoUrls.filter((u: string) => typeof u === 'string' && u.trim() !== '');
-      } else {
-        payload.videoUrls = deleteField();
       }
       // Social links
-      if ((data as any).facebookUrl && (data as any).facebookUrl.trim()) payload.facebookUrl = (data as any).facebookUrl.trim(); else payload.facebookUrl = deleteField();
-      if ((data as any).telegramUrl && (data as any).telegramUrl.trim()) payload.telegramUrl = (data as any).telegramUrl.trim(); else payload.telegramUrl = deleteField();
+      if ((data as any).facebookUrl && (data as any).facebookUrl.trim()) payload.facebookUrl = (data as any).facebookUrl.trim();
+      if ((data as any).telegramUrl && (data as any).telegramUrl.trim()) payload.telegramUrl = (data as any).telegramUrl.trim();
 
       if (typeof data.area === 'string' && data.area.trim()) {
         payload.area = data.area.trim();
-      } else {
-        payload.area = deleteField();
       }
       if (typeof (data as any).contactPhone === 'string') {
         const v = (data as any).contactPhone.trim();
-        payload.contactPhone = v ? v : deleteField();
-      } else {
-        payload.contactPhone = deleteField();
+        if (v) payload.contactPhone = v;
       }
       if (typeof (data as any).contactWhatsapp === 'string') {
         const v = (data as any).contactWhatsapp.trim();
-        payload.contactWhatsapp = v ? v : deleteField();
-      } else {
-        payload.contactWhatsapp = deleteField();
+        if (v) payload.contactWhatsapp = v;
       }
 
       await updateService(id, payload);
-      toast({ title: tr(locale, 'form.toasts.updateSuccess') });
+      try {
+        const after = await getServiceById(id);
+        const n = Array.isArray((after as any)?.images) ? (after as any).images.length : 0;
+        toast({ title: tr(locale, 'form.toasts.updateSuccess'), description: `${n} image(s) saved` });
+      } catch {}
       router.push(`/services/${id}`);
     } catch (err: any) {
       toast({ variant: 'destructive', title: tr(locale, 'form.toasts.updateFailedTitle'), description: err?.message || '' });
@@ -654,25 +657,34 @@ export default function EditServicePage() {
                   <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                     {images.map((img, i) => (
                       <div key={i} className="relative overflow-hidden rounded border">
-                        <Image src={img.url} alt={`Image ${i + 1}`} width={400} height={300} className="aspect-square w-full object-cover" />
+                        {/^data:|^blob:/i.test(String(img.url)) ? (
+                          <img src={String(img.url)} alt={`Image ${i + 1}`} className="aspect-square w-full object-cover" />
+                        ) : (
+                          <Image src={img.url} alt={`Image ${i + 1}`} width={400} height={300} className="aspect-square w-full object-cover" />
+                        )}
                         <div className={`flex items-center justify-between gap-2 p-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <div className="flex gap-1">{images.length > 1 && (<><Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, -1)} disabled={i === 0} aria-label={tr(locale, 'form.images.moveUp')}><ArrowUp className="h-4 w-4" /></Button><Button type="button" variant="outline" size="sm" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1} aria-label={tr(locale, 'form.images.moveDown')}><ArrowDown className="h-4 w-4" /></Button></>)}</div>
-                          <div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild><Button type="button" variant="outline" size="sm" aria-label="More"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                              <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
-                                <DropdownMenuItem onSelect={() => setTimeout(() => document.getElementById(`replace-file-${i}`)?.click(), 0)}><Pencil className="h-4 w-4" /> {tr(locale, 'form.images.replace')}</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleReplaceUrl(i)}><LinkIcon className="h-4 w-4" /> {tr(locale, 'form.images.replaceUrl')}</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => removeImage(i)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> {tr(locale, 'form.images.remove')}</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            <input id={`replace-file-${i}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleReplaceFile(i, f); e.currentTarget.value = ''; }} />
+                          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => moveImage(i, -1)} aria-label={tr(locale, 'form.images.moveUp')}><ArrowUp className="h-4 w-4" /></button>
+                            <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => moveImage(i, +1)} aria-label={tr(locale, 'form.images.moveDown')}><ArrowDown className="h-4 w-4" /></button>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button type="button" variant="outline" size="sm" aria-label="More"><MoreHorizontal className="h-4 w-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                              <DropdownMenuItem onSelect={() => setTimeout(() => document.getElementById(`replace-file-${i}`)?.click(), 0)}><Pencil className="h-4 w-4" /> {tr(locale, 'form.images.replace')}</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => handleReplaceUrl(i)}><LinkIcon className="h-4 w-4" /> {tr(locale, 'form.images.replaceUrl')}</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => removeImage(i)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> {tr(locale, 'form.images.remove')}</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <input id={`replace-file-${i}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleReplaceFile(i, f); e.currentTarget.value = ''; }} />
                         </div>
                       </div>
                     ))}
                   </div>
-                ) : (<p className="text-sm text-muted-foreground">{tr(locale, 'form.images.none')}</p>)}
+                ) : (
+                  <p className="text-sm text-muted-foreground">{tr(locale, 'form.images.none')}</p>
+                )}
               </CardContent>
             </Card>
 

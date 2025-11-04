@@ -15,6 +15,23 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+function deepStripUndefined<T = any>(input: T): T {
+  if (Array.isArray(input)) {
+    // @ts-ignore
+    return input.map((v) => deepStripUndefined(v)).filter((v) => v !== undefined) as T;
+  }
+  if (input && typeof input === 'object') {
+    const out: any = {};
+    for (const [k, v] of Object.entries(input as any)) {
+      if (v === undefined) continue;
+      const next = deepStripUndefined(v as any);
+      if (next !== undefined) out[k] = next;
+    }
+    return out as T;
+  }
+  return input;
+}
+
 export type ServiceImage = {
   url: string;
   hint?: string;
@@ -90,7 +107,8 @@ export async function createServiceDirect(data: Omit<Service, 'id' | 'createdAt'
     status: 'pending',
     createdAt: serverTimestamp(),
   };
-  const docRef = await addDoc(colRef, payload);
+  const clean = deepStripUndefined(payload);
+  const docRef = await addDoc(colRef, clean);
   return docRef.id;
 }
 
@@ -157,10 +175,30 @@ export async function updateService(
   data: Partial<Omit<Service, 'id' | 'createdAt' | 'providerId'>>
 ) {
   const docRef = doc(db, 'services', id);
-  const clean: any = Object.fromEntries(
-    Object.entries((data as any) || {}).filter(([_, v]) => v !== undefined)
-  );
-  await updateDoc(docRef, clean);
+  // Normalize nested fields to avoid undefined values anywhere in the payload
+  const normalized: any = { ...(data as any) };
+  if (Array.isArray(normalized.images)) {
+    normalized.images = normalized.images.map((img: any) => ({
+      url: String(img?.url || ''),
+      ...(img?.hint ? { hint: img.hint } : {}),
+      ...(img?.publicId ? { publicId: img.publicId } : {}),
+    }));
+  }
+  if (Array.isArray(normalized.subservices)) {
+    normalized.subservices = normalized.subservices.map((s: any) => ({
+      id: String(s?.id || ''),
+      title: String(s?.title || ''),
+      price: Number(s?.price ?? 0),
+      ...(s?.unit ? { unit: s.unit } : {}),
+      ...(s?.description ? { description: s.description } : {}),
+    }));
+  }
+  if (Array.isArray(normalized.videoUrls)) {
+    normalized.videoUrls = normalized.videoUrls.filter((u: any) => typeof u === 'string' && u.trim() !== '');
+  }
+
+  const stripped = deepStripUndefined(normalized);
+  await updateDoc(docRef, stripped as any);
 }
 
 export async function deleteService(id: string, reason?: string) {

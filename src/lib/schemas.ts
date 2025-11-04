@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+const imageUrlSchema = z.string().refine((v) => {
+  try {
+    if (!v) return false;
+    if (v.startsWith('data:image/')) return true;
+    if (v.startsWith('blob:')) return true;
+    if (v.startsWith('/')) return true;
+    const u = new URL(v);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}, 'أدخل رابط صالح');
+
 export const subServiceSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1, 'أدخل العنوان').max(100),
@@ -57,7 +70,7 @@ export const serviceSchema = z.object({
   images: z
     .array(
       z.object({
-        url: z.string().url(),
+        url: imageUrlSchema,
         id: z.string().optional(),
         width: z.number().optional(),
         height: z.number().optional(),
@@ -69,4 +82,5 @@ export const serviceSchema = z.object({
 
 export type ServiceFormData = z.infer<typeof serviceSchema>;
 export type SubServiceFormData = z.infer<typeof subServiceSchema>;
+
 

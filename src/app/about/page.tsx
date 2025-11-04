@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { Footer } from '@/components/layout/footer';
 import { tr } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +50,6 @@ export default async function AboutPage() {
         </div>
       </section>
       </main>
-      <Footer />
     </div>
   );
 }
