@@ -230,6 +230,7 @@ useEffect(() => {
       price: 0,
       priceMode: 'firm',
       showPriceInContact: false,
+      acceptRequests: true,
       subservices: [],
       location: { lat: 32.8872, lng: 13.1913 },
       images: [],
@@ -657,6 +658,15 @@ useEffect(() => {
                         </FormItem>
                       )} />
                     </div>
+                    <FormField control={form.control} name="acceptRequests" render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-2">
+                          <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} id="create_acceptRequests" />
+                          <FormLabel htmlFor="create_acceptRequests" className="!mt-0">{locale === 'ar' ? 'السماح بطلب الخدمة داخل التطبيق' : 'Allow in-app service requests'}</FormLabel>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="availabilityNote" render={({ field }) => (
                         <FormItem>

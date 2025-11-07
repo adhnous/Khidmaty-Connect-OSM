@@ -79,6 +79,8 @@ export type SubService = {
     priority?: number;       // 0..N, higher floats to top client-side
     // Simple share metric (owner-incremented client-side)
     shareCount?: number;     // total times owner pressed Share
+    // Whether seekers can send in-app requests to this service
+    acceptRequests?: boolean;
     createdAt?: unknown;
   };
 

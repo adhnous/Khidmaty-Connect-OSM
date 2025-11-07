@@ -148,6 +148,7 @@ export default function EditServicePage() {
       price: 0,
       priceMode: 'firm',
       showPriceInContact: false,
+      acceptRequests: true,
       category: '',
       city: 'Tripoli',
       area: '',
@@ -201,6 +202,7 @@ export default function EditServicePage() {
         price: doc.price,
         priceMode: (doc as any).priceMode ?? 'firm',
         showPriceInContact: !!(doc as any).showPriceInContact,
+        acceptRequests: (doc as any).acceptRequests !== false,
         category: (() => {
           const v = String((doc as any)?.category || '');
           const keys = Object.keys(CATEGORY_DEFS || {});
@@ -498,6 +500,7 @@ export default function EditServicePage() {
         price: data.price,
         priceMode: (data as any).priceMode,
         showPriceInContact: !!(data as any).showPriceInContact,
+        acceptRequests: !!(data as any).acceptRequests,
         category: data.category,
         city: data.city,
         availabilityNote: data.availabilityNote,
@@ -695,6 +698,16 @@ export default function EditServicePage() {
               <FormField control={form.control} name="contactPhone" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.contactPhone')}</FormLabel><FormControl><Input placeholder={tr(locale, 'form.placeholders.contactPhone')} {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="contactWhatsapp" render={({ field }) => (<FormItem><FormLabel>{tr(locale, 'form.labels.contactWhatsapp')}</FormLabel><FormControl><Input placeholder={tr(locale, 'form.placeholders.contactWhatsapp')} {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
+
+            <FormField control={form.control} name="acceptRequests" render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} id="edit_acceptRequests" />
+                  <FormLabel htmlFor="edit_acceptRequests" className="!mt-0">{locale === 'ar' ? 'السماح بطلب الخدمة داخل التطبيق' : 'Allow in-app service requests'}</FormLabel>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <Card>
               <CardContent className="space-y-3">

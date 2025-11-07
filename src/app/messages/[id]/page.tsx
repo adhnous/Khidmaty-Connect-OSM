@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { subscribeMessages, sendMessage, type Message } from '@/lib/chat';
 
 export default function ConversationPage() {
@@ -41,9 +41,17 @@ export default function ConversationPage() {
         const parts = (data.participants || {}) as Record<string, boolean>;
         if (!user || !parts[user.uid]) { setNotAllowed(true); setLoading(false); return; }
         setNotAllowed(false);
+        // Mark as read on open
+        try {
+          await setDoc(ref, { participantsMeta: { [user.uid]: { lastReadAt: serverTimestamp() } } }, { merge: true });
+        } catch {}
         unsubscribe = subscribeMessages(convId, (rows) => {
           setMessages(rows);
           setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight }), 0);
+          // Update lastReadAt on new messages while viewing
+          try {
+            setDoc(doc(db, 'conversations', convId), { participantsMeta: { [user.uid!]: { lastReadAt: serverTimestamp() } } }, { merge: true });
+          } catch {}
         });
         setLoading(false);
       } catch {

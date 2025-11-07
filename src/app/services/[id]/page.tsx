@@ -597,7 +597,7 @@ export default function ServiceDetailPage() {
                 >
                   <Share2 className="mr-2" /> {isOwner ? tr(locale, 'details.shareAppOwner') : tr(locale, 'details.shareService')}
                 </Button>
-                {service.providerId !== 'demo' && !isOwner && (
+                {service.providerId !== 'demo' && !isOwner && ((service as any)?.acceptRequests !== false) && (
                   <Button
                     size="lg"
                     variant="outline"

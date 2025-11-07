@@ -9,7 +9,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Globe, User as UserIcon, Menu, Bell, Shield, Handshake } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,7 @@ export default function TopNav() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [notifLoading, setNotifLoading] = useState(false);
+  const [unread, setUnread] = useState(0);
 
   const enableNotifications = async () => {
     if (!user) return;
@@ -55,6 +57,27 @@ export default function TopNav() {
       setNotifLoading(false);
     }
   };
+
+  // Subscribe to unread conversations count
+  useEffect(() => {
+    try {
+      if (!user?.uid) { setUnread(0); return; }
+      const field = `participants.${user.uid}` as any;
+      const ref = collection(db, 'conversations');
+      const q = query(ref, where(field, '==', true));
+      const unsub = onSnapshot(q, (snap) => {
+        let count = 0;
+        snap.forEach((d) => {
+          const data: any = d.data();
+          const lma = data?.lastMessageAt?.toMillis?.() ?? (data?.lastMessageAt ? Date.parse(data.lastMessageAt) : 0);
+          const lra = data?.participantsMeta?.[user.uid]?.lastReadAt?.toMillis?.() ?? (data?.participantsMeta?.[user.uid]?.lastReadAt ? Date.parse(data.participantsMeta[user.uid].lastReadAt) : 0);
+          if (lma && (!lra || lma > lra)) count++;
+        });
+        setUnread(count);
+      });
+      return () => { try { unsub(); } catch {} };
+    } catch { setUnread(0); }
+  }, [user?.uid]);
 
   const links = useMemo(() => {
     const items = [
@@ -145,17 +168,21 @@ export default function TopNav() {
 
         {/* Actions: language + user menu + mobile hamburger */}
         <div className="ml-auto flex items-center gap-2">
-          {user && (userProfile?.role === 'provider' || userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
+          {user && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={enableNotifications}
-              disabled={notifLoading}
-              className="text-white hover:bg-white/10 focus-visible:ring-white focus-visible:ring-offset-black min-h-[44px]"
-              title={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
-              aria-label={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
+              onClick={() => router.push('/messages')}
+              className="relative text-white hover:bg-white/10 focus-visible:ring-white focus-visible:ring-offset-black min-h-[44px]"
+              title={locale === 'ar' ? 'الرسائل' : 'Messages'}
+              aria-label={locale === 'ar' ? 'الرسائل' : 'Messages'}
             >
               <Bell className="h-4 w-4" />
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-[10px] font-bold leading-[18px] text-white">
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
             </Button>
           )}
           <Button

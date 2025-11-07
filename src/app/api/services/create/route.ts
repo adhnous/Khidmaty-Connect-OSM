@@ -44,6 +44,7 @@ export async function POST(req: Request) {
       images: Array.isArray(body.images) ? body.images.filter((i: any) => i && typeof i.url === 'string') : [],
       contactPhone: typeof body.contactPhone === 'string' ? body.contactPhone : undefined,
       contactWhatsapp: typeof body.contactWhatsapp === 'string' ? body.contactWhatsapp : undefined,
+      acceptRequests: typeof body.acceptRequests === 'boolean' ? body.acceptRequests : true,
       videoUrl: typeof body.videoUrl === 'string' ? body.videoUrl : undefined,
       videoUrls: Array.isArray(body.videoUrls) ? body.videoUrls.filter((v: any) => typeof v === 'string' && v) : undefined,
       facebookUrl: typeof body.facebookUrl === 'string' ? body.facebookUrl : undefined,

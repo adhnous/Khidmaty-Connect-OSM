@@ -27,6 +27,8 @@ export const serviceSchema = z.object({
   price: z.coerce.number().min(0, 'يجب أن يكون السعر 0 أو أكثر'),
   priceMode: z.enum(['firm', 'negotiable', 'call']).default('firm'),
   showPriceInContact: z.boolean().default(false),
+  // Whether seekers can send in-app requests to this service
+  acceptRequests: z.boolean().default(true),
   category: z.string({required_error: "يرجى اختيار فئة"}).min(1, 'يرجى اختيار فئة'),
   city: z.string({required_error: "يرجى اختيار مدينة"}).min(1, 'يرجى اختيار مدينة'),
   area: z

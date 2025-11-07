@@ -36,6 +36,10 @@ export async function POST(req: NextRequest) {
     if (providerId === requesterId) {
       return NextResponse.json({ error: 'cannot_request_own_service' }, { status: 400 });
     }
+    // Respect provider setting: disable in-app requests if turned off
+    if ((service as any)?.acceptRequests === false) {
+      return NextResponse.json({ error: 'requests_disabled' }, { status: 403 });
+    }
 
     // Requester profile snapshot (for provider context)
     const requesterSnap = await db.collection('users').doc(requesterId).get();
