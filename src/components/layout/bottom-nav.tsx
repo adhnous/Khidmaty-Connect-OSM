@@ -120,14 +120,16 @@ export default function BottomNav() {
       });
     }
 
-    // Dashboard/Provider - conditionally enabled
-    items.push({
-      href: userProfile?.role === 'provider' ? "/dashboard" : "#",
-      icon: Briefcase,
-      label: tr(locale, 'header.providerDashboard'),
-      active: isActive('/dashboard'),
-      enabled: userProfile?.role === 'provider'
-    });
+    // Dashboard/Provider - only for providers/admins/owners
+    if (userProfile?.role === 'provider' || userProfile?.role === 'admin' || userProfile?.role === 'owner') {
+      items.push({
+        href: "/dashboard",
+        icon: Briefcase,
+        label: tr(locale, 'header.providerDashboard'),
+        active: isActive('/dashboard'),
+        enabled: true
+      });
+    }
 
     // Profile/Login
     items.push({

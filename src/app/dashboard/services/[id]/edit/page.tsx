@@ -53,7 +53,7 @@ import {
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { libyanCities, cityLabel, cityCenter } from '@/lib/cities';
-import CategoryCombobox from '@/components/category-combobox';
+import { CategoryCards, CATEGORY_DEFS } from '@/components/category-cards';
 
 const EditSchema = serviceSchema; // reuse same fields
 
@@ -68,6 +68,52 @@ function extractAreaFromDisplayName(name: string): string {
   }
 }
 
+// Map detailed categories to the creation-phase CategoryCards ids
+function mapCategoryToCardId(cat: string): string {
+  const c = String(cat || '').toLowerCase();
+  if (!c) return 'repair';
+  const has = (s: string) => c.includes(s);
+  // Repair / Home services
+  if ([
+    'plumbing','electrical','carpentry','home services','cleaning','painting','hvac','air conditioning','appliance repair',
+    'roofing','flooring','tiling','handyman','furniture assembly','metalwork','welding','masonry','concrete','glass','aluminum',
+    'electrical appliances install','interior design','water tank','water & sanitation','waste removal','solar','renewable energy',
+    'locksmith','gardening','landscaping','pest control'
+  ].some(has)) return 'repair';
+  // Transport & Automotive
+  if ([
+    'automotive','car wash','detailing','car repair','motorcycle repair','transport & delivery','transport','delivery','boat','marine','moving'
+  ].some(has)) return 'transport';
+  // Creative / Marketing & Media
+  if ([
+    'graphic design','photography','videography','printing','branding','copywriting','advertising','packaging','label design',
+    'digital marketing','social media marketing','seo','sem','paid ads','content marketing','email marketing','sms marketing',
+    'affiliate marketing','pr & communications','market research','influencer marketing'
+  ].some(has)) return 'creative';
+  // Medical & Health
+  if ([
+    'medical','health','clinic','doctor','dent','pharmac','nurse'
+  ].some(has)) return 'medical';
+  // HR & Recruitment
+  if ([
+    'hr','recruit','hiring','human resources','staffing'
+  ].some(has)) return 'hr';
+  // Education
+  if (['tutoring','education'].some(has)) return 'education';
+  // Consulting / Professional services & Tech
+  if ([
+    'legal services','accounting','tax','insurance','real estate','architecture','engineering','internet & networking','web development',
+    'translation','it & computer repair','mobile repair','satellite','tv','beauty & personal care','hair & makeup','fitness'
+  ].some(has)) return 'consulting';
+  // Sales & Retail
+  if ([
+    'retail & store','visual merchandising','point of sale','pos setup','storefront signage','shop interior design','inventory setup',
+    'e-commerce setup','marketplace listings','sales'
+  ].some(has)) return 'sales';
+  // Crafts / Tailoring
+  if (['tailoring','alterations','agriculture services'].some(has)) return 'crafts';
+  return 'repair';
+}
 // Client-only react-leaflet components to avoid double-init in dev
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
 const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false }) as any;
@@ -155,7 +201,11 @@ export default function EditServicePage() {
         price: doc.price,
         priceMode: (doc as any).priceMode ?? 'firm',
         showPriceInContact: !!(doc as any).showPriceInContact,
-        category: doc.category,
+        category: (() => {
+          const v = String((doc as any)?.category || '');
+          const keys = Object.keys(CATEGORY_DEFS || {});
+          return (keys as any).includes(v) ? v : mapCategoryToCardId(v);
+        })(),
         city: doc.city,
         area: doc.area,
         availabilityNote: doc.availabilityNote ?? '',
@@ -524,11 +574,15 @@ export default function EditServicePage() {
               </FormItem>
             )} />
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               <FormField control={form.control} name="category" render={({ field }) => (
-                <FormItem>
+                <FormItem className="md:col-span-2">
                   <FormLabel>{tr(locale, 'form.labels.category')}</FormLabel>
-                  <CategoryCombobox value={field.value} onChange={field.onChange} placeholder={tr(locale, 'form.labels.category') as string} mergeCommunity />
+                  <CategoryCards
+                    locale={locale}
+                    selectedId={String(field.value || '')}
+                    onSelect={(id) => field.onChange(id)}
+                  />
                   <FormMessage />
                 </FormItem>
               )} />

@@ -338,18 +338,13 @@ export default function ServiceDetailPage() {
     }
   }
 
-  const coords = useMemo(() => {
-    if (service?.lat != null && service?.lng != null) {
-      return { lat: Number(service.lat), lng: Number(service.lng) };
-    }
-    if (!service?.city) return null as null | { lat: number; lng: number };
-    const city = (service.city || '').toLowerCase();
-    // Approximate centroids for major Libyan cities used in the app
-    if (city === 'tripoli') return { lat: 32.8872, lng: 13.1913 };
-    if (city === 'benghazi') return { lat: 32.1167, lng: 20.0667 };
-    if (city === 'misrata') return { lat: 32.3783, lng: 15.0906 };
-    return null;
-  }, [service?.city, service?.lat, service?.lng]);
+ const coords = useMemo(() => {
+  if (service?.lat != null && service?.lng != null) {
+    return { lat: Number(service.lat), lng: Number(service.lng) };
+  }
+  return null;
+}, [service?.lat, service?.lng]);
+
 
   // Build a privacy-friendly YouTube embed URL if provided
   const videoEmbedUrl = useMemo(() => {

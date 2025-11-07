@@ -544,6 +544,11 @@ export const dict = {
       beauty: 'جمال',
       fitness: 'لياقة جسدية',
       consulting: 'استشارات',   
+      hr : 'الموارد البشرية',
+      it: 'تكنولوجيا المعلومات',
+      cleaning: 'تنظيف',
+      repair: 'تصليح',
+      catering: 'تموين',
     },
 
     cities: {

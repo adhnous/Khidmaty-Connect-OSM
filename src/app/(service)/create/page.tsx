@@ -180,11 +180,17 @@ const locationSchema = z.object({
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 export default function CreateServiceWizardPage() {
-  const { user } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const uid = user?.uid;
   const locale = getClientLocale();
   const router = useRouter();
- 
+  useEffect(() => {
+    if (loading) return;
+    if (!user) { router.replace('/login'); return; }
+    if (userProfile?.role !== 'provider') { router.replace('/'); }
+  }, [loading, user, userProfile?.role, router]);
+  if (loading || !user || userProfile?.role !== 'provider') return null;
+
 // Warn ONLY if you explicitly chose cloudinary but didn't set the two vars.
 useEffect(() => {
   const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
@@ -496,8 +502,9 @@ useEffect(() => {
   );
 
   return (
-    <div className="mx-auto max-w-3xl">
+<div className="mx-auto max-w-3xl pt-16 md:pt-20">
       <Card>
+        
         <CardHeader>
           <CardTitle>{wiz.title}</CardTitle>
           <CardDescription>{wiz.subtitle}</CardDescription>

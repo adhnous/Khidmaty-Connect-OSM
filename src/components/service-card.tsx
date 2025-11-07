@@ -79,7 +79,7 @@ export function ServiceCard({
   }, [searchParams]);
   const content = (
     <Card className="group h-full w-full overflow-hidden rounded-xl border bg-background/60 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="relative aspect-[16/9] w-full overflow-hidden">
+<div className="relative w-full h-48 md:h-56 overflow-hidden rounded-t-xl">
         {isInline ? (
           <img
             src={displayUrl}

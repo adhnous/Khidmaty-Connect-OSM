@@ -28,9 +28,7 @@ export default function SeedServiceWizardPage() {
   const locale = getClientLocale();
   const { toast } = useToast();
   const router = useRouter();
-  const { user } = useAuth();
-
-  const [loading, setLoading] = useState(false);
+  const { user, userProfile, loading } = useAuth();
 
   // Inputs
   const [title, setTitle] = useState('');
@@ -137,7 +135,19 @@ export default function SeedServiceWizardPage() {
     }
   };
 
-  if (loading) return null;
+  if (loading || (typeof loading === 'boolean' && loading)) return null;
+  if (userProfile?.role !== 'provider') {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>{locale === 'ar' ? 'الحساب غير مخوّل' : 'Not allowed'}</CardTitle>
+            <CardDescription>{locale === 'ar' ? 'هذه الصفحة للمقدّمين فقط.' : 'This page is for provider accounts only.'}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl">
