@@ -79,12 +79,12 @@ export function ServiceCard({
   }, [searchParams]);
   const content = (
     <Card className="group h-full w-full overflow-hidden rounded-xl border bg-background/60 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
-<div className="relative w-full h-48 md:h-56 overflow-hidden rounded-t-xl">
+      <div className="relative w-full aspect-[4/3] md:aspect-[16/9] overflow-hidden rounded-t-xl bg-muted">
         {isInline ? (
           <img
             src={displayUrl}
             alt={title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover object-center"
             data-ai-hint={aiHint}
           />
         ) : (
@@ -93,7 +93,7 @@ export function ServiceCard({
             alt={title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-[1.02]"
             data-ai-hint={aiHint}
             placeholder="blur"
             blurDataURL={blur}
