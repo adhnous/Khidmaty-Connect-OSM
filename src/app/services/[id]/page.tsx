@@ -177,13 +177,13 @@ export default function ServiceDetailPage() {
     try {
       setSharing(true);
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const url = `${origin}/?ref=${service.providerId}`;
+      const url = service?.id ? `${origin}/services/${service.id}` : origin;
       let shared = false;
       if (typeof navigator !== 'undefined' && (navigator as any).share) {
         try {
           await (navigator as any).share({
-            title: 'Khidmaty Connect',
-            text: 'Discover local services on Khidmaty Connect',
+            title: service.title || 'Khidmaty Connect',
+            text: service.title || 'Discover local services on Khidmaty Connect',
             url,
           });
           shared = true;

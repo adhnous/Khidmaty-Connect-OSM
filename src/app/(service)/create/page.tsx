@@ -478,7 +478,7 @@ useEffect(() => {
         toast({ title: locale === 'ar' ? 'تم إنشاء الخدمة' : 'Service created', description: `${n} image(s) saved` });
       } catch {}
       await deleteServiceDraft(uid);
-      router.push("/dashboard/services");
+      router.push(`/services/${id}`);
     } catch (e) {
       console.error(e);
       toast({ variant: 'destructive', title: locale === 'ar' ? 'فشل إنشاء الخدمة' : 'Failed to create service' });
