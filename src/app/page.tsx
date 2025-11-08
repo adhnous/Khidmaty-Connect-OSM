@@ -306,6 +306,11 @@ export default function Home() {
                 )}
                 {!filtersCollapsed && !(searchFocused || q.trim().length > 0) && (
                   <div className="mt-4 border-t pt-4">
+                    <div className="mb-2 flex items-center justify-end">
+                      <Button size="sm" variant="outline" onClick={() => { setCategory(ALL_CATEGORIES as string); showResultsAndScroll(); }}>
+                        {tr(locale, 'home.allCategories')}
+                      </Button>
+                    </div>
                     <CategoryCards
                       locale={locale}
                       selectedId={category === ALL_CATEGORIES ? null : (category as any)}
