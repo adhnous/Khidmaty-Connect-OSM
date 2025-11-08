@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CityOption } from "@/lib/cities";
 
@@ -109,7 +110,7 @@ export default function CityPicker({ locale, value, onChange, options, placehold
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverPrimitive.Anchor asChild>
         <Input
           ref={inputRef as any}
           value={query}
@@ -138,8 +139,18 @@ export default function CityPicker({ locale, value, onChange, options, placehold
             }
           }}
         />
-      </PopoverTrigger>
-      <PopoverContent align="start" className="p-0 w-[--radix-popover-trigger-width]">
+      </PopoverPrimitive.Anchor>
+      <PopoverContent
+        align="start"
+        className="p-0 w-[--radix-popper-anchor-width]"
+        onInteractOutside={(e) => {
+          const anchor = inputRef.current;
+          const t = e.target as Node | null;
+          if (anchor && (t === anchor || (t && anchor.contains(t)))) {
+            e.preventDefault(); // don't close when clicking the input (anchor)
+          }
+        }}
+      >
         <div className="p-2 border-b">
           <Input
             ref={panelInputRef as any}
