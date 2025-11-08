@@ -505,6 +505,20 @@ export default function ServiceDetailPage() {
                     <span className="text-sm">({reviews.length})</span>
                   </div>
                 </div>
+                {!hidePrice && ((service as any)?.priceMode !== 'hidden') && (
+                  <div className="mt-2">
+                    <span className="text-2xl font-bold text-primary">
+                      {(() => {
+                        const mode = String((service as any)?.priceMode || 'firm');
+                        const price = Number((service as any)?.price || 0);
+                        if (mode === 'call') return tr(locale, 'details.callForPrice');
+                        const base = `${price} LYD`;
+                        if (mode === 'negotiable') return `${base} (${tr(locale, 'details.negotiable')})`;
+                        return base;
+                      })()}
+                    </span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="mb-4">

@@ -286,9 +286,12 @@ useEffect(() => {
     } catch { return 0; }
   }, [JSON.stringify(subsForCalc)]);
   useEffect(() => {
-    const eff = (priceModeValue === 'call' || priceModeValue === 'hidden') ? 0 : computedTotal;
-    form.setValue('price', eff, { shouldValidate: true });
-  }, [computedTotal, priceModeValue]);
+    const arr = Array.isArray(subsForCalc) ? subsForCalc : [];
+    if (arr.length > 0) {
+      const eff = (priceModeValue === 'call' || priceModeValue === 'hidden') ? 0 : computedTotal;
+      form.setValue('price', eff, { shouldValidate: true });
+    }
+  }, [computedTotal, priceModeValue, subsForCalc]);
 
   // Load existing draft
   useEffect(() => {
@@ -557,6 +560,19 @@ useEffect(() => {
                             <Textarea rows={4} {...field} />
                           </FormControl>
                           <div className="mt-1 text-xs text-muted-foreground">{(form.watch('description')?.length || 0)} {locale === 'ar' ? 'حرف' : 'chars'}</div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{tr(locale, "form.labels.price")}</FormLabel>
+                          <FormControl>
+                            <Input type="number" min={0} step={1} value={Number(field.value ?? 0)} onChange={(e)=>field.onChange(Number(e.target.value))} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
