@@ -13,6 +13,7 @@ type Svc = {
   category: string | null;
   city: string | null;
   price: number | null;
+  priceMode?: 'firm' | 'negotiable' | 'call' | null;
   imageUrl: string | null;
 };
 
@@ -44,6 +45,7 @@ export default function ServicesListPage() {
             category: (d?.category as string) ?? null,
             city: (d?.city as string) ?? null,
             price: typeof d?.price === 'number' ? d.price : null,
+            priceMode: (d?.priceMode as any) ?? null,
             imageUrl: images[0]?.url ?? null,
           });
         });
@@ -100,6 +102,7 @@ export default function ServicesListPage() {
               category={r.category || 'other'}
               city={r.city || 'tripoli'}
               price={r.price ?? 0}
+              priceMode={r.priceMode as any}
               imageUrl={r.imageUrl || 'https://placehold.co/800x600?text=Service'}
               aiHint={`category:${r.category || 'other'}; city:${r.city || 'tripoli'}`}
               href={`/services/${r.id}`}

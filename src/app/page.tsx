@@ -261,6 +261,7 @@ export default function Home() {
                   category={s.category}
                   city={s.city}
                   price={s.price}
+                  priceMode={(s as any).priceMode}
                   imageUrl={s.images?.[0]?.url || 'https://placehold.co/400x300.png'}
                   aiHint={s.category}
                   href={`/services/${s.id}`}

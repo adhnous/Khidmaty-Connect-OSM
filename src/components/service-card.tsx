@@ -19,6 +19,7 @@ type ServiceCardProps = {
   category: string;
   city: string;
   price: number;
+  priceMode?: 'firm' | 'negotiable' | 'call';
   imageUrl: string;
   aiHint: string;
   href?: string;
@@ -30,6 +31,7 @@ export function ServiceCard({
   category,
   city,
   price,
+  priceMode,
   imageUrl,
   aiHint,
   href,
@@ -134,7 +136,15 @@ export function ServiceCard({
           <span>{cityLabel(locale, city)}</span>
         </div>
         {!hidePrice && (
-          <p className="text-sm md:text-base font-semibold text-primary">LYD {price}</p>
+          <p className="text-sm md:text-base font-semibold text-primary">
+            {(() => {
+              const mode = String(priceMode || 'firm');
+              if (mode === 'call') return tr(locale, 'details.callForPrice');
+              const base = `LYD ${price}`;
+              if (mode === 'negotiable') return `${base} (${tr(locale, 'details.negotiable')})`;
+              return base;
+            })()}
+          </p>
         )}
       </CardFooter>
     </Card>
