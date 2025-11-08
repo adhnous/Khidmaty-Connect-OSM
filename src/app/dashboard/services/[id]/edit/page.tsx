@@ -574,7 +574,7 @@ export default function EditServicePage() {
               <FormItem>
                 <FormLabel>{tr(locale, 'form.labels.description')}</FormLabel>
                 <FormControl><Textarea className="min-h-[150px]" {...field} /></FormControl>
-                <div className="mt-1 text-xs text-muted-foreground">{(form.watch('description')?.length || 0)}/800 · {locale === 'ar' ? 'الحد الأدنى 30 حرفاً' : 'min 30 chars'}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{(form.watch('description')?.length || 0)} {locale === 'ar' ? 'حرف' : 'chars'}</div>
                 <FormMessage />
               </FormItem>
             )} />
@@ -635,7 +635,14 @@ export default function EditServicePage() {
                   </div>
                 ))}
                 <div className="flex items-center justify-between text-sm"><div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div><div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div></div>
-                <Button type="button" variant="secondary" onClick={() => subFieldArray.append({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, title: '', price: 0, unit: '', description: '' })}>+ {isSales ? (locale === 'ar' ? 'إضافة بيع' : 'Add sale') : tr(locale, 'form.subservices.add')}</Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="font-bold text-red-600 hover:text-red-700 text-base md:text-lg"
+                  onClick={() => subFieldArray.append({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, title: '', price: 0, unit: '', description: '' })}
+                >
+                  + {isSales ? (locale === 'ar' ? 'إضافة بيع' : 'Add sale') : tr(locale, 'form.subservices.add')}
+                </Button>
 
                 {(priceModeValue !== 'call' && priceModeValue !== 'hidden') && (
                   <>

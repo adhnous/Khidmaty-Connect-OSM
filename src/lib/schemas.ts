@@ -23,7 +23,7 @@ export const subServiceSchema = z.object({
 
 export const serviceSchema = z.object({
   title: z.string().min(6, 'يجب أن يتكون العنوان من 6 أحرف على الأقل').max(100, 'لا يمكن أن يتجاوز العنوان 100 حرف'),
-  description: z.string().min(30, 'يجب أن يتكون الوصف من 30 حرفًا على الأقل').max(800, 'لا يمكن أن يتجاوز الوصف 800 حرف'),
+  description: z.string().min(1, 'أدخل الوصف'),
   price: z.coerce.number().min(0, 'يجب أن يكون السعر 0 أو أكثر'),
   priceMode: z.enum(['firm', 'negotiable', 'call', 'hidden']).default('firm'),
   showPriceInContact: z.boolean().default(false),

@@ -555,6 +555,7 @@ useEffect(() => {
                           <FormControl>
                             <Textarea rows={4} {...field} />
                           </FormControl>
+                          <div className="mt-1 text-xs text-muted-foreground">{(form.watch('description')?.length || 0)} {locale === 'ar' ? 'حرف' : 'chars'}</div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -868,7 +869,12 @@ useEffect(() => {
                         </div>
                       </div>
                     ))}
-                    <Button type="button" variant="secondary" onClick={() => subFieldArray.append({ id: `${Date.now()}`, title: "", price: 0 })}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="font-bold text-red-600 hover:text-red-700 text-base md:text-lg"
+                      onClick={() => subFieldArray.append({ id: `${Date.now()}`, title: "", price: 0 })}
+                    >
                       + {(String(form.watch('category') || '') === 'sales') ? (locale === 'ar' ? 'إضافة بيع' : 'Add sale') : tr(locale, 'form.subservices.add')}
                     </Button>
                   </div>
