@@ -122,14 +122,6 @@ export default function CityPicker({ locale, value, onChange, options, placehold
             if (query === currentLabel) setQuery("");
             try { (e.currentTarget as HTMLInputElement).select(); } catch {}
           }}
-          onMouseDown={() => {
-            if (!open) setOpen(true);
-            requestAnimationFrame(() => inputRef.current?.focus());
-          }}
-          onTouchStart={() => {
-            if (!open) setOpen(true);
-            requestAnimationFrame(() => inputRef.current?.focus());
-          }}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();

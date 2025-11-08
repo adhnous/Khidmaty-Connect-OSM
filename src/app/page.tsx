@@ -217,6 +217,21 @@ export default function Home() {
     } catch {}
   }
 
+  function resetFilters() {
+    try {
+      setQ('');
+      setCity(ALL_CITIES);
+      setCategory(ALL_CATEGORIES as string);
+      setMaxPrice('');
+      setSort('newest');
+      setSearchFocused(false);
+      setFiltersCollapsed(false);
+      // Smooth scroll back to the search section (initial state)
+      const el = document.getElementById('search');
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    } catch {}
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-ink">
       <main className="flex-1">
@@ -246,7 +261,7 @@ export default function Home() {
               <div className="rounded-2xl copper-gradient p-[2px]">
                 <div className="rounded-[1rem] bg-background text-foreground p-3 md:p-4 shadow-lg">
                   {!filtersCollapsed ? (
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-6">
                     <div className="md:col-span-3">
                       <Input
                         type="text"
@@ -270,25 +285,9 @@ export default function Home() {
                       className="h-11 text-sm md:text-base text-foreground placeholder:text-muted-foreground"
                       allOption={{ value: ALL_CITIES, label: tr(locale, 'home.allCities') }}
                     />
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      dir="ltr"
-                      placeholder={tr(locale, 'home.maxPricePlaceholder')}
-                      className="h-11 text-sm md:text-base text-foreground placeholder:text-muted-foreground"
-                      value={maxPrice}
-                      onChange={(e) => setMaxPrice(e.target.value)}
-                    />
-                    <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-                      <SelectTrigger className="h-11 text-sm md:text-base text-foreground">
-                        <SelectValue className="text-foreground" placeholder={tr(locale, 'home.sortBy')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="newest">{tr(locale, 'home.sortNewest')}</SelectItem>
-                        <SelectItem value="priceLow">{tr(locale, 'home.sortPriceLow')}</SelectItem>
-                        <SelectItem value="priceHigh">{tr(locale, 'home.sortPriceHigh')}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Button size="lg" variant="outline" className="h-11 md:h-12 w-full text-base" onClick={resetFilters}>
+                      {locale === 'ar' ? 'إعادة تعيين الفلاتر' : 'Reset filters'}
+                    </Button>
                     <Button size="lg" className="h-11 md:h-12 w-full text-base bg-power hover:bg-powerDark text-white" onClick={() => { void fetchServices(); showResultsAndScroll(); }}>
                       <Search className="mr-2" />
                       {tr(locale, 'home.search')}
@@ -297,7 +296,9 @@ export default function Home() {
                 ) : (
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
-                      {tr(locale, 'home.search')} — {category === ALL_CATEGORIES ? tr(locale, 'home.allCategories') : CATEGORY_DEFS[category as CategoryCardId]?.[locale] || String(category)}{city && city !== ALL_CITIES ? ` · ${city}` : ''}
+                      {tr(locale, 'home.search')}
+                      {category !== ALL_CATEGORIES ? ` — ${CATEGORY_DEFS[category as CategoryCardId]?.[locale] || String(category)}` : ''}
+                      {city && city !== ALL_CITIES ? ` · ${city}` : ''}
                     </div>
                     <Button size="sm" variant="outline" onClick={() => setFiltersCollapsed(false)}>
                       {tr(locale, 'common.previous')}
@@ -306,11 +307,6 @@ export default function Home() {
                 )}
                 {!filtersCollapsed && !(searchFocused || q.trim().length > 0) && (
                   <div className="mt-4 border-t pt-4">
-                    <div className="mb-2 flex items-center justify-end">
-                      <Button size="sm" variant="outline" onClick={() => { setCategory(ALL_CATEGORIES as string); showResultsAndScroll(); }}>
-                        {tr(locale, 'home.allCategories')}
-                      </Button>
-                    </div>
                     <CategoryCards
                       locale={locale}
                       selectedId={category === ALL_CATEGORIES ? null : (category as any)}
