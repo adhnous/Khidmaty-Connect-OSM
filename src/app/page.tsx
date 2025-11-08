@@ -19,11 +19,12 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import { ServiceCard } from '@/components/service-card';
+import CityPicker from '@/components/city-picker';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { listServicesFiltered, type Service, type ListFilters } from '@/lib/services';
 import { getClientLocale, tr } from '@/lib/i18n';
-import { libyanCities, cityLabel } from '@/lib/cities';
+import { libyanCities } from '@/lib/cities';
 import { CategoryCards, type CategoryCardId, CATEGORY_DEFS } from '@/components/category-cards';
 
 
@@ -38,7 +39,6 @@ const featuredCategories = [
 // Stable sentinel values so labels can be localized while values remain constant
 const ALL_CATEGORIES = 'ALL_CATEGORIES';
 const ALL_CITIES = 'ALL_CITIES';
-const cityOptions = [ALL_CITIES, ...libyanCities.map((c) => c.value)];
 
 export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
@@ -184,19 +184,15 @@ export default function Home() {
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void fetchServices(); } }}
                     />
                   </div>
-                  <Select value={city} onValueChange={setCity}>
-                    <SelectTrigger className="h-11 text-sm md:text-base text-foreground">
-                      <SelectValue className="text-foreground" placeholder={tr(locale, 'home.cityPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={ALL_CITIES}>{tr(locale, 'home.allCities')}</SelectItem>
-                      {libyanCities.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {cityLabel(locale, c.value)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CityPicker
+                    locale={locale}
+                    value={city}
+                    options={libyanCities}
+                    onChange={setCity}
+                    placeholder={tr(locale, 'home.cityPlaceholder')}
+                    className="h-11 text-sm md:text-base text-foreground placeholder:text-muted-foreground"
+                    allOption={{ value: ALL_CITIES, label: tr(locale, 'home.allCities') }}
+                  />
                   <Input
                     type="number"
                     inputMode="numeric"
