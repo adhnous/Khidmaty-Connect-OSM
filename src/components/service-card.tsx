@@ -19,7 +19,7 @@ type ServiceCardProps = {
   category: string;
   city: string;
   price: number;
-  priceMode?: 'firm' | 'negotiable' | 'call';
+  priceMode?: 'firm' | 'negotiable' | 'call' | 'hidden';
   imageUrl: string;
   aiHint: string;
   href?: string;
@@ -135,7 +135,7 @@ export function ServiceCard({
           <MapPin className="mr-1 h-3.5 w-3.5" />
           <span>{cityLabel(locale, city)}</span>
         </div>
-        {!hidePrice && (
+        {!hidePrice && priceMode !== 'hidden' && (
           <p className="text-sm md:text-base font-semibold text-primary">
             {(() => {
               const mode = String(priceMode || 'firm');

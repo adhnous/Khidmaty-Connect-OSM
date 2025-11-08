@@ -258,10 +258,12 @@ export default function EditServicePage() {
   const priceModeValue = String(form.watch('priceMode') || 'firm');
   const isSales = String(form.watch('category') || '').toLowerCase().includes('sales');
 
-  // Keep price synced to subservices total
+  // Keep price synced to subservices total unless mode is 'call' or 'hidden'
   useEffect(() => {
-    form.setValue('price', Number.isFinite(subTotal) ? Number(subTotal) : 0, { shouldValidate: true });
-  }, [subTotal]);
+    const mode = String(form.getValues('priceMode') || priceModeValue);
+    const next = (mode === 'call' || mode === 'hidden') ? 0 : (Number.isFinite(subTotal) ? Number(subTotal) : 0);
+    form.setValue('price', next, { shouldValidate: true });
+  }, [subTotal, priceModeValue]);
 
   // Reverse geocode selected point to show human-readable address (free, cached)
   useEffect(() => {
@@ -599,6 +601,7 @@ export default function EditServicePage() {
                         <SelectItem value="firm">{locale === 'ar' ? 'ثابت' : 'Firm'}</SelectItem>
                         <SelectItem value="negotiable">{locale === 'ar' ? 'قابل للتفاوض' : 'Negotiable'}</SelectItem>
                         <SelectItem value="call">{locale === 'ar' ? 'اتصل بي' : 'Call me'}</SelectItem>
+                        <SelectItem value="hidden">{locale === 'ar' ? 'إخفاء السعر' : 'Hide price'}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -634,7 +637,7 @@ export default function EditServicePage() {
                 <div className="flex items-center justify-between text-sm"><div className="text-muted-foreground">{tr(locale, 'form.subservices.total')}</div><div className="font-semibold">LYD {Number.isFinite(subTotal) ? subTotal : 0}</div></div>
                 <Button type="button" variant="secondary" onClick={() => subFieldArray.append({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, title: '', price: 0, unit: '', description: '' })}>+ {isSales ? (locale === 'ar' ? 'إضافة بيع' : 'Add sale') : tr(locale, 'form.subservices.add')}</Button>
 
-                {(subTotal > 0 && subFieldArray.fields.length > 0 && priceModeValue !== 'call') && (
+                {(priceModeValue !== 'call' && priceModeValue !== 'hidden') && (
                   <>
                     <FormField control={form.control} name="price" render={({ field }) => (
                       <FormItem>

@@ -569,9 +569,8 @@ export default function ServiceDetailPage() {
           <div className="lg:col-span-4">
             
 
-            
-<Card className="sticky top-24 mb-6">
-              {!hidePrice && !!((service as any)?.showPriceInContact) && (
+            <Card className="sticky top-24 mb-6">
+              {!hidePrice && !!((service as any)?.showPriceInContact) && ((service as any)?.priceMode !== 'hidden') && (
                 <CardHeader>
                   <CardTitle className="text-center text-muted-foreground">
                     {tr(locale, 'details.servicePrice')}
@@ -647,7 +646,7 @@ export default function ServiceDetailPage() {
                             {s.title}
                             {s.unit ? <span className="text-muted-foreground"> ({s.unit})</span> : null}
                           </span>
-                          {!hidePrice && (
+                          {!hidePrice && ((service as any)?.priceMode !== 'hidden') && (
                             <span className="whitespace-nowrap font-medium">LYD {Number(s.price ?? 0)}</span>
                           )}
                         </li>

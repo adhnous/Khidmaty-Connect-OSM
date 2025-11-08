@@ -129,20 +129,20 @@ export default function MediaGallery({
             />
           </div>
         ) : (
-          <div className="aspect-video w-full md:max-w-[1000px] mx-auto overflow-hidden rounded-2xl bg-muted">
+          <div className="relative aspect-video w-full md:max-w-[1000px] mx-auto overflow-hidden rounded-2xl bg-muted">
             {isInlineUrl(String(media[active].url)) ? (
               <img
                 src={String(media[active].url)}
                 alt={title}
-                className="h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
               />
             ) : (
               <Image
                 src={transformCloudinary(String(media[active].url), { w: 1200, q: 'auto' })}
                 alt={title}
-                width={1200}
-                height={675}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(max-width: 1024px) 100vw, 1000px"
+                className="object-cover"
               />
             )}
           </div>

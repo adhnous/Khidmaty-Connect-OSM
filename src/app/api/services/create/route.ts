@@ -37,10 +37,17 @@ export async function POST(req: Request) {
       title: typeof body.title === 'string' ? body.title : '',
       description: typeof body.description === 'string' ? body.description : '',
       price: Number.isFinite(body.price) ? Number(body.price) : 0,
+      priceMode: (['firm','negotiable','call','hidden'] as const).includes(String(body.priceMode || '').toLowerCase() as any)
+        ? String(body.priceMode).toLowerCase()
+        : 'firm',
+      showPriceInContact: typeof body.showPriceInContact === 'boolean' ? !!body.showPriceInContact : false,
       category: typeof body.category === 'string' ? body.category : '',
       city: typeof body.city === 'string' ? body.city : 'Tripoli',
       area: typeof body.area === 'string' ? body.area : '',
       availabilityNote: typeof body.availabilityNote === 'string' ? body.availabilityNote : '',
+      lat: Number.isFinite(body.lat) ? Number(body.lat) : undefined,
+      lng: Number.isFinite(body.lng) ? Number(body.lng) : undefined,
+      mapUrl: (typeof body.mapUrl === 'string' && body.mapUrl) ? body.mapUrl : undefined,
       images: Array.isArray(body.images) ? body.images.filter((i: any) => i && typeof i.url === 'string') : [],
       contactPhone: typeof body.contactPhone === 'string' ? body.contactPhone : undefined,
       contactWhatsapp: typeof body.contactWhatsapp === 'string' ? body.contactWhatsapp : undefined,

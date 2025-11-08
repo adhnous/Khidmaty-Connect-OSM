@@ -51,7 +51,7 @@ export type SubService = {
     title: string;
     description: string;
     price: number;
-    priceMode?: 'firm' | 'negotiable' | 'call';
+    priceMode?: 'firm' | 'negotiable' | 'call' | 'hidden';
     category: string;
     city: string;
     area: string;

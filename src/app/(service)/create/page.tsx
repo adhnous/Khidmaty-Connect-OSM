@@ -285,7 +285,7 @@ useEffect(() => {
     } catch { return 0; }
   }, [JSON.stringify(subsForCalc)]);
   useEffect(() => {
-    const eff = priceModeValue === 'call' ? 0 : computedTotal;
+    const eff = (priceModeValue === 'call' || priceModeValue === 'hidden') ? 0 : computedTotal;
     form.setValue('price', eff, { shouldValidate: true });
   }, [computedTotal, priceModeValue]);
 
@@ -829,6 +829,7 @@ useEffect(() => {
                             <option value="firm">{locale === 'ar' ? 'ثابت' : 'Firm'}</option>
                             <option value="negotiable">{locale === 'ar' ? 'قابل للتفاوض' : 'Negotiable'}</option>
                             <option value="call">{locale === 'ar' ? 'اتصل بي' : 'Call me'}</option>
+                            <option value="hidden">{locale === 'ar' ? 'إخفاء السعر' : 'Hide price'}</option>
                           </select>
                         </FormControl>
                         <FormMessage />
@@ -871,7 +872,7 @@ useEffect(() => {
                       + {(String(form.watch('category') || '') === 'sales') ? (locale === 'ar' ? 'إضافة بيع' : 'Add sale') : tr(locale, 'form.subservices.add')}
                     </Button>
                   </div>
-                  {(computedTotal > 0 && subFieldArray.fields.length > 0 && priceModeValue !== 'call') && (
+                  {(computedTotal > 0 && subFieldArray.fields.length > 0 && priceModeValue !== 'call' && priceModeValue !== 'hidden') && (
                     <>
                       <FormField
                         control={form.control}
