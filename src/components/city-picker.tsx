@@ -143,6 +143,13 @@ export default function CityPicker({ locale, value, onChange, options, placehold
       <PopoverContent
         align="start"
         className="p-0 w-[--radix-popper-anchor-width]"
+        onPointerDownOutside={(e) => {
+          const anchor = inputRef.current;
+          const t = e.target as Node | null;
+          if (anchor && (t === anchor || (t && anchor.contains(t)))) {
+            e.preventDefault();
+          }
+        }}
         onInteractOutside={(e) => {
           const anchor = inputRef.current;
           const t = e.target as Node | null;

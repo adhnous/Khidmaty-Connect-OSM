@@ -2,13 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+// Removed Select controls
 import {
   Briefcase,
   Car,
@@ -17,6 +11,7 @@ import {
   Search,
   Megaphone,
   ShoppingCart,
+  Play,
 } from 'lucide-react';
 import { ServiceCard } from '@/components/service-card';
 import CityPicker from '@/components/city-picker';
@@ -26,6 +21,9 @@ import { listServicesFiltered, type Service, type ListFilters } from '@/lib/serv
 import { getClientLocale, tr } from '@/lib/i18n';
 import { libyanCities } from '@/lib/cities';
 import { CategoryCards, type CategoryCardId, CATEGORY_DEFS } from '@/components/category-cards';
+import { db } from '@/lib/firebase';
+import { collection, doc, getDoc, getDocs, limit as qlimit, query, where } from 'firebase/firestore';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 
 const featuredCategories = [
@@ -50,11 +48,15 @@ export default function Home() {
   const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest');
   const [searchFocused, setSearchFocused] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [featuredVideos, setFeaturedVideos] = useState<Service[]>([]);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [videoSvc, setVideoSvc] = useState<Service | null>(null);
   const locale = getClientLocale();
 
   useEffect(() => {
     // Initial load
     void fetchServices();
+    void fetchFeaturedVideos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -232,6 +234,67 @@ export default function Home() {
     } catch {}
   }
 
+  async function fetchFeaturedVideos() {
+    try {
+      const sdoc = await getDoc(doc(db, 'settings', 'home'));
+      const ids = (sdoc.exists() ? ((sdoc.data() as any)?.featuredVideoIds || []) : []) as string[];
+      let items: Service[] = [];
+      if (Array.isArray(ids) && ids.length > 0) {
+        const snaps = await Promise.all(ids.map((id) => getDoc(doc(db, 'services', id))));
+        items = snaps
+          .filter((d) => d.exists())
+          .map((d) => ({ id: d.id, ...(d.data() as Service) }))
+          .filter((s) => ((s as any)?.status ?? 'approved') === 'approved' && (((s as any)?.videoUrls?.length ?? 0) > 0 || !!(s as any)?.videoUrl));
+      } else {
+        const q1 = query(collection(db, 'services'), where('featured', '==', true), qlimit(20));
+        const snap = await getDocs(q1);
+        items = snap.docs
+          .map((d) => ({ id: d.id, ...(d.data() as Service) }))
+          .filter((s) => ((s as any)?.status ?? 'approved') === 'approved' && (((s as any)?.videoUrls?.length ?? 0) > 0 || !!(s as any)?.videoUrl))
+          .slice(0, 8);
+      }
+      setFeaturedVideos(items);
+    } catch {
+      setFeaturedVideos([]);
+    }
+  }
+
+  function firstVideoThumb(s: Service): string {
+    const urls: string[] = [
+      ...(((s as any)?.videoUrls as string[] | undefined) || []),
+      ...(((s as any)?.videoUrl ? [String((s as any).videoUrl)] : []) as string[]),
+    ];
+    const yt = urls.find((u) => /youtu\.be\//i.test(u) || /youtube\.com\/watch\?v=/i.test(u) || /youtube\.com\/embed\//i.test(u));
+    if (yt) {
+      const idMatch =
+        yt.match(/youtu\.be\/([\w-]+)/i)?.[1] ||
+        yt.match(/[?&]v=([\w-]+)/i)?.[1] ||
+        yt.match(/embed\/([\w-]+)/i)?.[1] ||
+        '';
+      if (idMatch) return `https://img.youtube.com/vi/${idMatch}/hqdefault.jpg`;
+    }
+    return (s.images?.[0]?.url as string) || 'https://placehold.co/400x300.png';
+  }
+
+  function firstVideoUrl(s: Service): { kind: 'youtube' | 'file' | 'none'; url: string } {
+    const urls: string[] = [
+      ...(((s as any)?.videoUrls as string[] | undefined) || []),
+      ...(((s as any)?.videoUrl ? [String((s as any).videoUrl)] : []) as string[]),
+    ];
+    const yt = urls.find((u) => /youtu\.be\//i.test(u) || /youtube\.com\/watch\?v=/i.test(u) || /youtube\.com\/embed\//i.test(u));
+    if (yt) {
+      const idMatch =
+        yt.match(/youtu\.be\/([\w-]+)/i)?.[1] ||
+        yt.match(/[?&]v=([\w-]+)/i)?.[1] ||
+        yt.match(/embed\/([\w-]+)/i)?.[1] ||
+        '';
+      if (idMatch) return { kind: 'youtube', url: `https://www.youtube.com/embed/${idMatch}?autoplay=1&rel=0` };
+    }
+    const anyUrl = urls.find((u) => !!u);
+    if (anyUrl) return { kind: 'file', url: anyUrl };
+    return { kind: 'none', url: '' };
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-ink">
       <main className="flex-1">
@@ -354,6 +417,63 @@ export default function Home() {
             </div>
           </div>
         </section>
+        {featuredVideos.length > 0 && (
+          <section className="bg-secondary/80 py-12">
+            <div className="mx-auto max-w-6xl px-4 sm:px-6">
+              <h2 className="mb-5 text-2xl md:text-3xl font-bold font-headline">
+                {locale === 'ar' ? 'فيديوهات مميزة' : 'Featured Videos'}
+              </h2>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {featuredVideos.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="group shrink-0 text-left"
+                    onClick={() => { setVideoSvc(s); setVideoOpen(true); }}
+                  >
+                    <div className="relative w-64 h-40 rounded-lg overflow-hidden shadow">
+                      <img src={firstVideoThumb(s)} alt={s.title} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="rounded-full bg-black/60 p-2 text-white">
+                          <Play className="w-6 h-6" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2 w-64 truncate text-sm font-medium">{s.title}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+        <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
+          <DialogContent className="max-w-3xl p-0">
+            <DialogTitle className="sr-only">{videoSvc?.title || (locale === 'ar' ? 'مشغل الفيديو' : 'Video player')}</DialogTitle>
+            {videoSvc && (() => {
+              const v = firstVideoUrl(videoSvc);
+              if (v.kind === 'youtube') {
+                return (
+                  <div className="w-full">
+                    <div className="relative aspect-video w-full">
+                      <iframe src={v.url} allow="autoplay; encrypted-media" allowFullScreen className="absolute inset-0 h-full w-full" />
+                    </div>
+                    <div className="p-4 text-sm font-medium">{videoSvc.title}</div>
+                  </div>
+                );
+              }
+              if (v.kind === 'file') {
+                return (
+                  <div className="w-full">
+                    <video src={v.url} controls className="w-full h-auto" />
+                    <div className="p-4 text-sm font-medium">{videoSvc.title}</div>
+                  </div>
+                );
+              }
+              return <div className="p-6 text-sm">{locale === 'ar' ? 'لا يوجد فيديو' : 'No video available'}</div>;
+            })()}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
