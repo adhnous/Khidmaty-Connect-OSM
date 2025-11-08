@@ -549,6 +549,14 @@ export const dict = {
       cleaning: 'تنظيف',
       repair: 'تصليح',
       catering: 'تموين',
+      photography: 'تصوير',
+      events: 'فعاليات',
+      legal: 'قانوني',
+      finance: 'تمويل',
+      marketing: 'تسويق',
+      writing: 'كتابة',
+      crafts: 'حرف يدوية',
+      creative: 'إبداعي',
     },
 
     cities: {

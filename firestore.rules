@@ -181,11 +181,8 @@ service cloud.firestore {
 
     // Conversations and messages (in-app chat)
     match /conversations/{conversationId} {
-      function convExists() { return exists(/databases/$(database)/documents/conversations/$(conversationId)); }
-      function convParticipants() {
-        return convExists() ? get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants : {};
-      }
-      function isConvParticipant() { return isSignedIn() && (convParticipants()[request.auth.uid] == true); }
+      // For reads on the conversation document itself, rely on resource.data to avoid get() recursion
+      function isConvParticipant() { return isSignedIn() && (resource.data.participants[request.auth.uid] == true); }
       function isConvParticipantOnCreate() { return isSignedIn() && (request.resource.data.participants[request.auth.uid] == true); }
 
       // Only participants (or admin) can read/update conversations. Anyone creating must include themselves in participants.
@@ -194,7 +191,8 @@ service cloud.firestore {
       allow update, delete: if isConvParticipant() || isAdmin();
 
       match /messages/{messageId} {
-        function parentParticipants() { return convParticipants(); }
+        // For subcollection rules, read participants from the parent conversation doc
+        function parentParticipants() { return get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants; }
         function inParent() { return isSignedIn() && (parentParticipants()[request.auth.uid] == true); }
         function textOk() { return request.resource.data.text is string && request.resource.data.text.size() <= 2000; }
 
