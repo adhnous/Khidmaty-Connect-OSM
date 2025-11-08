@@ -54,6 +54,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { libyanCities, cityLabel, cityCenter } from '@/lib/cities';
 import { CategoryCards, CATEGORY_DEFS } from '@/components/category-cards';
+import CityPicker from '@/components/city-picker';
 
 const EditSchema = serviceSchema; // reuse same fields
 
@@ -693,10 +694,14 @@ export default function EditServicePage() {
               <FormField control={form.control} name="city" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{tr(locale, 'form.labels.city')}</FormLabel>
-                  <Select onValueChange={(v) => { field.onChange(v); const c = cityCenter(v); if (c) { setLat(c.lat); setLng(c.lng); } }} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={tr(locale, 'home.cityPlaceholder')} /></SelectTrigger></FormControl>
-                    <SelectContent>{libyanCities.map((c) => (<SelectItem key={c.value} value={c.value}>{cityLabel(locale, c.value)}</SelectItem>))}</SelectContent>
-                  </Select>
+                  <FormControl>
+                    <CityPicker
+                      locale={locale}
+                      value={field.value}
+                      options={libyanCities}
+                      onChange={(v) => { field.onChange(v); const c = cityCenter(v); if (c) { setLat(c.lat); setLng(c.lng); } }}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

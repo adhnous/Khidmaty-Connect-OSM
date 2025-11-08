@@ -28,6 +28,7 @@ import { tileUrl, tileAttribution, markerHtml } from "@/lib/map";
 import { reverseGeocodeNominatim, getLangFromDocument } from "@/lib/geocode";
 import { CategoryCards, CATEGORY_DEFS } from "@/components/category-cards";
 import { transformCloudinary } from "@/lib/images";
+import CityPicker from "@/components/city-picker";
 
 // -------------------- NEW HELPERS (ADD) --------------------
 function isHttpUrl(u?: string) {
@@ -575,19 +576,19 @@ useEffect(() => {
                           <FormItem>
                             <FormLabel>{tr(locale, "form.labels.city")}</FormLabel>
                             <FormControl>
-                              <select className="w-full rounded border bg-background p-2" value={field.value} onChange={(e) => {
-                                const v = e.target.value;
-                                field.onChange(v);
-                                const center = cityCenter(v);
-                                if (center) {
-                                  form.setValue('location.lat', Number(center.lat.toFixed(6)), { shouldValidate: true });
-                                  form.setValue('location.lng', Number(center.lng.toFixed(6)), { shouldValidate: true });
-                                }
-                              }}>
-                                {libyanCities.map((c) => (
-                                  <option key={c.value} value={c.value}>{cityLabel(locale, c.value)}</option>
-                                ))}
-                              </select>
+                              <CityPicker
+                                locale={locale}
+                                value={field.value}
+                                options={libyanCities}
+                                onChange={(v) => {
+                                  field.onChange(v);
+                                  const center = cityCenter(v);
+                                  if (center) {
+                                    form.setValue('location.lat', Number(center.lat.toFixed(6)), { shouldValidate: true });
+                                    form.setValue('location.lng', Number(center.lng.toFixed(6)), { shouldValidate: true });
+                                  }
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
