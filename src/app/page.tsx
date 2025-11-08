@@ -12,6 +12,8 @@ import {
   Megaphone,
   ShoppingCart,
   Play,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { ServiceCard } from '@/components/service-card';
 import CityPicker from '@/components/city-picker';
@@ -51,6 +53,7 @@ export default function Home() {
   const [featuredVideos, setFeaturedVideos] = useState<Service[]>([]);
   const [videoOpen, setVideoOpen] = useState(false);
   const [videoSvc, setVideoSvc] = useState<Service | null>(null);
+  const [reelsIndex, setReelsIndex] = useState(0);
   const locale = getClientLocale();
 
   useEffect(() => {
@@ -295,6 +298,17 @@ export default function Home() {
     return { kind: 'none', url: '' };
   }
 
+  useEffect(() => {
+    if (!videoOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!featuredVideos.length) return;
+      if (e.key === 'ArrowLeft') setReelsIndex((i) => (i - 1 + featuredVideos.length) % featuredVideos.length);
+      if (e.key === 'ArrowRight') setReelsIndex((i) => (i + 1) % featuredVideos.length);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [videoOpen, featuredVideos.length]);
+
   return (
     <div className="flex min-h-screen flex-col bg-ink">
       <main className="flex-1">
@@ -424,12 +438,12 @@ export default function Home() {
                 {locale === 'ar' ? 'فيديوهات مميزة' : 'Featured Videos'}
               </h2>
               <div className="flex gap-3 overflow-x-auto pb-2">
-                {featuredVideos.map((s) => (
+                {featuredVideos.map((s, i) => (
                   <button
                     key={s.id}
                     type="button"
                     className="group shrink-0 text-left"
-                    onClick={() => { setVideoSvc(s); setVideoOpen(true); }}
+                    onClick={() => { setVideoSvc(s); setReelsIndex(i); setVideoOpen(true); }}
                   >
                     <div className="relative w-64 h-40 rounded-lg overflow-hidden shadow">
                       <img src={firstVideoThumb(s)} alt={s.title} className="w-full h-full object-cover" />
@@ -448,25 +462,49 @@ export default function Home() {
           </section>
         )}
         <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
-          <DialogContent className="max-w-3xl p-0">
-            <DialogTitle className="sr-only">{videoSvc?.title || (locale === 'ar' ? 'مشغل الفيديو' : 'Video player')}</DialogTitle>
-            {videoSvc && (() => {
-              const v = firstVideoUrl(videoSvc);
+          <DialogContent className="w-[min(92vw,420px)] bg-transparent border-0 p-0">
+            <DialogTitle className="sr-only">{(featuredVideos[reelsIndex]?.title || videoSvc?.title) || (locale === 'ar' ? 'مشغل الفيديو' : 'Video player')}</DialogTitle>
+            {(() => {
+              const current = featuredVideos[reelsIndex] || videoSvc;
+              if (!current) return null;
+              const v = firstVideoUrl(current);
               if (v.kind === 'youtube') {
                 return (
-                  <div className="w-full">
-                    <div className="relative aspect-video w-full">
+                  <div className="relative w-full">
+                    <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl bg-black">
                       <iframe src={v.url} allow="autoplay; encrypted-media" allowFullScreen className="absolute inset-0 h-full w-full" />
                     </div>
-                    <div className="p-4 text-sm font-medium">{videoSvc.title}</div>
+                    <div className="p-3 text-sm font-medium">{current.title}</div>
+                    {featuredVideos.length > 1 && (
+                      <>
+                        <button type="button" className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white" onClick={() => setReelsIndex((i) => (i - 1 + featuredVideos.length) % featuredVideos.length)} aria-label="Previous">
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white" onClick={() => setReelsIndex((i) => (i + 1) % featuredVideos.length)} aria-label="Next">
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 );
               }
               if (v.kind === 'file') {
                 return (
-                  <div className="w-full">
-                    <video src={v.url} controls className="w-full h-auto" />
-                    <div className="p-4 text-sm font-medium">{videoSvc.title}</div>
+                  <div className="relative w-full">
+                    <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl bg-black">
+                      <video src={v.url} controls autoPlay playsInline className="absolute inset-0 h-full w-full" />
+                    </div>
+                    <div className="p-3 text-sm font-medium">{current.title}</div>
+                    {featuredVideos.length > 1 && (
+                      <>
+                        <button type="button" className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white" onClick={() => setReelsIndex((i) => (i - 1 + featuredVideos.length) % featuredVideos.length)} aria-label="Previous">
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white" onClick={() => setReelsIndex((i) => (i + 1) % featuredVideos.length)} aria-label="Next">
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 );
               }
