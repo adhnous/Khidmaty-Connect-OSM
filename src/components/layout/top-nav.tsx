@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { getClientLocale } from "@/lib/i18n";
+import { getFeatures } from "@/lib/settings";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Globe, User as UserIcon, Menu, Bell, Shield, Handshake } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { auth, db } from "@/lib/firebase";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,7 @@ export default function TopNav() {
   const { toast } = useToast();
   const [notifLoading, setNotifLoading] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [showCityViews, setShowCityViews] = useState(true);
 
   const enableNotifications = async () => {
     if (!user) return;
@@ -83,6 +85,9 @@ export default function TopNav() {
     const items = [
       { href: "/", label: locale === "ar" ? "تصفح الخدمات" : "Browse Services" },
     ];
+    if (showCityViews) {
+      items.push({ href: "/city-views", label: locale === "ar" ? "مشاهد المدن" : "City Views" });
+    }
     const role = userProfile?.role;
     const canSeeProvider = role === 'provider' || role === 'admin' || role === 'owner';
     if (canSeeProvider) {
@@ -94,7 +99,29 @@ export default function TopNav() {
       );
     }
     return items;
-  }, [locale, userProfile?.role]);
+  }, [locale, userProfile?.role, showCityViews]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const f = await getFeatures();
+        if (!cancelled) setShowCityViews(f?.showCityViews !== false);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const ref = doc(db, 'settings', 'features');
+      const unsub = onSnapshot(ref, (snap) => {
+        const data: any = snap.data() || {};
+        setShowCityViews(data?.showCityViews !== false);
+      });
+      return () => { try { unsub(); } catch {} };
+    } catch {}
+  }, []);
 
   const changeLocale = async () => {
     try {

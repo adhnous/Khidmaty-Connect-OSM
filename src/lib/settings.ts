@@ -9,6 +9,7 @@ export type FeaturesSettings = {
   lockAllToPricing?: boolean;
   lockProvidersToPricing?: boolean;
   lockSeekersToPricing?: boolean;
+  showCityViews?: boolean;
 };
 
 export const DEFAULT_FEATURES: FeaturesSettings = {
@@ -19,6 +20,7 @@ export const DEFAULT_FEATURES: FeaturesSettings = {
   lockAllToPricing: false,
   lockProvidersToPricing: false,
   lockSeekersToPricing: false,
+  showCityViews: true,
 };
 
 // Type guard to validate FeaturesSettings
@@ -33,6 +35,7 @@ function isValidFeaturesSettings(data: any): data is Partial<FeaturesSettings> {
   if (data.lockAllToPricing !== undefined && typeof data.lockAllToPricing !== 'boolean') return false;
   if (data.lockProvidersToPricing !== undefined && typeof data.lockProvidersToPricing !== 'boolean') return false;
   if (data.lockSeekersToPricing !== undefined && typeof data.lockSeekersToPricing !== 'boolean') return false;
+  if (data.showCityViews !== undefined && typeof data.showCityViews !== 'boolean') return false;
   
   return true;
 }
@@ -64,6 +67,7 @@ export async function getFeatures(): Promise<FeaturesSettings> {
       lockAllToPricing: data.lockAllToPricing ?? DEFAULT_FEATURES.lockAllToPricing,
       lockProvidersToPricing: data.lockProvidersToPricing ?? DEFAULT_FEATURES.lockProvidersToPricing,
       lockSeekersToPricing: data.lockSeekersToPricing ?? DEFAULT_FEATURES.lockSeekersToPricing,
+      showCityViews: data.showCityViews ?? DEFAULT_FEATURES.showCityViews,
     };
 
     console.log('Loaded features settings:', mergedFeatures);

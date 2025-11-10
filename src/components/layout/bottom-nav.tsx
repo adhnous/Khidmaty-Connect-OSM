@@ -14,6 +14,7 @@ export default function BottomNav() {
   const searchParams = useSearchParams();
   const [locale, setLocale] = useState<'en' | 'ar'>('en');
   const [showPricing, setShowPricing] = useState(false);
+  const [showCityViews, setShowCityViews] = useState(true);
   const navRef = useRef<HTMLElement | null>(null);
 
   // Set locale from document
@@ -75,7 +76,10 @@ export default function BottomNav() {
         const pricingGate = userProfile?.pricingGate || {};
         const forcedShow = pricingGate.mode === 'force_show';
         
-        if (isMounted) setShowPricing(!!forcedShow);
+        if (isMounted) {
+          setShowPricing(!!forcedShow);
+          setShowCityViews(features?.showCityViews !== false);
+        }
       } catch (error) {
         console.error('Error checking pricing visibility:', error);
         if (isMounted) setShowPricing(false);
@@ -109,6 +113,17 @@ export default function BottomNav() {
       enabled: true
     });
 
+    // City Views - feature gated
+    if (showCityViews) {
+      items.push({
+        href: "/city-views",
+        icon: Tag,
+        label: locale === 'ar' ? 'المدن' : 'Views',
+        active: isActive('/city-views'),
+        enabled: true
+      });
+    }
+
     // Pricing - conditionally shown
     if (showPricing) {
       items.push({
@@ -141,7 +156,7 @@ export default function BottomNav() {
     });
 
     return items;
-  }, [locale, showPricing, user, userProfile, pathname]);
+  }, [locale, showPricing, showCityViews, user, userProfile, pathname]);
 
   // Don't render on larger screens
   return (
