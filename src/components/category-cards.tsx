@@ -24,7 +24,6 @@ export type CategoryCardId =
   | "medical"
   | "transport"
   | "creative"
-  | "sales"
   | "crafts";
 
 export const CATEGORY_DEFS: Record<

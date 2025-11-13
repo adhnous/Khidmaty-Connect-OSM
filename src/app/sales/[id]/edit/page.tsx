@@ -325,21 +325,85 @@ export default function EditSaleItemPage() {
                   </div>
                 )}
 
-                {step === 4 && (
-                  <div className="space-y-4">
-                    <FormLabel>{locale==='ar'?'صور الإعلان':'Images'}</FormLabel>
-                    <Input type="file" accept="image/*" multiple onChange={(e)=> setSelectedFiles(Array.from(e.target.files || []).slice(0, 8))} />
-                    {previews.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
-                        {previews.map((src, i) => (
-                          <div key={i} className="relative">
-                            <img src={src} alt="" className="h-24 w-full rounded object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
+              {step === 4 && (
+  <div className="space-y-4">
+    <FormField
+      control={form.control}
+      name="images"
+      render={() => {
+        const images = (form.watch("images") || []) as { url: string }[];
+
+        async function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
+          const files = Array.from(e.target.files ?? []);
+          if (!files.length) return;
+
+          // compress + convert to data URL (same as create page)
+          const limited = files.slice(0, 8);
+          const dataUrls = await Promise.all(
+            limited.map((f) => compressToDataUrl(f, 1000, 0.7))
+          );
+
+          const newImages = [
+            ...images,
+            ...dataUrls.map((u) => ({ url: u })),
+          ];
+
+          form.setValue("images", newImages as any, { shouldValidate: true });
+        }
+
+        function handleRemoveImage(index: number) {
+          const next = images.filter((_, i) => i !== index);
+          form.setValue("images", next as any, { shouldValidate: true });
+        }
+
+        return (
+          <FormItem>
+            <FormLabel>
+              {locale === "ar" ? "صور الإعلان" : "Ad images"}
+            </FormLabel>
+
+            {/* file input */}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFilesChange}
+              className="block w-full text-sm text-muted-foreground file:me-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:file:bg-primary/90"
+            />
+
+            {/* thumbnails + remove button */}
+            {images.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {images.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="relative overflow-hidden rounded border bg-muted"
+                  >
+                    <img
+                      src={img.url}
+                      alt={`image-${idx}`}
+                      className="h-32 w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-black/80"
+                    >
+                      {locale === "ar" ? "حذف" : "Remove"}
+                    </button>
                   </div>
-                )}
+                ))}
+              </div>
+            )}
+
+            <FormMessage />
+          </FormItem>
+        );
+      }}
+    />
+  </div>
+)}
+
 
                 {step === 5 && (
                   <div className="space-y-2 text-sm text-muted-foreground">
