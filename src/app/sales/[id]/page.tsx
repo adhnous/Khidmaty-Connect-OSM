@@ -38,8 +38,12 @@ export default function SaleDetailPage() {
   const priceLabel = useMemo(() => {
     const mode = String((item as any)?.priceMode || "firm");
     const price = Number((item as any)?.price || 0);
-    if (mode === "call") return locale === "ar" ? "اتصل لمعرفة السعر" : "Call for price";
-    if (mode === "negotiable") return `${locale === "ar" ? "LYD" : "LYD"} ${price} ${locale === "ar" ? "(قابل للتفاوض)" : "(Negotiable)"}`;
+    if (mode === "call")
+      return locale === "ar" ? "اتصل لمعرفة السعر" : "Call for price";
+    if (mode === "negotiable")
+      return `${
+        locale === "ar" ? "LYD" : "LYD"
+      } ${price} ${locale === "ar" ? "(قابل للتفاوض)" : "(Negotiable)"}`;
     if (mode === "hidden") return "";
     return `${locale === "ar" ? "LYD" : "LYD"} ${price}`;
   }, [item?.priceMode, item?.price, locale]);
@@ -62,15 +66,26 @@ export default function SaleDetailPage() {
     return null;
   }, [item?.location]);
 
+  // NEW: convenience values for contact info
+  const contactPhone =
+    (item as any)?.contactPhone as string | undefined | null;
+  const contactWhatsapp =
+    (item as any)?.contactWhatsapp as string | undefined | null;
+
   async function handleShare() {
     if (!item?.id) return;
     try {
       setSharing(true);
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
       const url = `${origin}/sales/${item.id}`;
       if (typeof navigator !== "undefined" && (navigator as any).share) {
         try {
-          await (navigator as any).share({ title: item.title, text: item.title, url });
+          await (navigator as any).share({
+            title: item.title,
+            text: item.title,
+            url,
+          });
           return;
         } catch {}
       }
@@ -85,7 +100,9 @@ export default function SaleDetailPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <p className="text-muted-foreground">{tr(locale, "details.loading")}</p>
+        <p className="text-muted-foreground">
+          {tr(locale, "details.loading")}
+        </p>
       </div>
     );
   }
@@ -93,9 +110,15 @@ export default function SaleDetailPage() {
   if (notFound || !item) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="mb-2 text-2xl font-bold">{tr(locale, "details.notFoundTitle")}</h1>
-        <p className="mb-4 text-muted-foreground">{tr(locale, "details.notFoundBodyRemoved")}</p>
-        <Link href="/sales" className="underline">{locale === "ar" ? "عودة إلى السوق" : "Back to Sales"}</Link>
+        <h1 className="mb-2 text-2xl font-bold">
+          {tr(locale, "details.notFoundTitle")}
+        </h1>
+        <p className="mb-4 text-muted-foreground">
+          {tr(locale, "details.notFoundBodyRemoved")}
+        </p>
+        <Link href="/sales" className="underline">
+          {locale === "ar" ? "عودة إلى السوق" : "Back to Sales"}
+        </Link>
       </div>
     );
   }
@@ -128,26 +151,43 @@ export default function SaleDetailPage() {
                   <div className="flex items-center gap-1.5">
                     <MapPin className="h-5 w-5" />
                     <span>
-                      {item.city}{item.area ? `، ${item.area}` : ""}
+                      {item.city}
+                      {item.area ? `، ${item.area}` : ""}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <StarRating value={Math.round(Number((item as any)?.rating || 0))} readOnly size="md" />
-                    <span className="text-sm">({Number((item as any)?.reviewsCount || 0)})</span>
+                    <StarRating
+                      value={Math.round(
+                        Number((item as any)?.rating || 0)
+                      )}
+                      readOnly
+                      size="md"
+                    />
+                    <span className="text-sm">
+                      ({Number((item as any)?.reviewsCount || 0)})
+                    </span>
                   </div>
                 </div>
                 {priceLabel && (
                   <div className="mt-2">
-                    <span className="text-2xl font-bold text-primary">{priceLabel}</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {priceLabel}
+                    </span>
                   </div>
                 )}
               </CardHeader>
               <CardContent>
                 {(item as any)?.trade?.enabled && (
                   <div className="mb-3">
-                    <Badge variant="outline" className="me-2">{locale === "ar" ? "مفتوح للمبادلة" : "Open to trade"}</Badge>
-                    {((item as any)?.trade?.tradeFor) && (
-                      <span className="text-sm text-muted-foreground">{(item as any).trade.tradeFor}</span>
+                    <Badge variant="outline" className="me-2">
+                      {locale === "ar"
+                        ? "مفتوح للمبادلة"
+                        : "Open to trade"}
+                    </Badge>
+                    {(item as any)?.trade?.tradeFor && (
+                      <span className="text-sm text-muted-foreground">
+                        {(item as any).trade.tradeFor}
+                      </span>
                     )}
                   </div>
                 )}
@@ -178,7 +218,13 @@ export default function SaleDetailPage() {
                       {tr(locale, "details.approxIn")} {item.city}
                       {item.area ? `, ${item.area}` : ""}.
                     </div>
-                    <ServiceMap lat={coords.lat} lng={coords.lng} title={item.title} city={item.city} area={item.area} />
+                    <ServiceMap
+                      lat={coords.lat}
+                      lng={coords.lng}
+                      title={item.title}
+                      city={item.city}
+                      area={item.area}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -187,12 +233,69 @@ export default function SaleDetailPage() {
 
           <div className="lg:col-span-4">
             <Card className="sticky top-24 mb-6">
-              <CardContent className="flex flex-col gap-3 p-4">
-                <Button size="lg" className="h-12 w-full text-lg" onClick={handleShare} disabled={sharing}>
-                  <Share2 className="mr-2" /> {locale === "ar" ? "مشاركة" : "Share"}
+              <CardContent className="flex flex-col gap-4 p-4">
+                {/* NEW: contact info box */}
+                {(contactPhone || contactWhatsapp) && (
+                  <div className="rounded-md border p-3 text-sm space-y-2">
+                    <div className="font-semibold">
+                      {locale === "ar"
+                        ? "معلومات التواصل"
+                        : "Contact information"}
+                    </div>
+
+                    {contactPhone && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          {locale === "ar" ? "الهاتف" : "Phone"}
+                        </span>
+                        <a
+                          href={`tel:${contactPhone}`}
+                          className="font-semibold text-primary hover:underline"
+                        >
+                          {contactPhone}
+                        </a>
+                      </div>
+                    )}
+
+                    {contactWhatsapp && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          {locale === "ar" ? "واتساب" : "WhatsApp"}
+                        </span>
+                        <a
+                          href={`https://wa.me/${contactWhatsapp.replace(
+                            /[^0-9]/g,
+                            ""
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-primary hover:underline"
+                        >
+                          {contactWhatsapp}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <Button
+                  size="lg"
+                  className="h-12 w-full text-lg"
+                  onClick={handleShare}
+                  disabled={sharing}
+                >
+                  <Share2 className="mr-2" />{" "}
+                  {locale === "ar" ? "مشاركة" : "Share"}
                 </Button>
-                <Button asChild size="lg" variant="outline" className="h-12 w-full text-lg">
-                  <Link href="/sales">{locale === "ar" ? "عودة إلى السوق" : "Back to Sales"}</Link>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-12 w-full text-lg"
+                >
+                  <Link href="/sales">
+                    {locale === "ar" ? "عودة إلى السوق" : "Back to Sales"}
+                  </Link>
                 </Button>
               </CardContent>
             </Card>

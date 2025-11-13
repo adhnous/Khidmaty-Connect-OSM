@@ -24,7 +24,8 @@ export default function ProviderShopPage() {
     (async () => {
       try {
         const [si, sv] = await Promise.all([
-          listProviderSaleItems(providerId, { status: 'active' }),
+         // listProviderSaleItems(providerId, { status: 'active' }),
+            listProviderSaleItems(providerId, { status: 'approved' }),
           listServicesByProvider(providerId, 50),
         ]);
         setSales(si);

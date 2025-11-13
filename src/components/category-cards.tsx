@@ -38,7 +38,6 @@ export const CATEGORY_DEFS: Record<
   medical: { ar: "خدمات صحية وطبية", en: "Health & Medical", Icon: Stethoscope, color: "bg-rose-100 text-rose-700" },
   transport: { ar: "النقل والمواصلات والتوصيل", en: "Transport & Delivery", Icon: Truck, color: "bg-indigo-100 text-indigo-700" },
   creative: { ar: "الاعلانات التصميم والإبداع", en: "Advertising & Creative", Icon: Megaphone, color: "bg-fuchsia-100 text-fuchsia-700" },
-  sales: { ar: "البيع والتجارة", en: "Sales & Trade", Icon: ShoppingCart, color: "bg-teal-100 text-teal-700" },
   crafts: { ar: "اعمال مهنية وحرف يدوية", en: "Skilled Trades & Crafts", Icon: Hammer, color: "bg-amber-100 text-amber-700" },
 };
 
