@@ -320,8 +320,8 @@ export const dict = {
       browse: 'تصفح الخدمات',
       providers: 'للمقدّمين',
       providerDashboard: 'لوحة المزود',
-      myServices: 'خدماتي',
-      addService: 'إضافة خدمة جديدة',
+      myServices: 'إعلاناتي',
+      addService: 'إضافة خدمة أو عنصر للبيع',
       profile: 'الملف الشخصي',
       signOut: 'تسجيل الخروج',
       login: 'تسجيل الدخول / إنشاء حساب',
@@ -337,7 +337,7 @@ export const dict = {
     },
    dashboard: {
     serviceForm: {
-      editSubtitle: 'إضافة خدمة',
+      editSubtitle: 'إضافة خدمة أو عنصر للبيع',
       subtitle: 'أدخل معلومات الخدمة',
       fields: {
         title: 'العنوان',
@@ -380,7 +380,7 @@ export const dict = {
 
     },
       sidebar: {
-        services: 'خدماتي',
+        services: 'إعلاناتي',
         analytics: 'تحليلاتي',
         profile: 'الملف الشخصي',
         settings: 'الإعدادات',
@@ -396,14 +396,14 @@ export const dict = {
         addService: 'إضافة خدمة جديدة',
       },
       services: {
-        title: 'خدماتي',
-        subtitle: 'اعرض وأدر جميع قوائم خدماتك.',
-        newService: 'خدمة جديدة',
+        title: 'إعلاناتي',
+        subtitle: 'اعرض وأدر جميع قوائم الإعلانات.',
+        newService: 'إعلان جديد',
         seedSamples: 'إضافة عينات',
         loading: 'جارٍ التحميل…',
-        emptyTitle: 'لا توجد خدمات بعد.',
-        createFirst: 'أنشئ أول خدمة لك',
-        seedSampleServices: 'إضافة خدمات تجريبية',
+        emptyTitle: 'لا توجد إعلانات بعد.',
+        createFirst: 'أنشئ أول إعلان لك',
+        seedSampleServices: 'إضافة إعلانات تجريبية',
          table: {
           headers: {
             title: 'العنوان',
@@ -432,12 +432,12 @@ export const dict = {
           view: 'عرض',
           edit: 'تعديل',
           delete: 'حذف',
-          deleteConfirm: 'هل أنت متأكد من حذف هذه الخدمة؟',
+          deleteConfirm: 'هل أنت متأكد من حذف هذه الإعلان؟',
           deleteConfirmDesc: 'هذه الخطوة لا يمكن التراجع عنها.',
           deleteConfirmCancel: 'إلغاء',
           deleteConfirmConfirm: 'حذف',
-          deleteFailed: 'فشل في حذف الخدمة',
-          deleteSuccess: 'تم حذف الخدمة بنجاح',
+          deleteFailed: 'فشل في حذف الإعلان',
+          deleteSuccess: 'تم حذف الإعلان بنجاح',
         },
       },
        
@@ -452,8 +452,8 @@ export const dict = {
         email: 'البريد الإلكتروني',
         password: 'كلمة المرور',
         roleLabel: 'أنا...',
-        roleSeeker: 'باحث عن خدمة (أبحث عن متخصص)',
-        roleProvider: 'مقدم خدمة (أقدم خدماتي)',
+        roleSeeker: 'باحث عن إعلان (أبحث عن متخصص)',
+        roleProvider: 'مقدم إعلان (أقدم خدماتي)',
       },
       priceModeOptions: {
         firm: 'ثابت',
@@ -506,11 +506,11 @@ export const dict = {
     },
 
     home: {
-      heroTitle: 'اعثر على خدمات محلية موثوقة',
+      heroTitle: 'اعثر على إعلانات محلية موثوقة',
       heroSubtitle: 'صلتك بالمحترفين المهرة في ليبيا.',
-      providerCta: 'أنا مقدم خدمة — أدرج خدمتي',
-      seekerCta: 'أنا باحث عن خدمة — اعثر على الخدمات',
-      searchPlaceholder: 'ما الخدمة التي تبحث عنها؟',
+      providerCta: 'أنا مقدم إعلان — أدرج إعلانتي',
+      seekerCta: 'أنا باحث عن إعلان — اعثر على الإعلانات',
+      searchPlaceholder: 'ما الإعلان الذي تبحث عنه؟',
       cityPlaceholder: 'المدينة',
       categoryPlaceholder: 'الفئة',
       allCities: 'كل المدن',
@@ -520,8 +520,8 @@ export const dict = {
       featuredCategories: 'فئات مميزة',
       popularServices: 'خدمات شائعة',
       loading: 'جارٍ تحميل الخدمات…',
-      empty1: 'لا توجد خدمات بعد.',
-      empty2: 'اذهب إلى لوحة التحكم → خدماتي لإنشاء خدمة جديدة.',
+      empty1: 'لا توجد إعلانات بعد.',
+      empty2: 'اذهب إلى لوحة التحكم → إعلاناتي لإنشاء إعلان جديد.',
       sortBy: 'ترتيب حسب',
       sortNewest: 'الأحدث',
       sortPriceLow: 'السعر: من الأقل إلى الأعلى',

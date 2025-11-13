@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const imageUrlSchema = z.string().refine((v) => {
+export const imageUrlSchema = z.string().refine((v) => {
   try {
     if (!v) return false;
     if (v.startsWith('data:image/')) return true;

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { CityOption } from "@/lib/cities";
 
 type Locale = "ar" | "en";
@@ -25,6 +25,9 @@ export default function CityPicker({ locale, value, onChange, options, placehold
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const panelInputRef = useRef<HTMLInputElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [canUp, setCanUp] = useState(false);
+  const [canDown, setCanDown] = useState(false);
 
   function normalizeArabic(input: string): string {
     try {
@@ -62,6 +65,14 @@ export default function CityPicker({ locale, value, onChange, options, placehold
           (el as HTMLInputElement).setSelectionRange(len, len);
         }
       } catch {}
+      try {
+        const currentLabel = value ? labelOf(value) : "";
+        if (query === currentLabel) {
+          setQuery("");
+        }
+        setActiveIndex(0);
+      } catch {}
+      setTimeout(recalcScroll, 0);
     }
   }, [open]);
 
@@ -101,6 +112,24 @@ export default function CityPicker({ locale, value, onChange, options, placehold
   useEffect(() => {
     if (activeIndex >= filtered.length) setActiveIndex(0);
   }, [filtered.length, activeIndex]);
+
+  useEffect(() => {
+    setTimeout(recalcScroll, 0);
+  }, [filtered.length]);
+
+  function recalcScroll() {
+    const el = listRef.current;
+    if (!el) { setCanUp(false); setCanDown(false); return; }
+    setCanUp(el.scrollTop > 0);
+    setCanDown(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+  }
+
+  function scrollByAmount(delta: number) {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollBy({ top: delta, behavior: "smooth" });
+    setTimeout(recalcScroll, 150);
+  }
 
   function select(val: string) {
     onChange(val);
@@ -142,7 +171,7 @@ export default function CityPicker({ locale, value, onChange, options, placehold
       </PopoverPrimitive.Anchor>
       <PopoverContent
         align="start"
-        className="p-0 w-[--radix-popper-anchor-width]"
+        className="z-[9999] p-0 w-[--radix-popper-anchor-width]"
         onPointerDownOutside={(e) => {
           const anchor = inputRef.current;
           const t = e.target as Node | null;
@@ -173,27 +202,49 @@ export default function CityPicker({ locale, value, onChange, options, placehold
             }}
           />
         </div>
-        <ScrollArea className="max-h-64">
-          <ul className="divide-y">
-            {filtered.map((it, idx) => (
-              <li key={`${it.isAll ? "__all" : "city"}-${it.value}`}>
-                <button
-                  type="button"
-                  className={`w-full text-start px-3 py-2 text-sm ${idx === activeIndex ? "bg-accent" : "hover:bg-accent/50"}`}
-                  onMouseEnter={() => setActiveIndex(idx)}
-                  onMouseDown={(e) => { e.preventDefault(); select(it.value); }}
-                >
-                  {it.label}
-                </button>
-              </li>
-            ))}
-            {filtered.length === 0 && (
-              <li className="px-3 py-2 text-sm text-muted-foreground">
-                {locale === "ar" ? "لا نتائج" : "No results"}
-              </li>
-            )}
-          </ul>
-        </ScrollArea>
+        <div className="relative">
+          <button
+            type="button"
+            className={`absolute left-1/2 -translate-x-1/2 top-1 z-[1] h-6 w-6 grid place-items-center rounded-full bg-accent/60 text-foreground ${canUp ? '' : 'opacity-40 pointer-events-none'}`}
+            onClick={() => scrollByAmount(-160)}
+            aria-label="Up"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </button>
+          <div
+            ref={listRef}
+            className="max-h-80 overflow-auto"
+            onScroll={recalcScroll}
+          >
+            <ul className="divide-y">
+              {filtered.map((it, idx) => (
+                <li key={`${it.isAll ? "__all" : "city"}-${it.value}`}>
+                  <button
+                    type="button"
+                    className={`w-full text-start px-3 py-2 text-sm ${idx === activeIndex ? "bg-accent" : "hover:bg-accent/50"}`}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    onMouseDown={(e) => { e.preventDefault(); select(it.value); }}
+                  >
+                    {it.label}
+                  </button>
+                </li>
+              ))}
+              {filtered.length === 0 && (
+                <li className="px-3 py-2 text-sm text-muted-foreground">
+                  {locale === "ar" ? "لا نتائج" : "No results"}
+                </li>
+              )}
+            </ul>
+          </div>
+          <button
+            type="button"
+            className={`absolute left-1/2 -translate-x-1/2 bottom-1 z-[1] h-6 w-6 grid place-items-center rounded-full bg-accent/60 text-foreground ${canDown ? '' : 'opacity-40 pointer-events-none'}`}
+            onClick={() => scrollByAmount(160)}
+            aria-label="Down"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
       </PopoverContent>
     </Popover>
   );

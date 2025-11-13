@@ -410,6 +410,14 @@ useEffect(() => {
         return;
       }
     }
+    // If user selected Sales & Trade in category step, redirect to dedicated sales create flow
+    if (step === 1) {
+      const v = String(form.getValues('category') || '').toLowerCase();
+      if (v === 'sales') {
+        router.push('/sales/create');
+        return;
+      }
+    }
     await persistDraft();
     setStep((s): Step => (s >= 6 ? 6 : ((s + 1) as Step)));
   };
@@ -626,14 +634,23 @@ useEffect(() => {
                     </div>
                     <div className="space-y-2">
                       <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
-                      <div className="rounded border">
-                        <MapContainer center={[latNum ?? 32.8872, lngNum ?? 13.1913]} zoom={13} scrollWheelZoom={false} className="cursor-crosshair" style={{ height: 280, width: '100%'}}
+                      <div className="relative z-0 rounded-lg border bg-background p-2 shadow-sm overflow-hidden">
+                        <MapContainer center={[latNum ?? 32.8872, lngNum ?? 13.1913]} zoom={13} scrollWheelZoom={false} className="cursor-crosshair rounded-md" style={{ height: 220, width: '100%'}}
                           onClick={(e: any) => {
                             const { lat, lng } = e?.latlng || {};
                             if (typeof lat === 'number' && typeof lng === 'number') {
                               form.setValue('location.lat', Number(lat.toFixed(6)), { shouldValidate: true });
                               form.setValue('location.lng', Number(lng.toFixed(6)), { shouldValidate: true });
                             }
+                          }}
+                          whenCreated={(map: any) => {
+                            const update = () => {
+                              const c = map.getCenter();
+                              form.setValue('location.lat', Number(c.lat.toFixed(6)), { shouldValidate: true });
+                              form.setValue('location.lng', Number(c.lng.toFixed(6)), { shouldValidate: true });
+                            };
+                            map.on('moveend', update);
+                            map.on('zoomend', update);
                           }}
                         >
                           <TileLayer url={tileUrl} attribution={tileAttribution} />

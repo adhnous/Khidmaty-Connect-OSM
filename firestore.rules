@@ -119,8 +119,35 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Sale items: first-class collection for Sales & Trade
+    match /sale_items/{id} {
+      // Owner = provider who created the item
+      function isOwner() { return isSignedIn() && request.auth.uid == resource.data.providerId; }
+      function isOwnerOnCreate(data) { return isSignedIn() && data.providerId == request.auth.uid; }
+      function isPendingOnCreate() { return !(request.resource.data.status is string) || request.resource.data.status == 'pending'; }
+      // Public can read active items; owners and admins can read all
+      allow read: if (resource.data.status == 'approved') || isOwner() || isAdmin();
+      // Providers can create their own items only; must start pending. Admins can create too.
+      allow create: if (
+        (isSignedIn() && userRole() == 'provider' && isOwnerOnCreate(request.resource.data) && isPendingOnCreate())
+        || isAdmin()
+      );
+      // Owners can update their docs but cannot change providerId; admins can update anything
+      allow update: if (
+        (isOwner() && request.resource.data.providerId == resource.data.providerId && request.resource.data.status == resource.data.status)
+        || isAdmin()
+      );
+      // Owners or admins can delete
+      allow delete: if isOwner() || isAdmin();
+    }
+
     // Per-user draft for the create-service wizard
     match /servicesDrafts/{uid} {
+      allow read, create, update, delete: if request.auth != null && request.auth.uid == uid;
+    }
+    
+    // Per-user draft for the sales wizard
+    match /saleItemsDrafts/{uid} {
       allow read, create, update, delete: if request.auth != null && request.auth.uid == uid;
     }
 

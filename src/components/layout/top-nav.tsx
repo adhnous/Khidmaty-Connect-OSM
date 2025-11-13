@@ -88,13 +88,16 @@ export default function TopNav() {
     if (showCityViews) {
       items.push({ href: "/city-views", label: locale === "ar" ? "مشاهد المدن" : "City Views" });
     }
+    // Expose Sales feed in primary navigation
+    items.push({ href: "/sales", label: locale === "ar" ? "البيع والتجارة" : "Sales & Trade" });
     const role = userProfile?.role;
     const canSeeProvider = role === 'provider' || role === 'admin' || role === 'owner';
     if (canSeeProvider) {
       items.push(
         { href: "/dashboard", label: locale === "ar" ? "لوحة المزود" : "Provider Dashboard" },
-        { href: "/dashboard/services", label: locale === "ar" ? "خدماتي" : "My Services" },
-        { href: "/create", label: locale === "ar" ? "إضافة خدمة جديدة" : "Add Service" },
+        { href: "/dashboard/services", label: locale === "ar" ? "إعلاناتي" : "My Services" },
+        { href: "/create", label: locale === "ar" ? "إضافة خدمة أو عنصر للبيع" : "Add Service" },
+
         { href: "/dashboard/settings", label: locale === "ar" ? "الإعدادات" : "Settings" },
       );
     }
@@ -245,10 +248,10 @@ export default function TopNav() {
                       <Link href="/dashboard">{locale === "ar" ? "لوحة المزود" : "Provider Dashboard"}</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard/services">{locale === "ar" ? "خدماتي" : "My Services"}</Link>
+                      <Link href="/dashboard/services">{locale === "ar" ? "إعلاناتي" : "My Services"}</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/create">{locale === "ar" ? "إضافة خدمة جديدة" : "Add Service"}</Link>
+                      <Link href="/create">{locale === "ar" ? "إضافة خدمة أو عنصر للبيع" : "Add Service"}</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/settings">{locale === "ar" ? "الإعدادات" : "Settings"}</Link>

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { listServicesByProvider, requestServiceDelete, createService, type Service } from '@/lib/services';
+import { listProviderSaleItems, deleteSaleItem, type SaleItem } from '@/lib/sale-items';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { getClientLocale, tr } from '@/lib/i18n';
@@ -19,6 +20,7 @@ import { getClientLocale, tr } from '@/lib/i18n';
 export default function MyServicesPage() {
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
+  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const locale = getClientLocale();
@@ -28,8 +30,12 @@ export default function MyServicesPage() {
       if (!user) return;
       setLoading(true);
       try {
-        const data = await listServicesByProvider(user.uid);
-        setServices(data);
+        const [svc, sales] = await Promise.all([
+          listServicesByProvider(user.uid),
+          listProviderSaleItems(user.uid, {})
+        ]);
+        setServices(svc);
+        setSaleItems(sales);
       } finally {
         setLoading(false);
       }
@@ -52,6 +58,19 @@ export default function MyServicesPage() {
       } else {
         toast({ variant: 'destructive', title: tr(locale, 'dashboard.services.toast.deleteFailed'), description: err?.message || '' });
       }
+    }
+  };
+
+  const handleDeleteSale = async (id?: string) => {
+    if (!id) return;
+    const ok = window.confirm(locale === 'ar' ? 'هل أنت متأكد من حذف هذا الإعلان؟' : 'Delete this sale item?');
+    if (!ok) return;
+    try {
+      await deleteSaleItem(id);
+      setSaleItems(prev => prev.filter(s => s.id !== id));
+      toast({ title: locale === 'ar' ? 'تم حذف الإعلان' : 'Sale item deleted' });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: locale === 'ar' ? 'فشل حذف الإعلان' : 'Failed to delete sale item', description: err?.message || '' });
     }
   };
 
@@ -134,7 +153,7 @@ export default function MyServicesPage() {
       <CardContent>
         {loading ? (
           <p className="text-muted-foreground">{tr(locale, 'dashboard.services.loading')}</p>
-        ) : services.length === 0 ? (
+        ) : (services.length === 0 && saleItems.length === 0) ? (
           <div className="text-muted-foreground">
             <p>{tr(locale, 'dashboard.services.emptyTitle')}</p>
             <Button asChild className="mt-3 mr-3">
@@ -143,51 +162,103 @@ export default function MyServicesPage() {
             <Button variant="outline" onClick={seedSampleServices} className="mt-3">{tr(locale, 'dashboard.services.seedSampleServices')}</Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => (
-              <Card key={service.id} className="overflow-hidden">
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
-                  <img
-                    src={(service as any)?.images?.[0]?.url || 'https://placehold.co/800x600.png'}
-                    alt={service.title}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-2 text-base font-semibold">{service.title}</h3>
-                    {((service as any).pendingDelete === true) ? (
-                      <Badge variant="destructive">{locale === 'ar' ? 'قيد الحذف' : 'Pending deletion'}</Badge>
-                    ) : (service as any).status === 'pending' ? (
-                      <Badge variant="secondary">{locale === 'ar' ? 'قيد الموافقة' : 'Waiting for approval'}</Badge>
-                    ) : null}
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{service.category}</Badge>
-                      <span>{service.city}</span>
+          <div className="space-y-6">
+            {services.length > 0 && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {services.map((service) => (
+                  <Card key={`svc-${service.id}`} className="overflow-hidden">
+                    <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                      <img
+                        src={(service as any)?.images?.[0]?.url || 'https://placehold.co/800x600.png'}
+                        alt={service.title}
+                        className="h-full w-full object-cover"
+                      />
                     </div>
-                    <span className="font-semibold text-primary">LYD {service.price}</span>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/services/${service.id}`}>{tr(locale, 'dashboard.services.actions.view')}</Link>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/services/${service.id}/edit`}>{tr(locale, 'dashboard.services.actions.edit')}</Link>
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(service.id)}
-                      disabled={((service as any).pendingDelete === true) || service.status === 'pending'}
-                    >
-                      {tr(locale, 'dashboard.services.actions.delete')}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="line-clamp-2 text-base font-semibold">{service.title}</h3>
+                        {((service as any).pendingDelete === true) ? (
+                          <Badge variant="destructive">{locale === 'ar' ? 'قيد الحذف' : 'Pending deletion'}</Badge>
+                        ) : (service as any).status === 'pending' ? (
+                          <Badge variant="secondary">{locale === 'ar' ? 'قيد الموافقة' : 'Waiting for approval'}</Badge>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{service.category}</Badge>
+                          <span>{service.city}</span>
+                        </div>
+                        <span className="font-semibold text-primary">LYD {service.price}</span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/services/${service.id}`}>{tr(locale, 'dashboard.services.actions.view')}</Link>
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/dashboard/services/${service.id}/edit`}>{tr(locale, 'dashboard.services.actions.edit')}</Link>
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(service.id)}
+                          disabled={((service as any).pendingDelete === true) || service.status === 'pending'}
+                        >
+                          {tr(locale, 'dashboard.services.actions.delete')}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+            {saleItems.length > 0 && (
+              <div>
+                <div className="mb-2 text-sm text-muted-foreground">{locale === 'ar' ? 'عناصري للبيع' : 'My Sale Items'}</div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {saleItems.map((it) => (
+                    <Card key={`sale-${it.id}`} className="overflow-hidden">
+                      <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                        <img
+                          src={(it as any)?.images?.[0]?.url || 'https://placehold.co/800x600.png'}
+                          alt={it.title}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="line-clamp-2 text-base font-semibold">{it.title}</h3>
+                          {it.status === 'pending' ? (
+                            <Badge variant="secondary">{locale === 'ar' ? 'قيد الموافقة' : 'Waiting for approval'}</Badge>
+                          ) : it.status === 'sold' ? (
+                            <Badge variant="destructive">{locale === 'ar' ? 'تم البيع' : 'Sold'}</Badge>
+                          ) : it.status === 'hidden' ? (
+                            <Badge variant="secondary">{locale === 'ar' ? 'مخفي' : 'Hidden'}</Badge>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">Sales</Badge>
+                            <span>{it.city}</span>
+                          </div>
+                          <span className="font-semibold text-primary">LYD {it.price}</span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/sales/${it.id}`}>{tr(locale, 'dashboard.services.actions.view')}</Link>
+                          </Button>
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/sales/${it.id}/edit`}>{tr(locale, 'dashboard.services.actions.edit')}</Link>
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleDeleteSale(it.id)}>
+                            {tr(locale, 'dashboard.services.actions.delete')}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
