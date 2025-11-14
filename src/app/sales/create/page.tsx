@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import dynamic from "next/dynamic";
@@ -23,6 +23,38 @@ import CityPicker from "@/components/city-picker";
 import { tileUrl, tileAttribution, markerHtml } from "@/lib/map";
 import { createSaleItem, uploadSaleImages } from "@/lib/sale-items";
 import { getUploadMode } from "@/lib/images";
+import { getSaleDraft, saveSaleDraft, deleteSaleDraft } from "@/lib/sale-drafts";
+
+type TitleCategory = {
+  id: string;
+  ar: string;
+  en: string;
+  icon: string;
+};
+
+const TITLE_CATEGORIES: TitleCategory[] = [
+  { id: "shops", ar: "متاجر", en: "Shops", icon: "🏬" },
+  { id: "cars", ar: "سيارات ومركبات", en: "Cars & Vehicles", icon: "🚗" },
+  { id: "motorcycles", ar: "دراجات نارية", en: "Motorcycles", icon: "🏍️" },
+  { id: "property-sale", ar: "عقارات للبيع", en: "Property for sale", icon: "🏠" },
+  { id: "property-rent", ar: "عقارات للايجار", en: "Property for rent", icon: "🏢" },
+  { id: "jobs", ar: "وظائف", en: "Jobs", icon: "💼" },
+  { id: "teaching", ar: "تدريس وتدريب", en: "Teaching & training", icon: "🎓" },
+  { id: "services", ar: "الخدمات", en: "Services", icon: "🛠️" },
+  { id: "companies", ar: "شركات ومعدات", en: "Companies & equipment", icon: "🏗️" },
+  { id: "electronics", ar: "الكترونيات", en: "Electronics", icon: "📺" },
+  { id: "laptops", ar: "لابتوب وكمبيوتر", en: "Laptops & computers", icon: "💻" },
+  { id: "mobiles", ar: "موبايل - تابلت", en: "Mobile & tablet", icon: "📱" },
+  { id: "video-games", ar: "ألعاب الفيديو والأطفال", en: "Video games & kids", icon: "🎮" },
+  { id: "home-garden", ar: "المنزل والحديقة", en: "Home & garden", icon: "🛋️" },
+  { id: "sports", ar: "معدات رياضية و لياقة", en: "Sports & fitness", icon: "🏃‍♂️" },
+  { id: "kids-toys", ar: "لوازم الأطفال و الألعاب", en: "Kids & toys", icon: "🧸" },
+  { id: "fashion-men", ar: "أزياء - موضة رجالي", en: "Men's fashion", icon: "👔" },
+  { id: "fashion-women", ar: "أزياء - موضة نسائية", en: "Women's fashion", icon: "👗" },
+  { id: "pets", ar: "حيوانات واكسسوارات", en: "Pets & accessories", icon: "🐾" },
+  { id: "food", ar: "طعام - غذاء", en: "Food", icon: "🍔" },
+  { id: "books-entertainment", ar: "ترفيه وكتب ومقتنيات", en: "Books & entertainment", icon: "📚" },
+];
 
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
 const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false }) as any;
@@ -87,6 +119,53 @@ export default function CreateSaleItemPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(2);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [showTitleCategories, setShowTitleCategories] = useState(false);
+  const saveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Load existing draft for this user, if any
+  useEffect(() => {
+    (async () => {
+      if (!user?.uid) return;
+      try {
+        const draft = await getSaleDraft(user.uid);
+        if (draft) {
+          form.reset({
+            category: 'sales',
+            title: draft.title ?? '',
+            price: draft.price ?? 0,
+            priceMode: draft.priceMode ?? 'firm',
+            trade: draft.trade ?? { enabled: false },
+            images: draft.images ?? [],
+            videoUrls: draft.videoUrls ?? [],
+            status: draft.status ?? 'pending',
+            city: draft.city ?? (libyanCities[0]?.value ?? 'Tripoli'),
+            area: draft.area,
+            location: draft.location ?? { lat: 32.8872, lng: 13.1913 },
+            contactPhone: draft.contactPhone ?? '',
+            contactWhatsapp: draft.contactWhatsapp ?? '',
+            condition: draft.condition,
+            tags: draft.tags,
+            mapUrl: draft.mapUrl,
+            hideExactLocation: draft.hideExactLocation ?? false,
+          });
+        }
+      } catch {
+        // ignore draft errors
+      }
+    })();
+  }, [user?.uid, form]);
+
+  // Autosave draft on form changes (debounced)
+  useEffect(() => {
+    if (!user?.uid) return;
+    const sub = form.watch((values) => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        void saveSaleDraft(user.uid!, values as Partial<SaleItemForm>).catch(() => {});
+      }, 600);
+    });
+    return () => sub.unsubscribe();
+  }, [user?.uid, form]);
 
   useEffect(() => {
     const urls = selectedFiles.map((f) => URL.createObjectURL(f));
@@ -224,13 +303,75 @@ export default function CreateSaleItemPage() {
 
               {step === 2 && (
                 <div className="space-y-4">
-                  <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{tr(locale,'form.labels.title')}</FormLabel>
-                      <Input {...field} />
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem className="relative">
+                        <FormLabel>{tr(locale, "form.labels.title")}</FormLabel>
+                        <Input
+                          {...field}
+                          onFocus={() => {
+                            setShowTitleCategories(true);
+                          }}
+                        />
+                        <FormMessage />
+
+                        {showTitleCategories && (
+                          <div className="absolute inset-x-0 z-20 mt-2 rounded-xl border bg-popover p-3 shadow-lg">
+                            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                              <span>
+                                {locale === "ar"
+                                  ? "اختر نوع العنصر الذي تريد بيعه"
+                                  : "Choose what you are selling"}
+                              </span>
+                              <button
+                                type="button"
+                                className="rounded px-2 py-0.5 hover:bg-muted"
+                                onClick={() => setShowTitleCategories(false)}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                              {TITLE_CATEGORIES.map((cat) => {
+                                const label =
+                                  locale === "ar" ? cat.ar : cat.en;
+                                return (
+                                  <button
+                                    key={cat.id}
+                                    type="button"
+                                    onClick={() => {
+                                      const normalizedLabel = label.trim();
+
+                                      form.setValue("title", normalizedLabel, {
+                                        shouldDirty: true,
+                                        shouldValidate: true,
+                                      });
+
+                                      form.setValue("tags", [normalizedLabel], {
+                                        shouldDirty: true,
+                                      });
+
+                                      setShowTitleCategories(false);
+                                    }}
+                                    className="flex flex-col items-center justify-between rounded-lg border bg-card px-2 py-3 text-center text-xs hover:bg-accent"
+                                  >
+                                    <span className="mb-1 text-2xl">
+                                      {cat.icon}
+                                    </span>
+                                    <span className="font-medium leading-snug">
+                                      {label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </FormItem>
+                    )}
+                  />
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <FormField control={form.control} name="price" render={({ field }) => (
                       <FormItem>

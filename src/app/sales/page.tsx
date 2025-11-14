@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import SalesHero from "@/components/sales-hero";
 
@@ -19,6 +19,46 @@ import { listSaleItems, type SaleItem } from "@/lib/sale-items";
 import SaleCard from "@/components/SaleCard";
 import PromotedSaleStrip from "@/components/promoted-sale-strip";
 
+type SaleCategory = {
+  id: string;
+  ar: string;
+  en: string;
+  icon: string;
+};
+
+const SALE_CATEGORIES: SaleCategory[] = [
+  { id: "cars", ar: "سيارات ومركبات", en: "Cars & Vehicles", icon: "🚗" },
+  { id: "realEstate", ar: "عقارات للبيع", en: "Property for Sale", icon: "🏠" },
+  { id: "electronics", ar: "الكترونيات", en: "Electronics", icon: "📺" },
+  { id: "mobile", ar: "موبايل - تابلت", en: "Mobiles & Tablets", icon: "📱" },
+  { id: "home", ar: "المنزل والحديقة", en: "Home & Garden", icon: "🛋️" },
+  { id: "fashion", ar: "أزياء وموضة", en: "Fashion", icon: "👗" },
+];
+
+const EXTRA_SALE_CATEGORIES: SaleCategory[] = [
+  { id: "shops", ar: "متاجر", en: "Shops", icon: "🏬" },
+  { id: "motorcycles", ar: "دراجات نارية", en: "Motorcycles", icon: "🏍️" },
+  { id: "property-rent", ar: "عقارات للايجار", en: "Property for Rent", icon: "🏢" },
+  { id: "jobs", ar: "وظائف", en: "Jobs", icon: "💼" },
+  { id: "teaching", ar: "تدريس وتدريب", en: "Teaching & Training", icon: "🎓" },
+  { id: "services", ar: "الخدمات", en: "Services", icon: "🛠️" },
+  { id: "companies", ar: "شركات ومعدات", en: "Companies & Equipment", icon: "🏗️" },
+  { id: "laptops", ar: "لابتوب وكمبيوتر", en: "Laptops & Computers", icon: "💻" },
+  { id: "video-games", ar: "ألعاب الفيديو والأطفال", en: "Video Games & Kids", icon: "🎮" },
+  { id: "sports", ar: "معدات رياضية ولياقة", en: "Sports & Fitness", icon: "🏃‍♂️" },
+  { id: "kids-toys", ar: "لوازم الأطفال و الألعاب", en: "Kids & Toys", icon: "🧸" },
+  { id: "fashion-men", ar: "أزياء - موضة رجالي", en: "Men's Fashion", icon: "👔" },
+  { id: "fashion-women", ar: "أزياء - موضة نسائية", en: "Women's Fashion", icon: "👗" },
+  { id: "pets", ar: "حيوانات واكسسوارات", en: "Pets & Accessories", icon: "🐾" },
+  { id: "food", ar: "طعام - غذاء", en: "Food", icon: "🍔" },
+  { id: "books-entertainment", ar: "ترفيه وكتب ومقتنيات", en: "Books & Entertainment", icon: "📚" },
+];
+
+const SALE_CATEGORIES_FOR_UI: SaleCategory[] = [
+  ...SALE_CATEGORIES,
+  ...EXTRA_SALE_CATEGORIES,
+];
+
 export default function SalesFeedPage() {
   const locale = getClientLocale();
   const [items, setItems] = useState<SaleItem[]>([]);
@@ -27,6 +67,9 @@ export default function SalesFeedPage() {
   const [condition, setCondition] = useState<string>("ALL");
   const [trade, setTrade] = useState<boolean>(false);
   const [q, setQ] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [showSearchCategories, setShowSearchCategories] = useState(false);
 
   async function fetchItems() {
     setLoading(true);
@@ -62,12 +105,88 @@ export default function SalesFeedPage() {
           );
         });
       }
+
+      if (activeCategory) {
+        rows = rows.filter((r: any) =>
+          matchesCategoryByText(r as SaleItem, activeCategory),
+        );
+      }
+
       setItems(rows);
     } catch {
       setItems([]);
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleCategoryClick(cat: SaleCategory) {
+    if (activeCategory === cat.id) {
+      setActiveCategory(null);
+      setQ("");
+      return;
+    }
+
+    setActiveCategory(cat.id);
+    setQ(locale === "ar" ? cat.ar : cat.en);
+
+    // On mobile (and desktop), bring the results into view
+    // so the user sees the matching ads immediately.
+    setTimeout(() => {
+      try {
+        listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {
+        // ignore scroll issues
+      }
+    }, 0);
+  }
+
+  function matchesCategory(item: SaleItem, categoryId: string): boolean {
+    const textBase = `${item.title ?? ""} ${item.description ?? ""} ${
+      Array.isArray(item.tags) ? item.tags.join(" ") : ""
+    }`;
+    const text = textBase.toLowerCase();
+
+    switch (categoryId) {
+      case "cars":
+        // Match common Arabic/English words for cars/vehicles
+        return (
+          text.includes("سيار") || // سيارة / سيارات / السيارات
+          text.includes("car") ||
+          text.includes("cars")
+        );
+      default:
+        return true;
+    }
+  }
+
+  function matchesCategoryByText(
+    item: SaleItem,
+    categoryId: string,
+  ): boolean {
+    const textBase = `${item.title ?? ""} ${item.description ?? ""} ${
+      Array.isArray(item.tags) ? item.tags.join(" ") : ""
+    }`;
+    const text = textBase.toLowerCase();
+
+    const cat = SALE_CATEGORIES_FOR_UI.find((c) => c.id === categoryId);
+    if (!cat) return true;
+
+    // Take the first word of the Arabic and English labels,
+    // then use a short "root" (first few characters) for matching.
+    const arFirst = (cat.ar || "").split(/[ \-]/)[0];
+    const arRoot = arFirst.slice(0, Math.min(4, arFirst.length)).toLowerCase();
+
+    const enFirst = (cat.en || "").split(/[&-]/)[0];
+    const enRoot = enFirst.trim().toLowerCase();
+
+    const patterns: string[] = [];
+    if (arRoot) patterns.push(arRoot);
+    if (enRoot) patterns.push(enRoot);
+
+    return patterns.some(
+      (p) => p && text.includes(p),
+    );
   }
 
   useEffect(() => {
@@ -94,7 +213,36 @@ export default function SalesFeedPage() {
             {locale === "ar" ? "البيع والتجارة" : "Sales & Trade"}
           </h1>
 
-          {/* filters container – aligned to the right, width = content only */}
+          {/* category shortcuts */}
+          <div className="mb-5">
+            <div className="mb-2 text-xs font-semibold text-muted-foreground">
+              {locale === "ar" ? "تصفح حسب القسم" : "Browse by category"}
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+              {SALE_CATEGORIES_FOR_UI.map((cat) => {
+                const selected = activeCategory === cat.id;
+                const label = locale === "ar" ? cat.ar : cat.en;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleCategoryClick(cat)}
+                    className={[
+                      "flex flex-col items-center justify-between rounded-xl border px-2 py-3 text-center text-xs sm:text-sm bg-card",
+                      selected
+                        ? "border-primary bg-primary/5 font-semibold"
+                        : "border-border hover:bg-accent/10",
+                    ].join(" ")}
+                  >
+                    <span className="mb-1 text-2xl">{cat.icon}</span>
+                    <span className="line-clamp-2 leading-snug">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* filters container - aligned to the right, width = content only */}
           <div className="mb-4 flex justify-end">
             <div className="rounded-2xl copper-gradient p-[2px]">
               <div className="rounded-[1rem] bg-background px-3 py-2 text-foreground shadow-lg md:px-4 md:py-3">
@@ -188,20 +336,66 @@ export default function SalesFeedPage() {
 
                   {/* keyword */}
                   <div className="w-full md:w-64">
-                    <Input
-                      type="text"
-                      inputMode="search"
-                      value={q}
-                      placeholder={tr(locale, "home.searchPlaceholder")}
-                      onChange={(e) => setQ(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          void fetchItems();
-                        }
-                      }}
-                      className="h-10"
-                    />
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        inputMode="search"
+                        value={q}
+                        placeholder={tr(locale, "home.searchPlaceholder")}
+                        onChange={(e) => setQ(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            void fetchItems();
+                          }
+                        }}
+                        className="h-10"
+                      />
+
+                      {showSearchCategories && (
+                        <div className="absolute inset-x-0 z-30 mt-2 max-h-[320px] overflow-y-auto rounded-xl border bg-popover p-3 shadow-lg">
+                          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                            <span>
+                              {locale === "ar"
+                                ? "اختر قسمًا للبحث عنه"
+                                : "Quick search by category"}
+                            </span>
+                            <button
+                              type="button"
+                              className="rounded px-2 py-0.5 hover:bg-muted"
+                              onClick={() => setShowSearchCategories(false)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                            {SALE_CATEGORIES.map((cat) => {
+                              const label =
+                                locale === "ar" ? cat.ar : cat.en;
+                              return (
+                                <button
+                                  key={cat.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setQ(label);
+                                    setShowSearchCategories(false);
+                                    void fetchItems();
+                                  }}
+                                  className="flex flex-col items-center justify-between rounded-lg border bg-card px-2 py-3 text-center text-xs hover:bg-accent"
+                                >
+                                  <span className="mb-1 text-2xl">
+                                    {cat.icon}
+                                  </span>
+                                  <span className="font-medium leading-snug">
+                                    {label}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -212,6 +406,8 @@ export default function SalesFeedPage() {
           <div className="mb-5">
             <PromotedSaleStrip take={5} />
           </div>
+
+          <div ref={listRef} />
 
           {loading ? (
             <p className="text-muted-foreground">
