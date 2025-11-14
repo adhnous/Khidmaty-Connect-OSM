@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { getServiceById, updateService, type Service } from '@/lib/services';
+import { getServiceById, updateService, listServicesFiltered, type Service } from '@/lib/services';
 import { findOrCreateConversation } from '@/lib/chat';
 import ServiceMap from '@/components/service-map';
 import { listReviewsByService, getUserReviewForService, upsertReview, deleteMyReview, type Review } from '@/lib/reviews';
@@ -41,6 +41,8 @@ export default function ServiceDetailPage() {
   const [myRating, setMyRating] = useState<number>(0);
   const [myText, setMyText] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [nearbyServices, setNearbyServices] = useState<Array<Service & { distanceKm?: number }>>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
 
   useEffect(() => {
     const raw = (params as any)?.id as string | string[] | undefined;
@@ -338,12 +340,58 @@ export default function ServiceDetailPage() {
     }
   }
 
- const coords = useMemo(() => {
-  if (service?.lat != null && service?.lng != null) {
-    return { lat: Number(service.lat), lng: Number(service.lng) };
+  const coords = useMemo(() => {
+    if (service?.lat != null && service?.lng != null) {
+      return { lat: Number(service.lat), lng: Number(service.lng) };
+    }
+    return null;
+  }, [service?.lat, service?.lng]);
+
+  function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const toRad = (v: number) => (v * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
-  return null;
-}, [service?.lat, service?.lng]);
+
+  // Load nearby services (other providers) near this service
+  useEffect(() => {
+    (async () => {
+      if (!coords || !service?.city) {
+        setNearbyServices([]);
+        return;
+      }
+      try {
+        setNearbyLoading(true);
+        const list = await listServicesFiltered({ city: service.city, limit: 40 });
+        const scored = list
+          .filter((s) => s.id !== service.id)
+          .filter(
+            (s) =>
+              typeof s.lat === 'number' &&
+              typeof s.lng === 'number' &&
+              !Number.isNaN(s.lat) &&
+              !Number.isNaN(s.lng),
+          )
+          .map((s) => ({
+            ...s,
+            distanceKm: distanceKm(coords.lat, coords.lng, s.lat as number, s.lng as number),
+          }))
+          .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0))
+          .slice(0, 6);
+        setNearbyServices(scored);
+      } catch {
+        setNearbyServices([]);
+      } finally {
+        setNearbyLoading(false);
+      }
+    })();
+  }, [coords?.lat, coords?.lng, service?.city, service?.id]);
 
 
   // Build a privacy-friendly YouTube embed URL if provided
@@ -798,6 +846,65 @@ export default function ServiceDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {coords && (
+              <Card className="mb-6">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold">
+                    {locale === 'ar' ? 'خدمات أخرى قريبة' : 'Other services nearby'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {nearbyLoading && (
+                    <p className="text-sm text-muted-foreground">
+                      {locale === 'ar' ? 'جاري تحميل الخدمات القريبة...' : 'Loading nearby services...'}
+                    </p>
+                  )}
+                  {!nearbyLoading && nearbyServices.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {locale === 'ar' ? 'لا توجد خدمات قريبة حتى الآن.' : 'No nearby services yet.'}
+                    </p>
+                  )}
+
+                  <div className="space-y-3">
+                    {nearbyServices.map((svc) => (
+                      <Link
+                        key={svc.id}
+                        href={`/services/${svc.id}`}
+                        className="flex gap-3 rounded-lg border bg-card p-2 text-xs hover:bg-accent"
+                      >
+                        <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                          {Array.isArray(svc.images) && (svc.images[0] as any)?.url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={(svc.images[0] as any).url}
+                              alt={svc.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                              {locale === 'ar' ? 'بدون صورة' : 'No image'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="truncate text-sm font-semibold">{svc.title}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {svc.city}
+                            {svc.area ? ` • ${svc.area}` : ''}
+                          </div>
+                          {typeof svc.distanceKm === 'number' && (
+                            <div className="text-[11px] text-muted-foreground">
+                              {svc.distanceKm.toFixed(1)} km
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
           </>
           )}

@@ -11,6 +11,7 @@ import StarRating from "@/components/star-rating";
 import { MapPin, Share2 } from "lucide-react";
 import { getClientLocale, tr } from "@/lib/i18n";
 import { getSaleItemById, type SaleItem } from "@/lib/sale-items";
+import { listServicesFiltered, type Service } from "@/lib/services";
 import ServiceMap from "@/components/service-map";
 
 export default function SaleDetailPage() {
@@ -20,6 +21,10 @@ export default function SaleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [nearbyServices, setNearbyServices] = useState<
+    Array<Service & { distanceKm?: number }>
+  >([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -71,6 +76,69 @@ export default function SaleDetailPage() {
     (item as any)?.contactPhone as string | undefined | null;
   const contactWhatsapp =
     (item as any)?.contactWhatsapp as string | undefined | null;
+
+  function distanceKm(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const toRad = (v: number) => (v * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  // Load nearby services once we know the item's location
+  useEffect(() => {
+    (async () => {
+      if (!coords || !item?.city) {
+        setNearbyServices([]);
+        return;
+      }
+      setNearbyLoading(true);
+      try {
+        const services = await listServicesFiltered({
+          city: item.city,
+          limit: 40,
+        });
+
+        const scored = services
+          .filter(
+            (s) =>
+              typeof s.lat === "number" &&
+              typeof s.lng === "number" &&
+              !Number.isNaN(s.lat) &&
+              !Number.isNaN(s.lng),
+          )
+          .map((s) => ({
+            ...s,
+            distanceKm: distanceKm(
+              coords.lat,
+              coords.lng,
+              s.lat as number,
+              s.lng as number,
+            ),
+          }))
+          .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0))
+          .slice(0, 6);
+
+        setNearbyServices(scored);
+      } catch {
+        setNearbyServices([]);
+      } finally {
+        setNearbyLoading(false);
+      }
+    })();
+  }, [coords?.lat, coords?.lng, item?.city]);
 
   async function handleShare() {
     if (!item?.id) return;
@@ -299,6 +367,73 @@ export default function SaleDetailPage() {
                 </Button>
               </CardContent>
             </Card>
+
+            {coords && (
+              <Card className="mb-6">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold">
+                    {locale === "ar"
+                      ? "خدمات قريبة من هذا الإعلان"
+                      : "Services near this listing"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {nearbyLoading && (
+                    <p className="text-sm text-muted-foreground">
+                      {locale === "ar"
+                        ? "جاري تحميل الخدمات القريبة..."
+                        : "Loading nearby services..."}
+                    </p>
+                  )}
+                  {!nearbyLoading && nearbyServices.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {locale === "ar"
+                        ? "لا توجد خدمات قريبة حتى الآن."
+                        : "No nearby services yet."}
+                    </p>
+                  )}
+
+                  <div className="space-y-3">
+                    {nearbyServices.map((svc) => (
+                      <Link
+                        key={svc.id}
+                        href={`/services/${svc.id}`}
+                        className="flex gap-3 rounded-lg border bg-card p-2 text-xs hover:bg-accent"
+                      >
+                        <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                          {Array.isArray(svc.images) && svc.images[0]?.url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={svc.images[0].url}
+                              alt={svc.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                              {locale === "ar" ? "بدون صورة" : "No image"}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="truncate text-sm font-semibold">
+                            {svc.title}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {svc.city}
+                            {svc.area ? ` • ${svc.area}` : ""}
+                          </div>
+                          {typeof svc.distanceKm === "number" && (
+                            <div className="text-[11px] text-muted-foreground">
+                              {svc.distanceKm.toFixed(1)} km
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>
