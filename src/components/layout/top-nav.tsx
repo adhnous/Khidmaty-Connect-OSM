@@ -108,7 +108,7 @@ export default function TopNav() {
 
   const links = useMemo(() => {
     const items = [
-      { href: "/", label: locale === "ar" ? "تصفح الخدمات" : "Browse Services" }
+      { href: "/services", label: locale === "ar" ? "تصفح الخدمات" : "Browse Services" }
     ];
     if (showCityViews) {
       items.push({
