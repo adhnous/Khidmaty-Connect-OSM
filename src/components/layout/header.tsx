@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { LogIn, User, LogOut, Briefcase, Bell, Menu } from 'lucide-react';
+import { LogIn, User, LogOut, Briefcase, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,7 +13,6 @@ import { signOut } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { getFcmToken, saveFcmToken } from '@/lib/messaging';
 import { getFeatures } from '@/lib/settings';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,10 +25,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 export function Header() {
   // Hide the black header bar on product routes
-  const p = (typeof window !== 'undefined' ? window.location.pathname : (typeof window === 'undefined' ? '' : '')) || '';
+  const p =
+    (typeof window !== 'undefined'
+      ? window.location.pathname
+      : typeof window === 'undefined'
+      ? ''
+      : '') || '';
   if (p.startsWith('/dashboard') || p.startsWith('/create') || p.startsWith('/owner')) {
     return null;
   }
+
   const { user, userProfile } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -50,8 +55,9 @@ export function Header() {
 
   const onLockPages = useMemo(() => {
     try {
-      const p = pathname || (typeof window !== 'undefined' ? window.location.pathname : '') || '';
-      const lower = p.toLowerCase();
+      const path =
+        pathname || (typeof window !== 'undefined' ? window.location.pathname : '') || '';
+      const lower = path.toLowerCase();
       return lower.includes('/pricing') || lower.includes('/checkout');
     } catch {
       return false;
@@ -61,16 +67,23 @@ export function Header() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({ title: 'ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬', description: 'ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø®Ø±ÙˆØ¬Ùƒ Ø¨Ù†Ø¬Ø§Ø­.' });
+      toast({
+        title: 'تم تسجيل الخروج',
+        description: 'تم تسجيل خروجك بنجاح.',
+      });
       router.push('/');
     } catch (error) {
-      toast({ variant: 'destructive', title: 'ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬', description: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬.' });
+      toast({
+        variant: 'destructive',
+        title: 'فشل تسجيل الخروج',
+        description: 'حدث خطأ أثناء تسجيل الخروج.',
+      });
     }
   };
 
   const getInitials = (email: string | null | undefined) => {
     return email ? email.substring(0, 2).toUpperCase() : 'AC';
-  }
+  };
 
   useEffect(() => {
     try {
@@ -96,7 +109,6 @@ export function Header() {
     document.addEventListener('visibilitychange', update);
     window.addEventListener('pageshow', update);
     window.addEventListener('pagehide', hide);
-    // Also react to focus/blur so UI hides immediately when app loses focus
     window.addEventListener('focus', update);
     window.addEventListener('blur', hide);
     return () => {
@@ -115,9 +127,12 @@ export function Header() {
       try {
         // Local override: hide via URL or cookie
         const urlHide = !!(searchParams?.get('hidePricing') || searchParams?.get('noPricing'));
-        const cookieHide = typeof document !== 'undefined' ? /(?:^|; )hidePricing=1/.test(document.cookie) : false;
+        const cookieHide =
+          typeof document !== 'undefined' ? /(?:^|; )hidePricing=1/.test(document.cookie) : false;
         if (urlHide) {
-          try { document.cookie = 'hidePricing=1; path=/; max-age=86400'; } catch {}
+          try {
+            document.cookie = 'hidePricing=1; path=/; max-age=86400';
+          } catch {}
         }
         if (urlHide || cookieHide) {
           setShowPricing(false);
@@ -131,21 +146,20 @@ export function Header() {
         const createdAtMs =
           (userProfile as any)?.createdAt?.toMillis?.() ??
           (user?.metadata?.creationTime ? new Date(user.metadata.creationTime).getTime() : 0);
-        const monthsSince = createdAtMs > 0 ? (Date.now() - createdAtMs) / (1000 * 60 * 60 * 24 * 30) : 0;
 
         const pg = (userProfile as any)?.pricingGate || {};
         const forcedShow = pg?.mode === 'force_show';
         const forcedHide = pg?.mode === 'force_hide';
-        const showAtObj = pg?.showAt;
-        const showAtMs = (showAtObj?.toMillis?.() ?? (showAtObj ? Date.parse(showAtObj) : 0)) || 0;
 
-        const lockedByRole = !!(f.lockAllToPricing || (role === 'provider' && f.lockProvidersToPricing) || (role === 'seeker' && f.lockSeekersToPricing));
+        const lockedByRole = !!(
+          f.lockAllToPricing ||
+          (role === 'provider' && f.lockProvidersToPricing) ||
+          (role === 'seeker' && f.lockSeekersToPricing)
+        );
         const plan = (userProfile?.plan ?? 'free') as string;
         const lockNow = forcedShow || (lockedByRole && plan === 'free');
         setLockActive(lockNow);
 
-        const monthsLimit = (typeof pg?.enforceAfterMonths === 'number') ? pg.enforceAfterMonths : (f.enforceAfterMonths ?? 3);
-        const byRole = (role === 'provider' && f.showForProviders) || (role === 'seeker' && f.showForSeekers);
         let show = false;
         if (forcedShow) show = true;
         else if (forcedHide) show = false;
@@ -156,13 +170,20 @@ export function Header() {
         setLockActive(false);
       }
     })();
-    return () => { alive = false };
-  }, [user?.uid, userProfile?.role, (userProfile as any)?.pricingGate, userProfile?.plan, searchParams]);
+    return () => {
+      alive = false;
+    };
+  }, [
+    user?.uid,
+    userProfile?.role,
+    (userProfile as any)?.pricingGate,
+    userProfile?.plan,
+    searchParams,
+  ]);
 
   const toggleLocale = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
     document.cookie = `locale=${next}; path=/; max-age=31536000`;
-    // Apply immediately for a smoother feel, then reload to re-render server side
     document.documentElement.setAttribute('lang', next);
     document.documentElement.setAttribute('dir', next === 'ar' ? 'rtl' : 'ltr');
     window.location.reload();
@@ -175,111 +196,90 @@ export function Header() {
       setNotifLoading(true);
       const token = await getFcmToken();
       if (!token) {
-        const granted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+        const granted =
+          typeof Notification !== 'undefined' && Notification.permission === 'granted';
         const description = granted
-          ? (locale === 'ar'
-              ? 'Ù…ÙØªØ§Ø­ VAPID Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„ÙˆÙŠØ¨ Ù…ÙÙ‚ÙˆØ¯ Ø£Ùˆ ØºÙŠØ± ØµØ§Ù„Ø­. Ø¹ÙŠÙ‘Ù† NEXT_PUBLIC_FIREBASE_VAPID_KEY Ø¥Ù„Ù‰ Ø§Ù„Ù…ÙØªØ§Ø­ Ø§Ù„Ø¹Ø§Ù… Ù…Ù† Firebase.'
-              : 'Missing or invalid Web Push VAPID key. Set NEXT_PUBLIC_FIREBASE_VAPID_KEY to the PUBLIC key from Firebase Console.')
-          : (locale === 'ar' ? 'ØªÙ… Ø±ÙØ¶ Ø§Ù„Ø¥Ø°Ù† Ø£Ùˆ ØºÙŠØ± Ù…Ø¯Ø¹ÙˆÙ….' : 'Permission denied or unsupported.');
-        toast({ variant: 'destructive', title: (locale === 'ar' ? 'Ù„Ù… ÙŠØªÙ… ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Notifications not enabled'), description });
+          ? locale === 'ar'
+            ? 'مفتاح VAPID لإشعارات الويب مفقود أو غير صالح. عيّن NEXT_PUBLIC_FIREBASE_VAPID_KEY إلى المفتاح العام من Firebase.'
+            : 'Missing or invalid Web Push VAPID key. Set NEXT_PUBLIC_FIREBASE_VAPID_KEY to the PUBLIC key from Firebase Console.'
+          : locale === 'ar'
+          ? 'تم رفض الإذن أو غير مدعوم.'
+          : 'Permission denied or unsupported.';
+        toast({
+          variant: 'destructive',
+          title: locale === 'ar' ? 'لم يتم تفعيل الإشعارات' : 'Notifications not enabled',
+          description,
+        });
         return;
       }
       await saveFcmToken(user.uid, token);
-      toast({ title: (locale === 'ar' ? 'ØªÙ… ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Notifications enabled'), description: (locale === 'ar' ? 'Ø³ØªØªÙ„Ù‚Ù‰ ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø¹Ù†Ø¯ ÙˆØ¬ÙˆØ¯ Ù†Ø´Ø§Ø· Ø¬Ø¯ÙŠØ¯.' : 'You will receive alerts for new activity.') });
+      toast({
+        title: locale === 'ar' ? 'تم تفعيل الإشعارات' : 'Notifications enabled',
+        description:
+          locale === 'ar'
+            ? 'ستتلقى تنبيهات عند وجود نشاط جديد.'
+            : 'You will receive alerts for new activity.',
+      });
     } catch (err) {
-      toast({ variant: 'destructive', title: (locale === 'ar' ? 'ÙØ´Ù„ Ø§Ù„ØªÙØ¹ÙŠÙ„' : 'Enable failed'), description: (locale === 'ar' ? 'ØªØ¹Ø°Ø± ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª.' : 'Could not enable notifications.') });
+      toast({
+        variant: 'destructive',
+        title: locale === 'ar' ? 'فشل التفعيل' : 'Enable failed',
+        description:
+          locale === 'ar'
+            ? 'تعذر تفعيل الإشعارات.'
+            : 'Could not enable notifications.',
+      });
     } finally {
       setNotifLoading(false);
     }
   };
 
   return (
-    <header className="sticky z-30 w-full border-b bg-ink text-snow border-white/10 pt-safe" style={{ top: 'var(--ad-height, 0px)' }}>
-      <div className="container flex h-14 md:h-16 items-center justify-between">
+    <header
+      className="sticky z-30 w-full border-b border-white/10 bg-ink pt-safe text-snow"
+      style={{ top: 'var(--ad-height, 0px)' }}
+    >
+      <div className="container flex h-14 items-center justify-between md:h-16">
         <Logo />
         <div className="flex items-center gap-2 md:gap-4">
-          {/* Mobile menu */}
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" className="h-9 w-9 md:h-10 md:w-10 rounded-full text-snow hover:bg-white/10" aria-label={locale === 'ar' ? 'Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©' : 'Menu'}>
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side={locale === 'ar' ? 'right' : 'left'} className="w-72 max-w-[85vw]">
-                <SheetHeader>
-                  <SheetTitle>{locale === 'ar' ? 'Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©' : 'Menu'}</SheetTitle>
-                </SheetHeader>
-                <nav className="mt-4 grid gap-2">
-                  <Button variant="ghost" className="justify-start" asChild>
-                    <Link href="/">{tr(locale, 'header.browse')}</Link>
-                  </Button>
-                  {showPricing && (
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/pricing">{tr(locale, 'pages.pricing.nav')}</Link>
-                    </Button>
-                  )}
-                  {userProfile?.role === 'provider' && (
-                    <>
-                      <Button variant="ghost" className="justify-start" asChild>
-                        <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>
-                      </Button>
-                      <Button variant="ghost" className="justify-start" asChild>
-                        <Link href="/dashboard/services/new">{tr(locale, 'header.addService')}</Link>
-                      </Button>
-                    </>
-                  )}
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={toggleLocale}
-                    aria-label={tr(locale, 'header.switch')}
-                    title={tr(locale, 'header.switch')}
-                  >
-                    {locale === 'ar' ? 'English' : 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©'}
-                  </Button>
-                  {user ? (
-                    <>
-                      <Button variant="ghost" className="justify-start" asChild>
-                        <Link href="/dashboard/profile">{tr(locale, 'header.profile')}</Link>
-                      </Button>
-                      <Button variant="destructive" className="justify-start" onClick={handleSignOut}>
-                        {tr(locale, 'header.signOut')}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button className="justify-start" asChild>
-                      <Link href="/login">
-                        <LogIn className="mr-2 h-4 w-4" />
-                        {tr(locale, 'header.login')}
-                      </Link>
-                    </Button>
-                  )}
-                </nav>
-              </SheetContent>
-            </Sheet>
-          </div>
           {(!lockActive && !onLockPages && isPageVisible) && (
             <>
+              {/* Desktop nav links */}
               <nav className="hidden items-center gap-2 md:flex">
-                <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
+                <Button
+                  variant="ghost"
+                  className="font-medium text-snow hover:bg-white/10"
+                  asChild
+                >
                   <Link href="/">{tr(locale, 'header.browse')}</Link>
                 </Button>
-                { showPricing && (
-                  <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
+                {showPricing && (
+                  <Button
+                    variant="ghost"
+                    className="font-medium text-snow hover:bg-white/10"
+                    asChild
+                  >
                     <Link href="/pricing">{tr(locale, 'pages.pricing.nav')}</Link>
                   </Button>
                 )}
-                { userProfile?.role === 'provider' && (
-                  <Button variant="ghost" className="text-snow hover:bg-white/10 font-medium" asChild>
-                    <Link href="/dashboard">{tr(locale, 'header.providerDashboard')}</Link>
+                {userProfile?.role === 'provider' && (
+                  <Button
+                    variant="ghost"
+                    className="font-medium text-snow hover:bg-white/10"
+                    asChild
+                  >
+                    <Link href="/dashboard">
+                      {tr(locale, 'header.providerDashboard')}
+                    </Link>
                   </Button>
                 )}
               </nav>
+
+              {/* Provider quick actions (all screens) */}
               {user && userProfile?.role === 'provider' && (
                 <Button
                   size="sm"
-                  className="h-8 rounded-full bg-copper hover:bg-copperDark text-ink font-semibold border-0"
+                  className="h-8 rounded-full border-0 bg-copper font-semibold text-ink hover:bg-copperDark"
                   asChild
                 >
                   <Link href="/dashboard/services/new">
@@ -288,97 +288,112 @@ export function Header() {
                   </Link>
                 </Button>
               )}
+
               {user && userProfile?.role === 'provider' && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-9 rounded-full text-snow hover:bg-white/10 border-0"
+                  className="h-9 rounded-full border-0 text-snow hover:bg-white/10"
                   onClick={enableNotifications}
                   disabled={notifLoading}
-                  title={locale === 'ar' ? 'ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Enable notifications'}
-                  aria-label={locale === 'ar' ? 'ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Enable notifications'}
+                  title={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
+                  aria-label={locale === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
                 >
                   <Bell className="mr-1 h-4 w-4" />
-                  {locale === 'ar' ? 'Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Notifications'}
+                  {locale === 'ar' ? 'الإشعارات' : 'Notifications'}
                 </Button>
               )}
+
+              {/* Language toggle */}
               <Button
                 size="sm"
-                className="h-9 rounded-full bg-snow px-4 md:px-3 text-ink hover:bg-snow/90 border-0 shadow-sm"
+                className="h-9 rounded-full border-0 bg-snow px-4 text-ink shadow-sm hover:bg-snow/90 md:px-3"
                 onClick={toggleLocale}
                 title={tr(locale, 'header.switch')}
                 aria-label={tr(locale, 'header.switch')}
               >
                 {locale === 'ar' ? 'EN' : 'AR'}
               </Button>
-              {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full text-primary-foreground">
-                      <Avatar className="h-9 w-9 ring-1 ring-white/30">
-                        <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-                        <AvatarFallback className="bg-snow text-ink font-semibold">
-                          {getInitials(user.email)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.displayName ?? 'User'}</p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                          {user.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {userProfile?.role === 'provider' && (
+
+              {/* User / login menu: desktop only */}
+              <div className="hidden md:flex">
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="relative h-8 w-8 rounded-full text-primary-foreground"
+                      >
+                        <Avatar className="h-9 w-9 ring-1 ring-white/30">
+                          <AvatarImage
+                            src={user.photoURL ?? ''}
+                            alt={user.displayName ?? 'User'}
+                          />
+                          <AvatarFallback className="bg-snow text-ink font-semibold">
+                            {getInitials(user.email)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            {user.displayName ?? 'User'}
+                          </p>
+                          <p className="text-xs leading-none text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {userProfile?.role === 'provider' && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard">
+                            <Briefcase className="mr-2" />
+                            {tr(locale, 'header.providerDashboard')}
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      {userProfile?.role === 'provider' && (
+                        <>
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard/services">
+                              <Briefcase className="mr-2" />
+                              {tr(locale, 'header.myServices')}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard/services/new">
+                              <Briefcase className="mr-2" />
+                              {tr(locale, 'header.addService')}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
                       <DropdownMenuItem asChild>
-                        <Link href="/dashboard">
-                          <Briefcase className="mr-2" />
-                          {tr(locale, 'header.providerDashboard')}
+                        <Link href="/dashboard/profile">
+                          <User className="mr-2" />
+                          {tr(locale, 'header.profile')}
                         </Link>
                       </DropdownMenuItem>
-                    )}
-                    {userProfile?.role === 'provider' && (
-                      <>
-                        <DropdownMenuItem asChild>
-                          <Link href="/dashboard/services">
-                            <Briefcase className="mr-2" />
-                            {tr(locale, 'header.myServices')}
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/dashboard/services/new">
-                            <Briefcase className="mr-2" />
-                            {tr(locale, 'header.addService')}
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/profile">
-                        <User className="mr-2" />
-                        {tr(locale, 'header.profile')}
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="mr-2" />
-                      {tr(locale, 'header.signOut')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button asChild>
-                  <Link href="/login">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    {tr(locale, 'header.login')}
-                  </Link>
-                </Button>
-              )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="mr-2" />
+                        {tr(locale, 'header.signOut')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button asChild>
+                    <Link href="/login">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      {tr(locale, 'header.login')}
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -386,4 +401,3 @@ export function Header() {
     </header>
   );
 }
-
