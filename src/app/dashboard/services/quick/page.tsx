@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createService, uploadServiceImages, updateService, getServiceById, type ServiceImage } from '@/lib/services';
+import { getUploadMode } from '@/lib/images';
 
 const QuickSchema = z.object({
   title: z.string().min(6).max(100),
@@ -112,7 +113,7 @@ export default function QuickCreateServicePage() {
     try {
       let images: ServiceImage[] = [];
       if (selectedFiles.length > 0) {
-        const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
+        const mode = getUploadMode(user.uid);
         try {
           if (mode === 'local') {
             // local uploads expect an /api/uploads route; if missing, fallback to inline
@@ -125,10 +126,13 @@ export default function QuickCreateServicePage() {
             } else {
               throw new Error('local_upload_unavailable');
             }
-          } else if (mode === 'cloudinary') {
-            images = await uploadServiceImages(user.uid, selectedFiles);
           } else {
-            // default: Firebase Storage
+            // For now, treat 'inline', 'storage' and 'cloudinary' the same here:
+            // upload to Firebase Storage via uploadServiceImages.
+            if (mode === 'cloudinary') {
+              // Make it explicit in dev logs that this is a fallback.
+              console.warn('[QuickCreate] Cloudinary mode not fully supported in quick create; using Firebase Storage instead.');
+            }
             images = await uploadServiceImages(user.uid, selectedFiles);
           }
         } catch {

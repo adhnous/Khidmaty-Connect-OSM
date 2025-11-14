@@ -21,7 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { libyanCities, cityLabel, cityCenter } from "@/lib/cities";
 import CityPicker from "@/components/city-picker";
 import { tileUrl, tileAttribution, markerHtml } from "@/lib/map";
-import { createSaleItem } from "@/lib/sale-items";
+import { createSaleItem, uploadSaleImages } from "@/lib/sale-items";
+import { getUploadMode } from "@/lib/images";
 
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
 const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false }) as any;
@@ -135,22 +136,55 @@ export default function CreateSaleItemPage() {
 
   async function handleFinish() {
     const ok = await form.trigger(undefined, { shouldFocus: true });
-    if (!ok) return;
+    if (!ok) {
+      toast({
+        variant: 'destructive',
+        title:
+          locale === 'ar'
+            ? 'O�O_OrU, OU,O�O�U,U% OU,U^O�U? U.U+ OU,O�O3OO�U,'
+            : 'Please fix the highlighted fields before publishing',
+      });
+      return;
+    }
     const u = user;
     if (!u) return;
     try {
       let images = form.getValues('images');
+      const mode = getUploadMode(u.uid);
       if (selectedFiles.length > 0) {
         const limited = selectedFiles.slice(0, 8);
-        const dataUrls = await Promise.all(limited.map((f) => compressToDataUrl(f, 1000, 0.7)));
-        images = dataUrls.map((u) => ({ url: u }));
+        try {
+          if (mode === 'storage') {
+            // Normal path: upload to Firebase Storage
+            images = await uploadSaleImages(u.uid, limited);
+          } else {
+            // inline/local/cloudinary: keep compressed data URLs in Firestore
+            if (mode === 'cloudinary') {
+              console.warn(
+                '[SalesCreate] Cloudinary mode not fully supported for sales; keeping inline data URLs instead of uploading.'
+              );
+            }
+            const dataUrls = await Promise.all(
+              limited.map((f) => compressToDataUrl(f, 1000, 0.7))
+            );
+            images = dataUrls.map((v) => ({ url: v }));
+          }
+        } catch {
+          // Fallback: always succeed with inline data URLs
+          const dataUrls = await Promise.all(
+            limited.map((f) => compressToDataUrl(f, 1000, 0.7))
+          );
+          images = dataUrls.map((v) => ({ url: v }));
+        }
         form.setValue('images', images as any, { shouldValidate: true });
       }
       const providerName = userProfile?.displayName || u.displayName || (u.email ? u.email.split('@')[0] : null);
       const providerEmail = u.email || null;
       const id = await createSaleItem({ ...(form.getValues()), images, providerId: u.uid, providerName, providerEmail });
       toast({ title: locale === 'ar' ? 'تم إنشاء عنصر للبيع' : 'Sale item created' });
-      try { window.location.href = `/sales`; } catch {}
+     // try { window.location.href = `/sales`; } catch {}
+     try { window.location.href = `/sales/${id}`; } catch {}
+
     } catch (e: any) {
       toast({ variant: 'destructive', title: e?.message || 'Failed' });
     }

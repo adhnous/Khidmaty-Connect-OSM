@@ -24,7 +24,8 @@ export type CategoryCardId =
   | "medical"
   | "transport"
   | "creative"
-  | "crafts";
+  | "crafts"
+  | "sales";
 
 export const CATEGORY_DEFS: Record<
   CategoryCardId,
@@ -38,6 +39,7 @@ export const CATEGORY_DEFS: Record<
   transport: { ar: "النقل والمواصلات والتوصيل", en: "Transport & Delivery", Icon: Truck, color: "bg-indigo-100 text-indigo-700" },
   creative: { ar: "الاعلانات التصميم والإبداع", en: "Advertising & Creative", Icon: Megaphone, color: "bg-fuchsia-100 text-fuchsia-700" },
   crafts: { ar: "اعمال مهنية وحرف يدوية", en: "Skilled Trades & Crafts", Icon: Hammer, color: "bg-amber-100 text-amber-700" },
+  sales: { ar: "المبيعات وخدمة العملاء", en: "Sales & Customer Service", Icon: ShoppingCart, color: "bg-green-100 text-green-700" },
 };
 
 export function CategoryCards({
@@ -46,16 +48,21 @@ export function CategoryCards({
   onSelect,
   size = 'md',
   tone = 'solid',
+  hideSales = false,
 }: {
   locale: Locale;
   selectedId?: string | null;
   onSelect(id: CategoryCardId): void;
   size?: 'sm' | 'md';
   tone?: 'solid' | 'translucent';
+  hideSales?: boolean;
 }) {
   const isSm = size === 'sm';
   const translucent = tone === 'translucent';
-  const entries = Object.entries(CATEGORY_DEFS) as [CategoryCardId, (typeof CATEGORY_DEFS)[CategoryCardId]][];
+  const entries = (Object.entries(CATEGORY_DEFS) as [CategoryCardId, (typeof CATEGORY_DEFS)[CategoryCardId]][]).filter(
+    ([id]) => !(id === 'sales' && hideSales)
+  );
+
   return (
     <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 md:grid-cols-4">
       {entries.map(([id, def]) => {

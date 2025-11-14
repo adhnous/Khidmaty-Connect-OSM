@@ -192,34 +192,26 @@ export default function CreateServiceWizardPage() {
   }, [loading, user, userProfile?.role, router]);
   if (loading || !user || userProfile?.role !== 'provider') return null;
 
-// Warn ONLY if you explicitly chose cloudinary but didn't set the two vars.
-useEffect(() => {
-  const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
-  const missingCloud = !(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD);
-  const missingPreset = !process.env.NEXT_PUBLIC_CLOUDINARY_PRESET;
-  if (mode === 'cloudinary' && (missingCloud || missingPreset)) {
-    console.warn('⚠️ Cloudinary env missing: set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME (or NEXT_PUBLIC_CLOUDINARY_CLOUD) and NEXT_PUBLIC_CLOUDINARY_PRESET');
-  }
-}, []);
- const { toast } = useToast();
-  // ✅ Add this block here (before const form = useForm(...))
-  if (typeof window !== 'undefined') {
-    if (!(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD) || !process.env.NEXT_PUBLIC_CLOUDINARY_PRESET) {
-      console.warn('⚠️ Cloudinary env missing: set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME (or NEXT_PUBLIC_CLOUDINARY_CLOUD) and NEXT_PUBLIC_CLOUDINARY_PRESET');
-    }
-  }
+  const { toast } = useToast();
 
-  // (Optional) quick debug: see which upload mode is active
+  // Warn only when Cloudinary mode is selected but required env vars are missing.
   useEffect(() => {
-    // Safe to log NEXT_PUBLIC_* and uid
-    console.log('[CreateService] uploadMode =', getUploadMode(uid), {
-      hasCloud: !!(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD),
-      hasPreset: !!process.env.NEXT_PUBLIC_CLOUDINARY_PRESET,
-      uid: !!uid,
-    });
-  }, [uid]);
+    const mode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
+    const hasCloud =
+      !!(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD);
+    const hasPreset = !!process.env.NEXT_PUBLIC_CLOUDINARY_PRESET;
+
+    if (mode === 'cloudinary' && (!hasCloud || !hasPreset)) {
+      console.warn(
+        '[CreateService] Cloudinary mode selected but env is incomplete. ' +
+          'Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME (or NEXT_PUBLIC_CLOUDINARY_CLOUD) ' +
+          'and NEXT_PUBLIC_CLOUDINARY_PRESET.'
+      );
+    }
+  }, []);
 
   const form = useForm<ServiceFormData>({
+
     resolver: zodResolver(serviceSchema),
     mode: "onChange",
     defaultValues: {

@@ -23,3 +23,28 @@ export function transformCloudinary(url: string, opts?: { w?: number; q?: string
     return url;
   }
 }
+
+// Shared helper to decide how images should be handled client-side.
+// Modes:
+// - inline: keep images as data URLs / local previews
+// - local: custom /api/uploads handler on this host
+// - storage: Firebase Storage via uploadServiceImages
+// - cloudinary: Cloudinary; callers may treat as storage if not fully supported
+export function getUploadMode(uid?: string | null): 'inline' | 'local' | 'cloudinary' | 'storage' {
+  const envMode = (process.env.NEXT_PUBLIC_IMAGE_UPLOAD_MODE || '').toLowerCase();
+  const hasCloud = !!(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD);
+  const hasPreset = !!process.env.NEXT_PUBLIC_CLOUDINARY_PRESET;
+  const storageDisabled =
+    process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === '1' ||
+    process.env.NEXT_PUBLIC_DISABLE_STORAGE_UPLOAD === 'true';
+
+  if (envMode === 'inline') return 'inline';
+  if (envMode === 'local') return 'local';
+  if (envMode === 'cloudinary') return hasCloud && hasPreset ? 'cloudinary' : 'inline';
+  if (envMode === 'storage') return storageDisabled ? 'inline' : 'storage';
+
+  if (uid) {
+    return storageDisabled ? (hasCloud && hasPreset ? 'cloudinary' : 'inline') : 'storage';
+  }
+  return hasCloud && hasPreset ? 'cloudinary' : 'inline';
+}

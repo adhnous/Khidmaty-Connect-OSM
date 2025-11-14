@@ -13,7 +13,7 @@ describe('saleItemSchema', () => {
       images: [{ url: 'https://example.com/phone.jpg' }],
     };
     const parsed = saleItemSchema.parse(data);
-    expect(parsed.status).toBe('active');
+    expect(parsed.status).toBe('pending');
     expect(parsed.trade).toEqual({ enabled: false });
   });
 

@@ -1,4 +1,4 @@
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import {
   addDoc,
   collection,
@@ -13,6 +13,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { SaleItemForm } from '@/lib/schemas-sale';
 
 const COL = 'sale_items';
@@ -42,6 +43,27 @@ export type SaleItem = SaleItemForm & {
   createdAt?: any;
   updatedAt?: any;
 };
+
+export type SaleImage = {
+  url: string;
+  publicId?: string;
+  width?: number;
+  height?: number;
+};
+
+export async function uploadSaleImages(
+  providerId: string,
+  files: File[]
+): Promise<SaleImage[]> {
+  const uploads = files.map(async (file, index) => {
+    const path = `sale_items/${providerId}/${Date.now()}_${index}_${file.name}`;
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    return { url } as SaleImage;
+  });
+  return Promise.all(uploads);
+}
 
 export async function createSaleItem(
   data: SaleItemForm & { providerId: string; providerName?: string | null; providerEmail?: string | null }

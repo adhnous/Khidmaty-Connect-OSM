@@ -384,11 +384,13 @@ export default function Home() {
                 )}
                 {!filtersCollapsed && !(searchFocused || q.trim().length > 0) && (
                   <div className="mt-4 border-t pt-4">
-                    <CategoryCards
-                      locale={locale}
-                      selectedId={category === ALL_CATEGORIES ? null : (category as any)}
-                      onSelect={(id) => { setCategory(id); showResultsAndScroll(); }}
-                    />
+                   <CategoryCards
+  locale={locale}
+  selectedId={category === ALL_CATEGORIES ? null : (category as any)}
+  onSelect={(id) => { setCategory(id); showResultsAndScroll(); }}
+  hideSales
+/>
+
                   </div>
                 )}
               </div>
