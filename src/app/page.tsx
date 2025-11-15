@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Search, MapPin, Shield, Smartphone } from "lucide-react";
 import { getClientLocale } from "@/lib/i18n";
 
-const VIDEO_EMBED_URL = "https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE";
+const VIDEO_EMBED_URL = "https://www.youtube.com/embed/3WpTyA3OkYw";
 
 export default function Home() {
   const locale = getClientLocale();
