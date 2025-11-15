@@ -1,16 +1,99 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Search, MapPin, Shield, Smartphone } from "lucide-react";
 import { getClientLocale } from "@/lib/i18n";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
-const VIDEO_EMBED_URL = "https://www.youtube.com/embed/3WpTyA3OkYw";
+const FALLBACK_VIDEOS = ["https://www.youtube.com/embed/3WpTyA3OkYw"];
+
+function normalizeYoutubeEmbed(raw: string): string {
+  const v = String(raw || "").trim();
+  if (!v) return "";
+
+  // Try to extract a video id from common YouTube URL shapes
+  const idMatch =
+    v.match(/youtu\.be\/([\w-]+)/i)?.[1] ||
+    v.match(/[?&]v=([\w-]+)/i)?.[1] ||
+    v.match(/\/embed\/([\w-]+)/i)?.[1] ||
+    v.match(/\/shorts\/([\w-]+)/i)?.[1];
+
+  if (idMatch) {
+    return `https://www.youtube.com/embed/${idMatch}`;
+  }
+
+  // If it's already an embed URL (even from m.youtube.com), normalize host
+  if (/youtube\.com\/embed\//i.test(v)) {
+    try {
+      const u = new URL(v);
+      return `https://www.youtube.com${u.pathname}${u.search}${u.hash}`;
+    } catch {
+      return v;
+    }
+  }
+
+  return v;
+}
+
+function youtubeThumbFromEmbed(url: string): string {
+  try {
+    const u = new URL(url);
+    const m = u.pathname.match(/\/embed\/([\w-]+)/i);
+    const id = m?.[1];
+    if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  } catch {
+    // ignore
+  }
+  return "https://placehold.co/320x180?text=Video";
+}
+
+function useLandingVideos() {
+  const [videos, setVideos] = useState<string[]>(FALLBACK_VIDEOS);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const ref = doc(db, "settings", "home");
+        const snap = await getDoc(ref);
+        const arr = (snap.exists()
+          ? (snap.get("landingVideoUrls") as string[] | undefined)
+          : undefined) || [];
+        const cleaned = Array.isArray(arr)
+          ? arr
+              .map((v) => normalizeYoutubeEmbed(String(v || "")))
+              .filter((v) => v.length > 0)
+              .slice(0, 20)
+          : [];
+        if (!cancelled && cleaned.length > 0) {
+          setVideos(cleaned);
+        }
+      } catch {
+        // ignore errors and keep fallback
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return videos;
+}
 
 export default function Home() {
   const locale = getClientLocale();
   const isAr = locale === "ar";
-  const hasVideo = !VIDEO_EMBED_URL.includes("YOUR_VIDEO_ID_HERE");
+  const videos = useLandingVideos();
+
+  // which video is in the big frame
+  const [activeIndex, setActiveIndex] = useState(0);
+  const safeIndex = videos.length > activeIndex ? activeIndex : 0;
+  const primaryVideo = videos[safeIndex];
+  const hasVideo = !!primaryVideo;
+
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -88,35 +171,63 @@ export default function Home() {
             </div>
 
             {/* Video / preview */}
-            <div className="flex-1">
-              <div className="relative aspect-video overflow-hidden rounded-2xl border bg-black/80 shadow-xl">
-                {hasVideo ? (
-                  <iframe
-                    src={VIDEO_EMBED_URL}
-                    title="Khidmaty Connect intro"
-                    className="h-full w-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <Play className="h-6 w-6" />
-                    </div>
-                    <p>
-                      {isAr
-                        ? "يمكنك إضافة رابط فيديو يوتيوب تعريفي بالتطبيق هنا."
-                        : "Place your YouTube intro video link here."}
-                    </p>
-                    <p className="text-[11px] opacity-80">
-                      {isAr
-                        ? "عدّل المتغيّر VIDEO_EMBED_URL في src/app/page.tsx."
-                        : "Edit VIDEO_EMBED_URL in src/app/page.tsx to show your video."}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
+<div className="flex-1">
+  <div className="relative aspect-video overflow-hidden rounded-2xl border bg-black/80 shadow-xl">
+    {hasVideo ? (
+      <iframe
+        src={primaryVideo}
+        title="Khidmaty Connect intro"
+        className="h-full w-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    ) : (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Play className="h-6 w-6" />
+        </div>
+        <p>
+          {isAr
+            ? "…"  // keep your existing Arabic text
+            : "Place your YouTube intro video link here."}
+        </p>
+        <p className="text-[11px] opacity-80">
+          {isAr
+            ? "…"  // keep your existing Arabic text
+            : "Edit VIDEO_EMBED_URL in src/app/page.tsx to show your video."}
+        </p>
+      </div>
+    )}
+  </div>
+
+{videos.length > 1 && (
+  <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+    {videos.map((v, idx) => {
+      if (idx === safeIndex) return null; // skip the one already in the big frame
+      return (
+        <button
+          type="button"
+          key={idx}
+          onClick={() => setActiveIndex(idx)}
+          className="relative h-24 w-40 flex-none overflow-hidden rounded-xl border bg-black/80 shadow-sm"
+        >
+          <img
+            src={youtubeThumbFromEmbed(v)}
+            alt={`Khidmaty extra video ${idx + 1}`}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
+            <Play className="mr-1 h-4 w-4" />
+            {isAr ? "مشاهدة الفيديو" : "Play in main frame"}
+          </div>
+        </button>
+      );
+    })}
+  </div>
+)}
+
+</div>
+
           </div>
         </section>
 
@@ -204,4 +315,3 @@ export default function Home() {
     </div>
   );
 }
-
