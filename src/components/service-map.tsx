@@ -1,17 +1,10 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ScaleControl } from 'react-leaflet';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { tileUrl, tileAttribution, markerHtml } from '@/lib/map';
-
-// Dynamically import react-leaflet components on client only to avoid double-initialization
-const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false }) as any;
-const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false }) as any;
-const Marker = dynamic(() => import('react-leaflet').then((m) => m.Marker), { ssr: false }) as any;
-const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr: false }) as any;
-const ScaleControl = dynamic(() => import('react-leaflet').then((m) => m.ScaleControl), { ssr: false }) as any;
 
 export type ServiceMapProps = {
   lat: number;
@@ -128,6 +121,7 @@ export default function ServiceMap({ lat, lng, title, area, city, zoom = 14 }: S
           zoom={zoom}
           className="h-full w-full"
           scrollWheelZoom={false}
+          attributionControl={false}
           onClick={() => {
             try { window.open(gmapsUrl, '_blank'); } catch {}
           }}

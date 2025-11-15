@@ -712,12 +712,13 @@ export default function CreateSaleItemPage() {
                   </div>
 
                   {/* MAP */}
-                  <div className="rounded border">
+                  <div className="relative mt-3 overflow-hidden rounded-[14px] border-2 border-[#D97800] shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
                     <MapContainer
                       key={form.watch("city") || "default"}
                       center={[latNum, lngNum]}
                       zoom={13}
                       scrollWheelZoom={false}
+                      attributionControl={false}
                       className="cursor-crosshair"
                       style={{ height: 280, width: "100%" }}
                     >
@@ -777,6 +778,9 @@ export default function CreateSaleItemPage() {
                         </Popup>
                       </Marker>
                     </MapContainer>
+                    <div className="pointer-events-none absolute bottom-1 right-1 text-[10px] text-[#555] opacity-50">
+                      @ Khidmaty & CloudAI Academy
+                    </div>
                   </div>
 
                   {/* Contact */}

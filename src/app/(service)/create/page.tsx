@@ -630,8 +630,8 @@ export default function CreateServiceWizardPage() {
                     </div>
                     <div className="space-y-2">
                       <FormLabel>{tr(locale, 'form.labels.pickLocation')}</FormLabel>
-                      <div className="relative z-0 rounded-lg border bg-background p-2 shadow-sm overflow-hidden">
-                        <MapContainer center={[latNum ?? 32.8872, lngNum ?? 13.1913]} zoom={13} scrollWheelZoom={false} className="cursor-crosshair rounded-md" style={{ height: 220, width: '100%'}}
+                      <div className="relative z-0 overflow-hidden rounded-[14px] border-2 border-[#D97800] bg-background p-2 shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+                        <MapContainer center={[latNum ?? 32.8872, lngNum ?? 13.1913]} zoom={13} scrollWheelZoom={false} attributionControl={false} className="cursor-crosshair rounded-md" style={{ height: 220, width: '100%'}}
                           onClick={(e: any) => {
                             const { lat, lng } = e?.latlng || {};
                             if (typeof lat === 'number' && typeof lng === 'number') {
@@ -671,6 +671,9 @@ export default function CreateServiceWizardPage() {
                           )}
                           <ScaleControl imperial={false} position="bottomleft" />
                         </MapContainer>
+                        <div className="pointer-events-none absolute bottom-1 right-2 text-[10px] text-[#555] opacity-50">
+                          @ Khidmaty & CloudAI Academy
+                        </div>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

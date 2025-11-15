@@ -1,10 +1,17 @@
 // Shared map config for Leaflet/Google map components
 // Keep this file side-effect free; consume only in client components.
 
-export const tileUrl = process.env.NEXT_PUBLIC_OSM_TILE_URL || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+// Default to standard OSM tiles with street/place labels.
+// Can be overridden via NEXT_PUBLIC_OSM_TILE_URL if needed.
+export const tileUrl =
+  process.env.NEXT_PUBLIC_OSM_TILE_URL ||
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+// We render attribution via a tiny overlay near the map UI.
+// This string can be overridden via NEXT_PUBLIC_OSM_ATTRIBUTION.
 export const tileAttribution =
   process.env.NEXT_PUBLIC_OSM_ATTRIBUTION ||
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  "@ Khidmaty & CloudAI Academy";
 
 // Reusable HTML for a simple green circular marker rendered via Leaflet divIcon
 export const markerHtml =

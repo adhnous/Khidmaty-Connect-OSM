@@ -382,6 +382,8 @@ export default function ServiceDetailPage() {
             ...s,
             distanceKm: distanceKm(coords.lat, coords.lng, s.lat as number, s.lng as number),
           }))
+          // Only keep services within 1 km of the current service
+          .filter((s) => (s.distanceKm ?? Infinity) <= 2)
           .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0))
           .slice(0, 6);
         setNearbyServices(scored);

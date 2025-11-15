@@ -269,7 +269,7 @@ export default function ServicesBrowsePage() {
                     Array.isArray((s as any).images) &&
                     (s as any).images[0]?.url
                       ? (s as any).images[0].url
-                      : 'https://placehold.co/800x600?text=Service'
+                      : 'https://placehold.co/800x600.png?text=Service'
                   }
                   aiHint={`category:${s.category}; city:${s.city}`}
                   href={`/services/${s.id}`}
