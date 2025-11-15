@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ServiceCard } from '@/components/service-card';
@@ -12,7 +12,7 @@ import {
   type CategoryCardId,
 } from '@/components/category-cards';
 import CityPicker from '@/components/city-picker';
- 
+
 const ALL_CITIES = 'ALL_CITIES';
 
 export default function ServicesBrowsePage() {
@@ -26,6 +26,7 @@ export default function ServicesBrowsePage() {
   const [activeCategory, setActiveCategory] = useState<CategoryCardId | null>(
     null,
   );
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   async function fetchServices() {
     setLoading(true);
@@ -86,6 +87,20 @@ export default function ServicesBrowsePage() {
           id
         : id;
     setQ(defLabel);
+
+    // On mobile, scroll results into view after choosing a category
+    try {
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        const el = resultsRef.current;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const top = rect.top + window.scrollY - 80;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }
+      }
+    } catch {
+      // ignore scrolling errors
+    }
   }
 
   useEffect(() => {
@@ -206,7 +221,10 @@ export default function ServicesBrowsePage() {
         </section>
 
         {/* Results */}
-        <section className="mx-auto max-w-6xl px-4 pb-10 pt-6 md:pt-8">
+        <section
+          ref={resultsRef}
+          className="mx-auto max-w-6xl px-4 pb-10 pt-6 md:pt-8"
+        >
           <div
             className={`mb-4 flex items-center justify-between ${
               isAr ? 'flex-row-reverse text-right' : ''
@@ -264,4 +282,3 @@ export default function ServicesBrowsePage() {
     </div>
   );
 }
-
