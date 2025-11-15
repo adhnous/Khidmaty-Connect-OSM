@@ -3,13 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 import { ServiceCard } from '@/components/service-card';
 import { listServicesFiltered, type Service } from '@/lib/services';
 import { libyanCities } from '@/lib/cities';
@@ -18,7 +11,8 @@ import {
   CategoryCards,
   type CategoryCardId,
 } from '@/components/category-cards';
-
+import CityPicker from '@/components/city-picker';
+ 
 const ALL_CITIES = 'ALL_CITIES';
 
 export default function ServicesBrowsePage() {
@@ -142,31 +136,25 @@ export default function ServicesBrowsePage() {
                     />
                   </div>
 
-                  {/* city select */}
-                  <div className="w-full md:w-56">
-                    <Select
-                      value={city}
-                      onValueChange={(value) => setCity(value)}
-                    >
-                      <SelectTrigger className="h-11 w-full">
-                        <SelectValue
-                          placeholder={
-                            tr(locale, 'home.cityPlaceholder') as string
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={ALL_CITIES}>
-                          {isAr ? 'كل المدن' : 'All cities'}
-                        </SelectItem>
-                        {libyanCities.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {c.ar}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                 {/* city select */}
+<div className="w-full md:w-56">
+  <CityPicker
+    locale={isAr ? 'ar' : 'en'}
+    value={city}
+    onChange={(val) => setCity(val)}
+    options={libyanCities}
+    placeholder={
+      (tr(locale, 'home.cityPlaceholder') as string) ||
+      (isAr ? 'ابحث عن مدينة' : 'Search city')
+    }
+    className="h-11"
+    allOption={{
+      value: ALL_CITIES,
+      label: isAr ? 'كل المدن' : 'All cities',
+    }}
+  />
+</div>
+
 
                   {/* buttons */}
                   <div

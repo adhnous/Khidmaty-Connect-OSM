@@ -598,6 +598,10 @@ export default function CreateServiceWizardPage() {
                                 options={libyanCities}
                                 onChange={(v) => {
                                   field.onChange(v);
+                                  // When user manually changes city, clear auto-detected area
+                                  // and treat it as a new manual choice (disable auto area until map is used again).
+                                  form.setValue('area', '', { shouldValidate: true });
+                                  setUserSetLocation(false);
                                   const center = cityCenter(v);
                                   if (center) {
                                     form.setValue('location.lat', Number(center.lat.toFixed(6)), { shouldValidate: true });

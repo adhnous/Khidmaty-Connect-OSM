@@ -58,7 +58,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="gap-2 px-6 text-base"
+  className="gap-2 px-6 text-base bg-black text-white hover:bg-black/90"
                   asChild
                 >
                   <Link href="/sales">
