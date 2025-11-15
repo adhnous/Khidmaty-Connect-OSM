@@ -8,47 +8,41 @@ import { getClientLocale } from "@/lib/i18n";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
+/* ---------------------------------------------------
+   1) SIMPLE VIDEO HELPERS
+--------------------------------------------------- */
+
 const FALLBACK_VIDEOS = ["https://www.youtube.com/embed/3WpTyA3OkYw"];
 
-function normalizeYoutubeEmbed(raw: string): string {
+function buildEmbedUrl(raw: string): string {
   const v = String(raw || "").trim();
   if (!v) return "";
 
-  // Try to extract a video id from common YouTube URL shapes
-  const idMatch =
+  const id =
     v.match(/youtu\.be\/([\w-]+)/i)?.[1] ||
     v.match(/[?&]v=([\w-]+)/i)?.[1] ||
     v.match(/\/embed\/([\w-]+)/i)?.[1] ||
     v.match(/\/shorts\/([\w-]+)/i)?.[1];
 
-  if (idMatch) {
-    return `https://www.youtube.com/embed/${idMatch}`;
+  if (id) {
+    return `https://www.youtube.com/embed/${id}`;
   }
-
-  // If it's already an embed URL (even from m.youtube.com), normalize host
-  if (/youtube\.com\/embed\//i.test(v)) {
-    try {
-      const u = new URL(v);
-      return `https://www.youtube.com${u.pathname}${u.search}${u.hash}`;
-    } catch {
-      return v;
-    }
-  }
-
   return v;
 }
 
-function youtubeThumbFromEmbed(url: string): string {
+function youtubeThumbFromUrl(raw: string): string {
   try {
-    const u = new URL(url);
-    const m = u.pathname.match(/\/embed\/([\w-]+)/i);
+    const v = buildEmbedUrl(raw);
+    const m = v.match(/\/embed\/([\w-]+)/i);
     const id = m?.[1];
     if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-  } catch {
-    // ignore
-  }
+  } catch {}
   return "https://placehold.co/320x180?text=Video";
 }
+
+/* ---------------------------------------------------
+   2) HOOK: Fetch landing videos from Firestore
+--------------------------------------------------- */
 
 function useLandingVideos() {
   const [videos, setVideos] = useState<string[]>(FALLBACK_VIDEOS);
@@ -59,20 +53,23 @@ function useLandingVideos() {
       try {
         const ref = doc(db, "settings", "home");
         const snap = await getDoc(ref);
-        const arr = (snap.exists()
-          ? (snap.get("landingVideoUrls") as string[] | undefined)
-          : undefined) || [];
+        const arr =
+          (snap.exists()
+            ? (snap.get("landingVideoUrls") as string[] | undefined)
+            : undefined) || [];
+
         const cleaned = Array.isArray(arr)
           ? arr
-              .map((v) => normalizeYoutubeEmbed(String(v || "")))
+              .map((v) => String(v || "").trim())
               .filter((v) => v.length > 0)
               .slice(0, 20)
           : [];
+
         if (!cancelled && cleaned.length > 0) {
           setVideos(cleaned);
         }
       } catch {
-        // ignore errors and keep fallback
+        // ignore and fallback stays
       }
     })();
     return () => {
@@ -83,24 +80,34 @@ function useLandingVideos() {
   return videos;
 }
 
+/* ---------------------------------------------------
+   3) HOME PAGE
+--------------------------------------------------- */
+
 export default function Home() {
   const locale = getClientLocale();
   const isAr = locale === "ar";
   const videos = useLandingVideos();
 
-  // which video is in the big frame
+  // WHICH VIDEO IS ACTIVE
   const [activeIndex, setActiveIndex] = useState(0);
-  const safeIndex = videos.length > activeIndex ? activeIndex : 0;
-  const primaryVideo = videos[safeIndex];
-  const hasVideo = !!primaryVideo;
+  const safeIndex = activeIndex < videos.length ? activeIndex : 0;
 
+  const primaryVideo = buildEmbedUrl(
+    videos[safeIndex] ?? videos[0] ?? FALLBACK_VIDEOS[0]
+  );
+
+  const hasVideo = !!primaryVideo;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-1">
-        {/* Hero */}
+        {/* ------------------------------------------------------------
+            HERO SECTION
+        ------------------------------------------------------------ */}
         <section className="border-b bg-gradient-to-b from-background via-background to-muted/40">
           <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-10 md:flex-row md:items-center md:py-16">
+            {/* LEFT TEXT */}
             <div
               className={`flex-1 space-y-6 ${
                 isAr ? "md:pl-10 text-right" : "md:pr-10 text-left"
@@ -129,19 +136,16 @@ export default function Home() {
                   isAr ? "justify-end" : "justify-start"
                 }`}
               >
-                <Button
-                  size="lg"
-                  className="gap-2 px-6 text-base"
-                  asChild
-                >
+                <Button size="lg" className="gap-2 px-6 text-base" asChild>
                   <Link href="/services">
                     {isAr ? "تصفح الخدمات" : "Browse services"}
                   </Link>
                 </Button>
+
                 <Button
                   size="lg"
                   variant="outline"
-  className="gap-2 px-6 text-base bg-black text-white hover:bg-black/90"
+                  className="gap-2 px-6 text-base bg-black text-white hover:bg-black/90"
                   asChild
                 >
                   <Link href="/sales">
@@ -158,80 +162,74 @@ export default function Home() {
                 <div className="inline-flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   {isAr
-                    ? "إعلانات حقيقية ومعتدلة، وليست منشورات عشوائية"
-                    : "Real, moderated listings – not random posts"}
+                    ? "إعلانات حقيقية ومعتدلة"
+                    : "Real, moderated listings"}
                 </div>
                 <div className="inline-flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   {isAr
-                    ? "بحث حسب المدينة، القسم، والموقع على الخريطة"
+                    ? "بحث حسب المدينة والقسم والموقع"
                     : "Search by city, category and map location"}
                 </div>
               </div>
             </div>
 
-            {/* Video / preview */}
-<div className="flex-1">
-  <div className="relative aspect-video overflow-hidden rounded-2xl border bg-black/80 shadow-xl">
-    {hasVideo ? (
-      <iframe
-        src={primaryVideo}
-        title="Khidmaty Connect intro"
-        className="h-full w-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    ) : (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Play className="h-6 w-6" />
-        </div>
-        <p>
-          {isAr
-            ? "…"  // keep your existing Arabic text
-            : "Place your YouTube intro video link here."}
-        </p>
-        <p className="text-[11px] opacity-80">
-          {isAr
-            ? "…"  // keep your existing Arabic text
-            : "Edit VIDEO_EMBED_URL in src/app/page.tsx to show your video."}
-        </p>
-      </div>
-    )}
-  </div>
+            {/* ------------------------------------------------------------
+                RIGHT: HERO VIDEO
+            ------------------------------------------------------------ */}
+            <div className="flex-1">
+              <div className="relative aspect-video overflow-hidden rounded-2xl border bg-black/80 shadow-xl">
+                {hasVideo ? (
+                  <iframe
+                    src={primaryVideo}
+                    title="Khidmaty Connect intro"
+                    className="h-full w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Play className="h-6 w-6" />
+                    </div>
+                    <p>{isAr ? "لا يوجد فيديو" : "No video available"}</p>
+                  </div>
+                )}
+              </div>
 
-{videos.length > 1 && (
-  <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-    {videos.map((v, idx) => {
-      if (idx === safeIndex) return null; // skip the one already in the big frame
-      return (
-        <button
-          type="button"
-          key={idx}
-          onClick={() => setActiveIndex(idx)}
-          className="relative h-24 w-40 flex-none overflow-hidden rounded-xl border bg-black/80 shadow-sm"
-        >
-          <img
-            src={youtubeThumbFromEmbed(v)}
-            alt={`Khidmaty extra video ${idx + 1}`}
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
-            <Play className="mr-1 h-4 w-4" />
-            {isAr ? "مشاهدة الفيديو" : "Play in main frame"}
-          </div>
-        </button>
-      );
-    })}
-  </div>
-)}
-
-</div>
-
+              {/* SMALL THUMBNAIL STRIP */}
+              {videos.length > 1 && (
+                <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+                  {videos.map((v, idx) => {
+                    if (idx === safeIndex) return null;
+                    return (
+                      <button
+                        type="button"
+                        key={idx}
+                        onClick={() => setActiveIndex(idx)}
+                        className="relative h-24 w-40 flex-none overflow-hidden rounded-xl border bg-black/80 shadow-sm"
+                      >
+                        <img
+                          src={youtubeThumbFromUrl(v)}
+                          alt={`Video ${idx + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
+                          <Play className="mr-1 h-4 w-4" />
+                          {isAr ? "مشاهدة" : "Play"}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
-        {/* How it works */}
+        {/* ------------------------------------------------------------
+            HOW IT WORKS
+        ------------------------------------------------------------ */}
         <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
           <div
             className={`mb-6 flex flex-col gap-2 ${
@@ -245,8 +243,8 @@ export default function Home() {
             </h2>
             <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
               {isAr
-                ? "في ثلاث خطوات بسيطة: اختر القسم، ابحث أو أنشئ إعلانك، ثم تواصل مباشرة عبر الهاتف أو واتساب أو المحادثة داخل التطبيق."
-                : "In three simple steps: choose a category, search or publish your listing, then contact directly via phone, WhatsApp, or in‑app chat."}
+                ? "اختر القسم، ابحث أو أنشئ إعلانك، ثم تواصل مباشرة."
+                : "Choose a category, search or publish your listing, then contact directly."}
             </p>
           </div>
 
@@ -256,12 +254,12 @@ export default function Home() {
                 <Search className="h-5 w-5" />
               </div>
               <h3 className="mb-1 text-sm font-semibold md:text-base">
-                {isAr ? "اختر بين الخدمات أو البيع" : "Choose services or sales"}
+                {isAr ? "اختر القسم" : "Choose category"}
               </h3>
               <p className="text-xs text-muted-foreground md:text-sm">
                 {isAr
-                  ? "من الصفحة الرئيسية تنتقل مباشرة إلى تصفح الخدمات أو إعلانات البيع والتجارة."
-                  : "From the landing page you go straight to either services or sales & trade."}
+                  ? "تصفح الخدمات أو البيع والتجارة بسهولة."
+                  : "Browse services or sales & trade easily."}
               </p>
             </div>
 
@@ -270,14 +268,12 @@ export default function Home() {
                 <MapPin className="h-5 w-5" />
               </div>
               <h3 className="mb-1 text-sm font-semibold md:text-base">
-                {isAr
-                  ? "فلترة ذكية حسب الموقع والمدينة"
-                  : "Smart filters by city and location"}
+                {isAr ? "فلترة بالموقع" : "Smart location filtering"}
               </h3>
               <p className="text-xs text-muted-foreground md:text-sm">
                 {isAr
-                  ? "استخدم المدينة، القسم، الحالة، والخريطة لرؤية الإعلانات والخدمات القريبة منك."
-                  : "Use city, category, condition and the map to see listings and services near you."}
+                  ? "ابحث حسب المدينة، القسم والموقع."
+                  : "Search by city, category, and map location."}
               </p>
             </div>
 
@@ -286,28 +282,28 @@ export default function Home() {
                 <Shield className="h-5 w-5" />
               </div>
               <h3 className="mb-1 text-sm font-semibold md:text-base">
-                {isAr ? "تواصل آمن ومباشر" : "Safe, direct contact"}
+                {isAr ? "تواصل آمن" : "Safe contact"}
               </h3>
               <p className="text-xs text-muted-foreground md:text-sm">
                 {isAr
-                  ? "كل إعلان يحتوي على وسيلة تواصل واضحة: هاتف، واتساب، أو محادثة داخلية، مع لوحة تحكم للمالك لمراجعة الإعلانات."
-                  : "Every listing includes clear contact options and an owner console to moderate and approve content."}
+                  ? "تواصل عبر الهاتف، الواتساب أو الدردشة."
+                  : "Contact via phone, WhatsApp or chat."}
               </p>
             </div>
           </div>
 
-          {/* Mobile-friendly reminder */}
+          {/* MOBILE NOTE */}
           <div className="mt-8 rounded-xl border bg-muted/40 p-4 text-xs text-muted-foreground md:text-sm">
             <div className="mb-2 flex items-center gap-2">
               <Smartphone className="h-4 w-4" />
               <span className="font-semibold text-foreground">
-                {isAr ? "مصمّم ليعمل جيداً على الجوال" : "Designed for mobile first"}
+                {isAr ? "مصمم للجوال" : "Designed for mobile"}
               </span>
             </div>
             <p>
               {isAr
-                ? "كل الصفحات – من البحث إلى إنشاء الإعلان – تم ضبطها لتعمل بسلاسة على شاشة الهاتف، لتتمكّن من تصوير ورفع إعلانك في ثوانٍ."
-                : "Every step, from searching to creating a listing, is tuned for phone screens so you can capture and publish in seconds."}
+                ? "يمكنك إنشاء إعلانك بسهولة من الجوال."
+                : "You can create your listing easily from your phone."}
             </p>
           </div>
         </section>
