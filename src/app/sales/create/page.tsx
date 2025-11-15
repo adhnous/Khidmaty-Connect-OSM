@@ -137,7 +137,7 @@ export default function CreateSaleItemPage() {
     defaultValues: {
       category: "sales",
       title: "",
-      price: null,       // << IMPORTANT
+      price: 0,
       priceMode: "firm",
       trade: { enabled: false },
       images: [],
