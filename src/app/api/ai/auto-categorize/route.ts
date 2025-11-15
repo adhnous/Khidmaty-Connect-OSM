@@ -6,21 +6,10 @@ export async function POST(req: Request) {
     if (!description) {
       return NextResponse.json({ error: 'Missing description' }, { status: 400 });
     }
-    // Fallback to heuristics when GOOGLE_API_KEY is not set or if upstream fails
-    if (!process.env.GOOGLE_API_KEY) {
-      const suggestions = heuristicCategories(description);
-      return NextResponse.json({ categorySuggestions: suggestions });
-    }
-
-    try {
-      // Lazy-load the flow only when API key is present to avoid init errors
-      const { autoCategorizeService } = await import('@/ai/flows/auto-categorize-service');
-      const result = await autoCategorizeService({ description });
-      return NextResponse.json(result);
-    } catch (e) {
-      const suggestions = heuristicCategories(description);
-      return NextResponse.json({ categorySuggestions: suggestions });
-    }
+    // For now, always use heuristic‑based suggestions only.
+    // This avoids requiring the Genkit runtime and extra Firebase modules.
+    const suggestions = heuristicCategories(description);
+    return NextResponse.json({ categorySuggestions: suggestions });
   } catch (err: any) {
     try {
       const { description } = await req.json();

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import dynamic from "next/dynamic";
 import L from "leaflet";
-
+import { useMapEvents } from "react-leaflet";
 import {
   Form,
   FormField,
@@ -85,6 +85,15 @@ const TileLayer = dynamic(() => import("react-leaflet").then(m => m.TileLayer), 
 const Marker = dynamic(() => import("react-leaflet").then(m => m.Marker), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then(m => m.Popup), { ssr: false });
 const ScaleControl = dynamic(() => import("react-leaflet").then(m => m.ScaleControl), { ssr: false });
+
+function MapTapWatcher({ onTap }: { onTap: (e: any) => void }) {
+  useMapEvents({
+    click(e) {
+      onTap(e);
+    },
+  });
+  return null;
+}
 
 // ------------------ Helpers ------------------
 async function fileToDataUrl(file: File): Promise<string> {
@@ -181,7 +190,7 @@ export default function CreateSaleItemPage() {
           form.reset({
             category: "sales",
             title: draft.title ?? "",
-            price: draft.price ?? null,
+            price: draft.price ?? 0,
             priceMode: draft.priceMode ?? "firm",
             trade: draft.trade ?? { enabled: false },
             images: draft.images ?? [],
@@ -192,7 +201,7 @@ export default function CreateSaleItemPage() {
             location: draft.location ?? { lat: 32.8872, lng: 13.1913 },
             contactPhone: draft.contactPhone ?? "",
             contactWhatsapp: draft.contactWhatsapp ?? "",
-            condition: draft.condition ?? "",
+            condition: draft.condition,
             tags: draft.tags ?? [],
             mapUrl: draft.mapUrl ?? "",
             hideExactLocation: draft.hideExactLocation ?? false,
@@ -711,9 +720,8 @@ export default function CreateSaleItemPage() {
                       scrollWheelZoom={false}
                       className="cursor-crosshair"
                       style={{ height: 280, width: "100%" }}
-                      onClick={handleMapTap}
-                      onTouchEnd={handleMapTap}
                     >
+                      <MapTapWatcher onTap={handleMapTap} />
                       <TileLayer
                         url={tileUrl}
                         attribution={tileAttribution}
