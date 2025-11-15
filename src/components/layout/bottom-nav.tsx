@@ -101,62 +101,49 @@ export default function BottomNav() {
   };
 
   // Calculate navigation items based on conditions
-  const navItems = useMemo(() => {
-    const items = [];
+  // Bottom navigation items: services, sales, home, profile/login
+const navItems = useMemo(() => {
+  const items = [];
 
-    // Home - always shown
-    items.push({
-      href: "/",
-      icon: Home,
-      label: tr(locale, 'header.browse'),
-      active: isActive('/'),
-      enabled: true
-    });
+  // 1) Browse services
+  items.push({
+    href: "/services",
+    icon: Briefcase,
+    label: locale === "ar" ? "تصفح الخدمات" : "Services",
+    active: isActive("/services"),
+    enabled: true,
+  });
 
-    // City Views - feature gated
-    if (showCityViews) {
-      items.push({
-        href: "/city-views",
-        icon: Tag,
-        label: locale === 'ar' ? 'المدن' : 'Views',
-        active: isActive('/city-views'),
-        enabled: true
-      });
-    }
+  // 2) Browse sales
+  items.push({
+    href: "/sales",
+    icon: Tag,
+    label: locale === "ar" ? "البيع والتجارة" : "Sales",
+    active: isActive("/sales"),
+    enabled: true,
+  });
 
-    // Pricing - conditionally shown
-    if (showPricing) {
-      items.push({
-        href: "/pricing",
-        icon: Tag,
-        label: tr(locale, 'pages.pricing.nav'),
-        active: isActive('/pricing'),
-        enabled: true
-      });
-    }
+  // 3) Home / landing page
+  items.push({
+    href: "/",
+    icon: Home,
+    label: locale === "ar" ? "الرئيسية" : "Home",
+    active: isActive("/"),
+    enabled: true,
+  });
 
-    // Dashboard/Provider - only for providers/admins/owners
-    if (userProfile?.role === 'provider' || userProfile?.role === 'admin' || userProfile?.role === 'owner') {
-      items.push({
-        href: "/dashboard",
-        icon: Briefcase,
-        label: tr(locale, 'header.providerDashboard'),
-        active: isActive('/dashboard'),
-        enabled: true
-      });
-    }
+  // 4) Profile or Login
+  items.push({
+    href: user ? "/dashboard/profile" : "/login",
+    icon: user ? User : LogIn,
+    label: tr(locale, user ? "header.profile" : "header.login"),
+    active: user ? isActive("/dashboard/profile") : isActive("/login"),
+    enabled: true,
+  });
 
-    // Profile/Login
-    items.push({
-      href: user ? "/dashboard/profile" : "/login",
-      icon: user ? User : LogIn,
-      label: tr(locale, user ? 'header.profile' : 'header.login'),
-      active: user ? isActive('/dashboard/profile') : isActive('/login'),
-      enabled: true
-    });
+  return items;
+}, [locale, user, pathname]);
 
-    return items;
-  }, [locale, showPricing, showCityViews, user, userProfile, pathname]);
 
   // Don't render on larger screens
   return (
