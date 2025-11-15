@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import SalesHero from "@/components/sales-hero";
 import {
@@ -54,6 +54,8 @@ export default function SalesFeedPage() {
   const [condition, setCondition] = useState<string>("ALL");
   const [trade, setTrade] = useState<boolean>(false);
   const [q, setQ] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   async function fetchItems() {
     setLoading(true);
@@ -69,6 +71,11 @@ export default function SalesFeedPage() {
       // client-side query filter (title, description, tags, tradeFor, city)
       const needle = q.trim().toLowerCase();
       if (needle) {
+        const tokens = needle
+          .split(/\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 1);
+
         rows = rows.filter((r: any) => {
           const t = String(r?.title || "").toLowerCase();
           const d = String(r?.description || "").toLowerCase();
@@ -77,16 +84,21 @@ export default function SalesFeedPage() {
           const tags: string[] = Array.isArray(r?.tags)
             ? (r.tags as string[])
             : [];
-          const inTags = tags.some((x) =>
-            String(x || "").toLowerCase().includes(needle),
+
+          const inText = tokens.some(
+            (tok) =>
+              t.includes(tok) ||
+              d.includes(tok) ||
+              tf.includes(tok) ||
+              c.includes(tok),
           );
-          return (
-            t.includes(needle) ||
-            d.includes(needle) ||
-            tf.includes(needle) ||
-            c.includes(needle) ||
-            inTags
-          );
+
+          const inTags = tags.some((x) => {
+            const v = String(x || "").toLowerCase();
+            return tokens.some((tok) => v.includes(tok));
+          });
+
+          return inText || inTags;
         });
       }
       setItems(rows);
@@ -94,6 +106,30 @@ export default function SalesFeedPage() {
       setItems([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleCategoryClick(cat: SaleCategory) {
+    if (activeCategory === cat.id) {
+      setActiveCategory(null);
+      setQ("");
+    } else {
+      setActiveCategory(cat.id);
+      setQ(cat.query || (locale === "ar" ? cat.ar : cat.en));
+    }
+
+    // On mobile, scroll results into view after choosing a category
+    try {
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
+        const el = resultsRef.current;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const top = rect.top + window.scrollY - 80;
+          window.scrollTo({ top, behavior: "smooth" });
+        }
+      }
+    } catch {
+      // ignore scroll errors
     }
   }
 
@@ -234,8 +270,37 @@ export default function SalesFeedPage() {
             </div>
           </div>
 
+          {/* category shortcuts */}
+          <div className="mb-4">
+            <div className="mb-2 text-xs font-semibold text-muted-foreground">
+              {locale === "ar" ? "تصفح حسب القسم" : "Browse by category"}
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+              {SALE_CATEGORIES.map((cat) => {
+                const selected = activeCategory === cat.id;
+                const label = locale === "ar" ? cat.ar : cat.en;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleCategoryClick(cat)}
+                    className={[
+                      "flex flex-col items-center justify-between rounded-xl border px-2 py-3 text-center text-xs sm:text-sm bg-card",
+                      selected
+                        ? "border-primary bg-primary/5 font-semibold"
+                        : "border-border hover:bg-accent/10",
+                    ].join(" ")}
+                  >
+                    <span className="mb-1 text-2xl">{cat.icon}</span>
+                    <span className="line-clamp-2 leading-snug">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Moving strip of owner-promoted sale cards */}
-          <div className="mb-5">
+          <div ref={resultsRef} className="mb-5">
             <PromotedSaleStrip take={5} />
           </div>
 
