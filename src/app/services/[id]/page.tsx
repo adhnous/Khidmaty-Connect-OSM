@@ -858,29 +858,25 @@ export default function ServiceDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between">
+                 <div className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between">
   <span className="text-muted-foreground">
     {locale === 'ar'
       ? 'ابحث عن خدمات ضمن مسافة (كم):'
       : 'Search services within distance (km):'}
   </span>
-  <div className="flex flex-wrap gap-1">
-    {[0.5, 1, 2, 5].map((km) => (
-      <button
-        key={km}
-        type="button"
-        className={`rounded-full border px-2 py-1 ${
-          Math.abs(nearbyRadiusKm - km) < 0.001
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-background text-foreground hover:bg-accent'
-        }`}
-        onClick={() => setNearbyRadiusKm(km)}
-      >
+  <select
+    className="h-8 rounded border px-2 text-xs bg-background"
+    value={String(nearbyRadiusKm)}
+    onChange={(e) => setNearbyRadiusKm(Number(e.target.value))}
+  >
+    {[0.5, 1, 2, 4,5,6,7,8,9,10].map((km) => (
+      <option key={km} value={km}>
         {km}
-      </button>
+      </option>
     ))}
-  </div>
+  </select>
 </div>
+
 
                   {nearbyLoading && (
                     <p className="text-sm text-muted-foreground">
