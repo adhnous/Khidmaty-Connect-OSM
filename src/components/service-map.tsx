@@ -125,15 +125,6 @@ export default function ServiceMap({ lat, lng, title, area, city, zoom = 14 }: S
           onClick={() => {
             try { window.open(gmapsUrl, '_blank'); } catch {}
           }}
-          whenReady={(e: any) => {
-            // Ensure Leaflet computes pane positions after mount
-            const map = e.target;
-            setTimeout(() => map.invalidateSize(), 0);
-            // Open Google Maps on any click on the Leaflet map
-            map.on('click', () => {
-              try { window.open(gmapsUrl, '_blank'); } catch {}
-            });
-          }}
         >
           <TileLayer attribution={tileAttribution} url={tileUrl} />
           <ScaleControl position="bottomleft" />

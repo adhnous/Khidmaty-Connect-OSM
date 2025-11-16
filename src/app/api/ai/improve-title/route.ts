@@ -6,22 +6,10 @@ export async function POST(req: Request) {
     if (!title || !description || !category) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
-    // If no API key, return a quick heuristic fallback to avoid external calls.
-    if (!process.env.GOOGLE_API_KEY) {
-      const improved = heuristicsImprove(title, description, category);
-      return NextResponse.json({ improvedTitle: improved });
-    }
-
-    try {
-      // Lazy-load the flow to avoid module init errors when API key is absent
-      const { improveServiceTitle } = await import('@/ai/flows/improve-service-title');
-      const result = await improveServiceTitle({ title, description, category });
-      return NextResponse.json(result);
-    } catch (e) {
-      // Network/timeouts: fallback gracefully so UI doesn't error.
-      const improved = heuristicsImprove(title, description, category);
-      return NextResponse.json({ improvedTitle: improved });
-    }
+    // Use a lightweight heuristic-only implementation so we don't depend
+    // on Genkit / @genkit-ai/firebase at build time.
+    const improved = heuristicsImprove(title, description, category);
+    return NextResponse.json({ improvedTitle: improved });
   } catch (err: any) {
     // Fallback as last resort
     try {

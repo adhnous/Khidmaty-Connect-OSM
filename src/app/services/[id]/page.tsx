@@ -43,6 +43,7 @@ export default function ServiceDetailPage() {
   const [saving, setSaving] = useState(false);
   const [nearbyServices, setNearbyServices] = useState<Array<Service & { distanceKm?: number }>>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [nearbyRadiusKm, setNearbyRadiusKm] = useState<number>(2);
 
   useEffect(() => {
     const raw = (params as any)?.id as string | string[] | undefined;
@@ -382,8 +383,8 @@ export default function ServiceDetailPage() {
             ...s,
             distanceKm: distanceKm(coords.lat, coords.lng, s.lat as number, s.lng as number),
           }))
-          // Only keep services within 1 km of the current service
-          .filter((s) => (s.distanceKm ?? Infinity) <= 2)
+          // Only keep services within the selected radius of the current service
+          .filter((s) => (s.distanceKm ?? Infinity) <= nearbyRadiusKm)
           .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0))
           .slice(0, 6);
         setNearbyServices(scored);
@@ -393,7 +394,7 @@ export default function ServiceDetailPage() {
         setNearbyLoading(false);
       }
     })();
-  }, [coords?.lat, coords?.lng, service?.city, service?.id]);
+  }, [coords?.lat, coords?.lng, service?.city, service?.id, nearbyRadiusKm]);
 
 
   // Build a privacy-friendly YouTube embed URL if provided
@@ -857,6 +858,27 @@ export default function ServiceDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-muted-foreground">
+                      {locale === 'ar'
+                        ? 'ابحث عن خدمات ضمن مسافة (كم):'
+                        : 'Search services within distance (km):'}
+                    </span>
+                    <input
+                      type="number"
+                      min={0.5}
+                      max={50}
+                      step={0.5}
+                      className="h-8 w-20 rounded border px-2 text-right text-xs"
+                      value={nearbyRadiusKm}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (Number.isNaN(v)) return;
+                        const clamped = Math.min(Math.max(v, 0.5), 50);
+                        setNearbyRadiusKm(clamped);
+                      }}
+                    />
+                  </div>
                   {nearbyLoading && (
                     <p className="text-sm text-muted-foreground">
                       {locale === 'ar' ? 'جاري تحميل الخدمات القريبة...' : 'Loading nearby services...'}
