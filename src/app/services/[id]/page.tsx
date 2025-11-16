@@ -858,27 +858,30 @@ export default function ServiceDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="text-muted-foreground">
-                      {locale === 'ar'
-                        ? 'ابحث عن خدمات ضمن مسافة (كم):'
-                        : 'Search services within distance (km):'}
-                    </span>
-                    <input
-                      type="number"
-                      min={0.5}
-                      max={50}
-                      step={0.5}
-                      className="h-8 w-20 rounded border px-2 text-right text-xs"
-                      value={nearbyRadiusKm}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        if (Number.isNaN(v)) return;
-                        const clamped = Math.min(Math.max(v, 0.5), 50);
-                        setNearbyRadiusKm(clamped);
-                      }}
-                    />
-                  </div>
+                  <div className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between">
+  <span className="text-muted-foreground">
+    {locale === 'ar'
+      ? 'ابحث عن خدمات ضمن مسافة (كم):'
+      : 'Search services within distance (km):'}
+  </span>
+  <div className="flex flex-wrap gap-1">
+    {[0.5, 1, 2, 5].map((km) => (
+      <button
+        key={km}
+        type="button"
+        className={`rounded-full border px-2 py-1 ${
+          Math.abs(nearbyRadiusKm - km) < 0.001
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-background text-foreground hover:bg-accent'
+        }`}
+        onClick={() => setNearbyRadiusKm(km)}
+      >
+        {km}
+      </button>
+    ))}
+  </div>
+</div>
+
                   {nearbyLoading && (
                     <p className="text-sm text-muted-foreground">
                       {locale === 'ar' ? 'جاري تحميل الخدمات القريبة...' : 'Loading nearby services...'}
