@@ -25,6 +25,7 @@ export default function SaleDetailPage() {
     Array<Service & { distanceKm?: number }>
   >([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [nearbyRadiusKm, setNearbyRadiusKm] = useState<number>(2);
 
   useEffect(() => {
     (async () => {
@@ -128,6 +129,7 @@ export default function SaleDetailPage() {
               s.lng as number,
             ),
           }))
+          .filter((s) => (s.distanceKm ?? Infinity) <= nearbyRadiusKm)
           .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0))
           .slice(0, 6);
 
@@ -138,7 +140,7 @@ export default function SaleDetailPage() {
         setNearbyLoading(false);
       }
     })();
-  }, [coords?.lat, coords?.lng, item?.city]);
+  }, [coords?.lat, coords?.lng, item?.city, nearbyRadiusKm]);
 
   async function handleShare() {
     if (!item?.id) return;
@@ -378,6 +380,27 @@ export default function SaleDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-muted-foreground">
+                      {locale === "ar"
+                        ? "ابحث عن خدمات ضمن مسافة (كم):"
+                        : "Search services within distance (km):"}
+                    </span>
+                    <input
+                      type="number"
+                      min={0.5}
+                      max={50}
+                      step={0.5}
+                      className="h-8 w-20 rounded border px-2 text-right text-xs"
+                      value={nearbyRadiusKm}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (Number.isNaN(v)) return;
+                        const clamped = Math.min(Math.max(v, 0.5), 50);
+                        setNearbyRadiusKm(clamped);
+                      }}
+                    />
+                  </div>
                   {nearbyLoading && (
                     <p className="text-sm text-muted-foreground">
                       {locale === "ar"
