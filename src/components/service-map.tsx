@@ -122,9 +122,6 @@ export default function ServiceMap({ lat, lng, title, area, city, zoom = 14 }: S
           className="h-full w-full"
           scrollWheelZoom={false}
           attributionControl={false}
-          onClick={() => {
-            try { window.open(gmapsUrl, '_blank'); } catch {}
-          }}
         >
           <TileLayer attribution={tileAttribution} url={tileUrl} />
           <ScaleControl position="bottomleft" />
