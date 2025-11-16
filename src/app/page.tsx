@@ -113,11 +113,14 @@ export default function Home() {
                 isAr ? "md:pl-10 text-right" : "md:pr-10 text-left"
               }`}
             >
-              <div className="inline-flex items-center rounded-full border bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
-                {isAr
-                  ? "منصّة موثوقة للخدمات والبيع في ليبيا"
-                  : "Trusted services and sales in Libya"}
-              </div>
+             <div className="inline-flex items-center gap-2 rounded-full border border-primary/60 bg-primary/10 px-4 py-1.5 text-xs md:text-sm font-semibold text-primary shadow-sm">
+  <Shield className="h-4 w-4" />
+  <span>
+    {isAr
+      ? "منصة موثوقة للخدمات والبيع في ليبيا"
+      : "Trusted platform for services and sales in Libya"}
+  </span>
+</div>
 
               <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
                 {isAr
