@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,6 @@ import { listSaleItems, type SaleItem } from "@/lib/sale-items";
 import SaleCard from "@/components/SaleCard";
 import PromotedSaleStrip from "@/components/promoted-sale-strip";
 import CityPicker from "@/components/city-picker";
-
 
 type SaleCategory = {
   id: string;
@@ -46,8 +45,11 @@ const SALE_CATEGORIES: SaleCategory[] = [
   { id: "food", ar: "طعام - غذاء", en: "Food & Drinks", icon: "🍔", query: "طعام أكل مطعم" },
   { id: "pets", ar: "حيوانات واكسسوارات", en: "Pets & Accessories", icon: "🐾", query: "حيوانات أليفة" },
 ];
+
 export default function SalesFeedPage() {
   const locale = getClientLocale();
+  const isAr = locale === "ar";
+
   const [items, setItems] = useState<SaleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState<string>("ALL_CITIES");
@@ -55,6 +57,8 @@ export default function SalesFeedPage() {
   const [trade, setTrade] = useState<boolean>(false);
   const [q, setQ] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [showCategoryPopup, setShowCategoryPopup] = useState(false);
+
   const resultsRef = useRef<HTMLDivElement | null>(null);
 
   async function fetchItems() {
@@ -115,7 +119,7 @@ export default function SalesFeedPage() {
       setQ("");
     } else {
       setActiveCategory(cat.id);
-      setQ(cat.query || (locale === "ar" ? cat.ar : cat.en));
+      setQ(cat.query || (isAr ? cat.ar : cat.en));
     }
 
     // On mobile, scroll results into view after choosing a category
@@ -154,7 +158,7 @@ export default function SalesFeedPage() {
       <main className="flex-1 pb-12">
         <div className="mx-auto max-w-6xl px-4 py-6">
           <h1 className="mb-4 text-2xl font-bold">
-            {locale === "ar" ? "البيع والتجارة" : "Sales & Trade"}
+            {isAr ? "البيع والتجارة" : "Sales & Trade"}
           </h1>
 
           {/* filters container – aligned to the right, width = content only */}
@@ -163,51 +167,48 @@ export default function SalesFeedPage() {
               <div className="rounded-[1rem] bg-background px-3 py-2 text-foreground shadow-lg md:px-4 md:py-3">
                 {/* filters row */}
                 <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
-                 {/* city */}
-<div className="w-full md:w-auto">
-  <CityPicker
-    locale={locale === "ar" ? "ar" : "en"}
-    value={city}
-    onChange={(val) => setCity(val)}
-    options={libyanCities}
-    placeholder={
-      (tr(locale, "home.cityPlaceholder") as string) ||
-      (locale === "ar" ? "ابحث عن مدينة" : "Search city")
-    }
-    className="h-10 w-full md:w-44"
-    allOption={{
-      value: "ALL_CITIES",
-      label: locale === "ar" ? "كل المدن" : "All cities",
-    }}
-  />
-</div>
-
+                  {/* city */}
+                  <div className="w-full md:w-auto">
+                    <CityPicker
+                      locale={isAr ? "ar" : "en"}
+                      value={city}
+                      onChange={(val) => setCity(val)}
+                      options={libyanCities}
+                      placeholder={
+                        (tr(locale, "home.cityPlaceholder") as string) ||
+                        (isAr ? "ابحث عن مدينة" : "Search city")
+                      }
+                      className="h-10 w-full md:w-44"
+                      allOption={{
+                        value: "ALL_CITIES",
+                        label: isAr ? "كل المدن" : "All cities",
+                      }}
+                    />
+                  </div>
 
                   {/* condition */}
                   <div className="w-full md:w-auto">
                     <Select value={condition} onValueChange={setCondition}>
                       <SelectTrigger className="h-10 w-full md:w-40">
                         <SelectValue
-                          placeholder={
-                            locale === "ar" ? "الحالة" : "Condition"
-                          }
+                          placeholder={isAr ? "الحالة" : "Condition"}
                         />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ALL">
-                          {locale === "ar" ? "الكل" : "All"}
+                          {isAr ? "الكل" : "All"}
                         </SelectItem>
                         <SelectItem value="new">
-                          {locale === "ar" ? "جديد" : "New"}
+                          {isAr ? "جديد" : "New"}
                         </SelectItem>
                         <SelectItem value="like-new">
-                          {locale === "ar" ? "شبه جديد" : "Like new"}
+                          {isAr ? "شبه جديد" : "Like new"}
                         </SelectItem>
                         <SelectItem value="used">
-                          {locale === "ar" ? "مستعمل" : "Used"}
+                          {isAr ? "مستعمل" : "Used"}
                         </SelectItem>
                         <SelectItem value="for-parts">
-                          {locale === "ar" ? "قطع" : "For parts"}
+                          {isAr ? "قطع" : "For parts"}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -221,7 +222,7 @@ export default function SalesFeedPage() {
                       onCheckedChange={(v) => setTrade(!!v)}
                     />
                     <label htmlFor="trade" className="text-sm">
-                      {locale === "ar" ? "المبادلة فقط" : "Trade enabled"}
+                      {isAr ? "المبادلة فقط" : "Trade enabled"}
                     </label>
                   </div>
 
@@ -234,28 +235,31 @@ export default function SalesFeedPage() {
                         setCondition("ALL");
                         setTrade(false);
                         setQ("");
+                        setActiveCategory(null);
                       }}
                     >
-                      {locale === "ar"
-                        ? "إعادة تعيين الفلاتر"
-                        : "Reset filters"}
+                      {isAr ? "إعادة تعيين الفلاتر" : "Reset filters"}
                     </Button>
                     <Button
                       className="bg-power text-white hover:bg-powerDark"
                       onClick={fetchItems}
                     >
-                      {tr(locale, "home.search")}
+                      {tr(locale, "home.search") || (isAr ? "بحث" : "Search")}
                     </Button>
                   </div>
 
                   {/* keyword */}
                   <div className="w-full md:w-64">
                     <Input
-                      type="text"
+                      type="search"
                       inputMode="search"
                       value={q}
-                      placeholder={tr(locale, "home.searchPlaceholder")}
+                      placeholder={
+                        (tr(locale, "home.searchPlaceholder") as string) ||
+                        (isAr ? "ما الإعلان الذي تبحث عنه؟" : "What are you looking for?")
+                      }
                       onChange={(e) => setQ(e.target.value)}
+                      onFocus={() => setShowCategoryPopup(true)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -263,39 +267,56 @@ export default function SalesFeedPage() {
                         }
                       }}
                       className="h-10"
+                      dir={isAr ? "rtl" : "ltr"}
                     />
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* category shortcuts */}
-          <div className="mb-4">
-            <div className="mb-2 text-xs font-semibold text-muted-foreground">
-              {locale === "ar" ? "تصفح حسب القسم" : "Browse by category"}
-            </div>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-              {SALE_CATEGORIES.map((cat) => {
-                const selected = activeCategory === cat.id;
-                const label = locale === "ar" ? cat.ar : cat.en;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleCategoryClick(cat)}
-                    className={[
-                      "flex flex-col items-center justify-between rounded-xl border px-2 py-3 text-center text-xs sm:text-sm bg-card",
-                      selected
-                        ? "border-primary bg-primary/5 font-semibold"
-                        : "border-border hover:bg-accent/10",
-                    ].join(" ")}
-                  >
-                    <span className="mb-1 text-2xl">{cat.icon}</span>
-                    <span className="line-clamp-2 leading-snug">{label}</span>
-                  </button>
-                );
-              })}
+                {/* popup category panel triggered by search focus */}
+                {showCategoryPopup && (
+                  <div className="mt-3 rounded-2xl border bg-card p-3 shadow-lg">
+                    <div className="mb-2 flex items-center justify-between text-xs font-semibold">
+                      <span>
+                        {isAr ? "اختر نوع العنصر" : "Choose item type"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCategoryPopup(false)}
+                        className="px-2 text-muted-foreground"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                      {SALE_CATEGORIES.map((cat) => {
+                        const selected = activeCategory === cat.id;
+                        const label = isAr ? cat.ar : cat.en;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              handleCategoryClick(cat);
+                              setShowCategoryPopup(false);
+                            }}
+                            className={[
+                              "flex flex-col items-center justify-between rounded-xl border px-2 py-3 text-center text-xs sm:text-sm bg-card",
+                              selected
+                                ? "border-primary bg-primary/5 font-semibold"
+                                : "border-border hover:bg-accent/10",
+                            ].join(" ")}
+                          >
+                            <span className="mb-1 text-2xl">{cat.icon}</span>
+                            <span className="line-clamp-2 leading-snug">
+                              {label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -310,7 +331,7 @@ export default function SalesFeedPage() {
             </p>
           ) : items.length === 0 ? (
             <div className="rounded-md border p-4 text-muted-foreground">
-              {locale === "ar" ? "لا توجد عناصر" : "No items yet."}
+              {isAr ? "لا توجد عناصر" : "No items yet."}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">

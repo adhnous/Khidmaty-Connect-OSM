@@ -17,10 +17,13 @@ const ALL_CITIES = 'ALL_CITIES';
 
 export default function ServicesBrowsePage() {
   const locale = getClientLocale();
+  const isAr = locale === 'ar';
+
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [showCategoryPopup, setShowCategoryPopup] = useState(false);
   const [city, setCity] = useState<string>(ALL_CITIES);
   const [q, setQ] = useState('');
   const [activeCategory, setActiveCategory] = useState<CategoryCardId | null>(
@@ -63,7 +66,7 @@ export default function ServicesBrowsePage() {
       setError(
         typeof e?.message === 'string'
           ? e.message
-          : locale === 'ar'
+          : isAr
           ? 'حدث خطأ أثناء تحميل الخدمات.'
           : 'Failed to load services.',
       );
@@ -78,14 +81,9 @@ export default function ServicesBrowsePage() {
       return;
     }
     setActiveCategory(id);
-    // use the localized label as a quick search term
-    const defLabel =
-      locale === 'ar'
-        ? // Arabic labels live in CATEGORY_DEFS; rely on CategoryCards behaviour by
-          // setting q to the current visible label via a simple mapping.
-          // For now we just reuse the id as a keyword for filtering.
-          id
-        : id;
+
+    // Simple keyword from id for now
+    const defLabel = id;
     setQ(defLabel);
 
     // On mobile, scroll results into view after choosing a category
@@ -99,7 +97,7 @@ export default function ServicesBrowsePage() {
         }
       }
     } catch {
-      // ignore scrolling errors
+      // ignore
     }
   }
 
@@ -116,8 +114,6 @@ export default function ServicesBrowsePage() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, activeCategory]);
-
-  const isAr = locale === 'ar';
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -138,38 +134,36 @@ export default function ServicesBrowsePage() {
                       type="search"
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
+                      onFocus={() => setShowCategoryPopup(true)}
                       placeholder={
-                        (tr(
-                          locale,
-                          'home.searchPlaceholder',
-                        ) as string) ||
+                        (tr(locale, 'home.searchPlaceholder') as string) ||
                         (isAr
                           ? 'ما الإعلان الذي تبحث عنه؟'
                           : 'What are you looking for?')
                       }
                       className="h-11"
+                      dir={isAr ? 'rtl' : 'ltr'}
                     />
                   </div>
 
-                 {/* city select */}
-<div className="w-full md:w-56">
-  <CityPicker
-    locale={isAr ? 'ar' : 'en'}
-    value={city}
-    onChange={(val) => setCity(val)}
-    options={libyanCities}
-    placeholder={
-      (tr(locale, 'home.cityPlaceholder') as string) ||
-      (isAr ? 'ابحث عن مدينة' : 'Search city')
-    }
-    className="h-11"
-    allOption={{
-      value: ALL_CITIES,
-      label: isAr ? 'كل المدن' : 'All cities',
-    }}
-  />
-</div>
-
+                  {/* city select */}
+                  <div className="w-full md:w-56">
+                    <CityPicker
+                      locale={isAr ? 'ar' : 'en'}
+                      value={city}
+                      onChange={(val) => setCity(val)}
+                      options={libyanCities}
+                      placeholder={
+                        (tr(locale, 'home.cityPlaceholder') as string) ||
+                        (isAr ? 'ابحث عن مدينة' : 'Search city')
+                      }
+                      className="h-11"
+                      allOption={{
+                        value: ALL_CITIES,
+                        label: isAr ? 'كل المدن' : 'All cities',
+                      }}
+                    />
+                  </div>
 
                   {/* buttons */}
                   <div
@@ -196,25 +190,39 @@ export default function ServicesBrowsePage() {
                     </Button>
                   </div>
                 </div>
-              </div>
 
-              {/* category cards */}
-              <div className="px-4 pb-4 pt-3 md:px-6 md:pb-6">
-                <div
-                  className={`mb-3 text-xs font-semibold text-muted-foreground ${
-                    isAr ? 'text-right' : ''
-                  }`}
-                >
-                  {isAr ? 'اختر نوع الخدمة' : 'Browse by service type'}
-                </div>
-                <CategoryCards
-                  locale={isAr ? 'ar' : 'en'}
-                  selectedId={activeCategory}
-                  onSelect={handleCategorySelect}
-                  size="sm"
-                  tone="solid"
-                  hideSales
-                />
+                {/* popup category panel triggered by search focus */}
+                {showCategoryPopup && (
+                  <div className="mt-3 rounded-2xl border bg-card p-3 shadow-lg">
+                    <div
+                      className={`mb-2 flex items-center justify-between text-xs font-semibold ${
+                        isAr ? 'flex-row-reverse' : ''
+                      }`}
+                    >
+                      <span>
+                        {isAr ? 'اختر نوع الخدمة' : 'Choose service type'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCategoryPopup(false)}
+                        className="px-2 text-muted-foreground"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <CategoryCards
+                      locale={isAr ? 'ar' : 'en'}
+                      selectedId={activeCategory}
+                      onSelect={(id) => {
+                        handleCategorySelect(id);
+                        setShowCategoryPopup(false);
+                      }}
+                      size="sm"
+                      tone="solid"
+                      hideSales
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
