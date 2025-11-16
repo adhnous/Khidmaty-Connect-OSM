@@ -120,7 +120,7 @@ export default function BottomNav() {
     items.push({
       href: "/services",
       icon: Briefcase,
-      label: locale === "ar" ? "تصفح الخدمات" : "Services",
+      label: locale === "ar" ? "الخدمات" : "Services",
       active: isActive("/services"),
       enabled: true,
     });
@@ -143,16 +143,16 @@ export default function BottomNav() {
       enabled: true,
     });
 
-    // 4) Add service or sale (provider only)
+    // 4) Add service or sale (provider only) -> goes to /add cards
     if (user && userProfile?.role === "provider") {
       items.push({
-        href: "/create",
+        href: "/add",
         icon: PlusCircle,
         label:
           locale === "ar"
             ? "إضافة خدمة أو عنصر للبيع"
             : "Add service or sale",
-        active: isActive("/create") || isActive("/sales/create"),
+        active: isActive("/add"),
         enabled: true,
       });
     }

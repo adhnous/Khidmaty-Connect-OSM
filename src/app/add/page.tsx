@@ -15,21 +15,33 @@ export default function AddListingChooserPage() {
       <main className="flex-1">
         <div className="mx-auto max-w-3xl px-4 py-10">
           <h1
-            className={`mb-6 text-2xl font-bold md:text-3xl ${
+            className={`mb-3 text-2xl font-bold md:text-3xl ${
               isAr ? "text-right" : "text-left"
             }`}
           >
-            {isAr ? "اختر ما تريد إنشاءه" : "What do you want to create?"}
+            {isAr ? "اختر ما تريد إنشاؤه" : "What would you like to add?"}
           </h1>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <p
+            className={`mb-8 max-w-2xl text-sm text-muted-foreground ${
+              isAr ? "text-right" : "text-left"
+            }`}
+          >
+            {isAr
+              ? "سجّل خدمتك أو متجرك أو منتجاتك ليظهر عرضك لعملاء قريبين منك، ونقترحها لهم عندما يبحثون عن خدمات أو عناصر في نفس المنطقة."
+              : "Register your service, shop, or items so people near you can discover you and get recommendations when they search for nearby services or sale items."}
+          </p>
+
+          <div className="grid gap-6 md:grid-cols-2">
             {/* Service card */}
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="relative h-full overflow-hidden border border-border/70 bg-card/90 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/80 hover:shadow-xl">
               <CardHeader className={isAr ? "text-right" : ""}>
-                <CardTitle className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5 text-primary" />
+                <CardTitle className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                    <Wrench className="h-5 w-5 text-primary" />
+                  </span>
                   <span>
-                    {isAr ? "إنشاء خدمة جديدة" : "Create a service"}
+                    {isAr ? "إنشاء خدمة أو متجر" : "Create a service or shop"}
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -38,22 +50,24 @@ export default function AddListingChooserPage() {
               >
                 <p className="text-sm text-muted-foreground">
                   {isAr
-                    ? "أضف خدمة مهنية أو تجارية مع الوصف والسعر والموقع."
-                    : "Add a professional or business service with description, price and location."}
+                    ? "سجّل خدمتك أو متجرك مع الوصف والموقع وطرق التواصل، ليظهر في صفحة الخدمات في مدينتك ونوصي به تلقائياً للزبائن القريبين منك."
+                    : "Register your service or shop with description, pricing, location, and contact details so it appears in your city and is recommended to nearby customers."}
                 </p>
                 <Button asChild className="w-full">
                   <Link href="/create">
-                    {isAr ? "ابدأ إنشاء خدمة" : "Start service wizard"}
+                    {isAr ? "ابدأ إنشاء الخدمة" : "Start service wizard"}
                   </Link>
                 </Button>
               </CardContent>
             </Card>
 
             {/* Sale item card */}
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="relative h-full overflow-hidden border border-border/70 bg-card/90 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/80 hover:shadow-xl">
               <CardHeader className={isAr ? "text-right" : ""}>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5 text-primary" />
+                <CardTitle className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                    <ShoppingBag className="h-5 w-5 text-primary" />
+                  </span>
                   <span>
                     {isAr ? "إنشاء عنصر للبيع" : "Create an item for sale"}
                   </span>
@@ -64,12 +78,12 @@ export default function AddListingChooserPage() {
               >
                 <p className="text-sm text-muted-foreground">
                   {isAr
-                    ? "اعرض سيارة، عقار، أو أي عنصر آخر للبيع أو للمبادلة."
-                    : "List a car, property, or any other item for sale or trade."}
+                    ? "اعرض سيارتك أو عقارك أو أي سلعة أخرى للبيع أو التبديل، ليظهر إعلانك للمشترين القريبين وفي نتائج البحث المرتبطة بنوع العنصر."
+                    : "List a car, property, or any other item for sale or trade so your listing is visible to nearby buyers and in relevant searches."}
                 </p>
                 <Button asChild className="w-full" variant="outline">
                   <Link href="/sales/create">
-                    {isAr ? "ابدأ إنشاء إعلان بيع" : "Start sales wizard"}
+                    {isAr ? "ابدأ إنشاء إعلان البيع" : "Start sales wizard"}
                   </Link>
                 </Button>
               </CardContent>
