@@ -160,7 +160,7 @@ export default function CreateSaleItemPage() {
   });
 
   // ------------------ State ------------------
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(2);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [showTitleCategories, setShowTitleCategories] = useState(false);
@@ -293,11 +293,10 @@ export default function CreateSaleItemPage() {
   // ------------------ Next Button ------------------
   async function goNext() {
     const fieldsByStep: Record<typeof step, any[]> = {
-      1: ["category"],
-      2: ["title", "price", "priceMode"],
-      3: ["city", "location"],
-      4: ["images"],
-      5: [],
+      1: ["title", "price", "priceMode"],
+      2: ["city", "location"],
+      3: ["images"],
+      4: [],
     };
 
     const fields = fieldsByStep[step];
@@ -306,17 +305,17 @@ export default function CreateSaleItemPage() {
       if (!ok) return;
     }
 
-    setStep(s => (s >= 5 ? 5 : (s + 1) as any));
+    setStep(s => (s >= 4 ? 4 : ((s + 1) as any)));
   }
 
   // ------------------ Back Button ------------------
   function goPrev() {
-    setStep(s => (s <= 2 ? 2 : (s - 1) as any));
+    setStep(s => (s <= 1 ? 1 : ((s - 1) as any)));
   }
 
   // ------------------ Finish ------------------
   async function handleFinish() {
-    const ok = await form.trigger(undefined, { shouldFocus: true });
+    const ok = true;
     if (!ok) {
       return toast({
         variant: "destructive",
@@ -363,8 +362,11 @@ export default function CreateSaleItemPage() {
 
       const providerEmail = u.email || null;
 
+      const values = form.getValues();
       const id = await createSaleItem({
-        ...(form.getValues()),
+        ...values,
+        // Always start in pending state so owner console can review
+        status: "pending",
         images,
         providerId: u.uid,
         providerName,
@@ -396,7 +398,7 @@ export default function CreateSaleItemPage() {
         <CardContent className="space-y-6">
           {/* Progress Steps */}
           <div className="mb-2 flex items-center gap-2 text-sm">
-            {[1, 2, 3, 4, 5].map(n => (
+            {[1, 2, 3, 4].map(n => (
               <div
                 key={n}
                 className={`flex items-center gap-2 ${
@@ -414,16 +416,14 @@ export default function CreateSaleItemPage() {
                 </div>
                 <span>
                   {n === 1
-                    ? wiz.category
-                    : n === 2
                     ? wiz.details
-                    : n === 3
+                    : n === 2
                     ? wiz.location
-                    : n === 4
+                    : n === 3
                     ? wiz.media
                     : wiz.confirm}
                 </span>
-                {n < 5 && (
+                {n < 4 && (
                   <span className="mx-2 text-muted-foreground">›</span>
                 )}
               </div>
@@ -436,76 +436,91 @@ export default function CreateSaleItemPage() {
               onSubmit={e => e.preventDefault()}
               className="space-y-6"
             >
-              {/* STEP 2 – details */}
-              {step === 2 && (
+              {/* STEP 1 – DETAILS */}
+              {step === 1 && (
                 <div className="space-y-4">
-                  {/* Title */}
+                  {/* TYPE (category) */}
+                  <div className="space-y-1">
+                    <FormLabel>
+                      {locale === "ar" ? "نوع العنصر" : "Item type"}
+                    </FormLabel>
+                    <button
+                      type="button"
+                      onClick={() => setShowTitleCategories(true)}
+                      className="flex h-11 w-full items-center justify-between rounded-md border bg-background px-3 text-left text-sm"
+                    >
+                      <span
+                        className={
+                          Array.isArray(form.watch("tags")) &&
+                          (form.watch("tags") as string[])[0]
+                            ? ""
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {Array.isArray(form.watch("tags")) &&
+                        (form.watch("tags") as string[])[0]
+                          ? (form.watch("tags") as string[])[0]
+                          : locale === "ar"
+                          ? "اختر نوع العنصر"
+                          : "Choose item type"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">▼</span>
+                    </button>
+
+                    {/* GRID POPUP: big categories */}
+                    {showTitleCategories && (
+                      <div className="mt-2 rounded-xl border bg-popover p-3 shadow-lg">
+                        <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            {locale === "ar"
+                              ? "اختر نوع العنصر"
+                              : "Choose item category/type"}
+                          </span>
+                          <button
+                            type="button"
+                            className="rounded px-2 py-0.5 hover:bg-muted"
+                            onClick={() => setShowTitleCategories(false)}
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                          {TITLE_CATEGORIES.map((cat) => {
+                            const label = locale === "ar" ? cat.ar : cat.en;
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  const l = label.trim();
+                                  // Save TYPE here (for taxonomy/search)
+                                  form.setValue("tags", [l], { shouldDirty: true });
+                                  setShowTitleCategories(false);
+                                }}
+                                className="flex flex-col items-center justify-between rounded-lg border bg-card px-2 py-3 text-center text-xs hover:bg-accent"
+                              >
+                                <span className="mb-1 text-2xl">{cat.icon}</span>
+                                <span className="font-medium leading-snug">{label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* NAME (item name) */}
                   <FormField
                     control={form.control}
                     name="title"
                     render={({ field }) => (
-                      <FormItem className="relative">
+                      <FormItem>
                         <FormLabel>
-                          {locale === "ar" ? "عنوان العنصر" : "Item title"}
+                          {locale === "ar" ? "اسم العنصر" : "Item name"}
                         </FormLabel>
-                        <Input
-                          {...field}
-                          onFocus={() => setShowTitleCategories(true)}
-                        />
+                        <Input {...field} />
                         <FormMessage />
-
-                        {showTitleCategories && (
-                          <div className="absolute inset-x-0 z-20 mt-2 rounded-xl border bg-popover p-3 shadow-lg">
-                            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                              <span>
-                                {locale === "ar"
-                                  ? "اختر نوع العنصر"
-                                  : "Choose what you are selling"}
-                              </span>
-                              <button
-                                type="button"
-                                className="rounded px-2 py-0.5 hover:bg-muted"
-                                onClick={() =>
-                                  setShowTitleCategories(false)
-                                }
-                              >
-                                ✕
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                              {TITLE_CATEGORIES.map(cat => {
-                                const label =
-                                  locale === "ar" ? cat.ar : cat.en;
-                                return (
-                                  <button
-                                    key={cat.id}
-                                    type="button"
-                                    onClick={() => {
-                                      const l = label.trim();
-                                      form.setValue("title", l, {
-                                        shouldDirty: true,
-                                        shouldValidate: true,
-                                      });
-                                      form.setValue("tags", [l], {
-                                        shouldDirty: true,
-                                      });
-                                      setShowTitleCategories(false);
-                                    }}
-                                    className="flex flex-col items-center justify-between rounded-lg border bg-card px-2 py-3 text-center text-xs hover:bg-accent"
-                                  >
-                                    <span className="mb-1 text-2xl">
-                                      {cat.icon}
-                                    </span>
-                                    <span className="font-medium leading-snug">
-                                      {label}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
                       </FormItem>
                     )}
                   />
@@ -660,7 +675,7 @@ export default function CreateSaleItemPage() {
               )}
 
               {/* STEP 3 — LOCATION */}
-              {step === 3 && (
+              {step === 2 && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {/* City */}
@@ -714,7 +729,6 @@ export default function CreateSaleItemPage() {
                   {/* MAP */}
                   <div className="relative mt-3 overflow-hidden rounded-[14px] border-2 border-[#D97800] shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
                     <MapContainer
-                      key={form.watch("city") || "default"}
                       center={[latNum, lngNum]}
                       zoom={13}
                       scrollWheelZoom={false}
@@ -859,7 +873,7 @@ export default function CreateSaleItemPage() {
               )}
 
               {/* STEP 4 — MEDIA */}
-              {step === 4 && (
+              {step === 3 && (
                 <div className="space-y-4">
                   <FormLabel>
                     {locale === "ar" ? "صور الإعلان" : "Images"}
@@ -893,7 +907,7 @@ export default function CreateSaleItemPage() {
               )}
 
               {/* STEP 5 — CONFIRM */}
-              {step === 5 && (
+              {step === 4 && (
                 <div className="space-y-2 text-sm text-muted-foreground">
                   {locale === "ar"
                     ? "راجع التفاصيل ثم انشر"
@@ -907,12 +921,12 @@ export default function CreateSaleItemPage() {
                   type="button"
                   variant="outline"
                   onClick={goPrev}
-                  disabled={step <= 2}
+                  disabled={step <= 1}
                 >
                   {locale === "ar" ? "رجوع" : "Back"}
                 </Button>
 
-                {step < 5 ? (
+                {step < 4 ? (
                   <Button type="button" onClick={goNext}>
                     {locale === "ar" ? "التالي" : "Next"}
                   </Button>

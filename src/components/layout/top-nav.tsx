@@ -127,7 +127,13 @@ export default function TopNav() {
       items.push(
         { href: "/dashboard", label: locale === "ar" ? "لوحة المزود" : "Provider Dashboard" },
         { href: "/dashboard/services", label: locale === "ar" ? "إعلاناتي" : "My Services" },
-        { href: "/create", label: locale === "ar" ? "إضافة خدمة أو عنصر للبيع" : "Add Service" },
+{
+  href: "/add",
+  label:
+    locale === "ar"
+      ? "إضافة خدمة أو عنصر للبيع"
+      : "Add service or sale item",
+},
         { href: "/dashboard/settings", label: locale === "ar" ? "الإعدادات" : "Settings" }
       );
     }
@@ -305,10 +311,12 @@ export default function TopNav() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/create">
-                        {locale === "ar" ? "إضافة خدمة أو عنصر للبيع" : "Add Service"}
-                      </Link>
-                    </DropdownMenuItem>
+  <Link href="/add">
+    {locale === "ar"
+      ? "إضافة خدمة أو عنصر للبيع"
+      : "Add service or sale item"}
+  </Link>
+</DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/settings">
                         {locale === "ar" ? "الإعدادات" : "Settings"}
