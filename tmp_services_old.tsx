@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
@@ -7,14 +7,11 @@ import { ServiceCard } from '@/components/service-card';
 import { listServicesFiltered, type Service } from '@/lib/services';
 import { libyanCities } from '@/lib/cities';
 import { getClientLocale, tr } from '@/lib/i18n';
-import { GraduationCap } from "lucide-react";
-
 import {
   CategoryCards,
   type CategoryCardId,
 } from '@/components/category-cards';
 import CityPicker from '@/components/city-picker';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const ALL_CITIES = 'ALL_CITIES';
 
@@ -70,7 +67,7 @@ export default function ServicesBrowsePage() {
         typeof e?.message === 'string'
           ? e.message
           : isAr
-          ? '+�+�+� +�+++� +�+�+�+�+� +�+�+�+�+� +�+�+�+�+�+�+�.'
+          ? '+�+�+� +�+++� +�+�+�+�+� +�+�+�+�+� +�+�+�+�+�+�+�.'
           : 'Failed to load services.',
       );
     } finally {
@@ -85,6 +82,7 @@ export default function ServicesBrowsePage() {
     }
     setActiveCategory(id);
 
+    // Simple keyword from id for now
     const defLabel = id;
     setQ(defLabel);
 
@@ -137,13 +135,12 @@ export default function ServicesBrowsePage() {
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
                       onFocus={() => setShowCategoryPopup(true)}
-                    placeholder={
-  (tr(locale, 'home.searchPlaceholder') as string) ||
-  (isAr
-    ? 'ما الإعلان الذي تبحث عنه؟'
-    : 'What are you looking for?')
-}
-
+                      placeholder={
+                        (tr(locale, 'home.searchPlaceholder') as string) ||
+                        (isAr
+                          ? '+�+� +�+�+�+�+�+�+� +�+�+�+� +�+�+�+� +�+�+�+�'
+                          : 'What are you looking for?')
+                      }
                       className="h-11"
                       dir={isAr ? 'rtl' : 'ltr'}
                     />
@@ -158,11 +155,12 @@ export default function ServicesBrowsePage() {
                       options={libyanCities}
                       placeholder={
                         (tr(locale, 'home.cityPlaceholder') as string) ||
-  (isAr ? 'ابحث حسب المدينة' : 'Search city')                      }
+                        (isAr ? '+�+�+�+� +�+� +�+�+�+�+�' : 'Search city')
+                      }
                       className="h-11"
                       allOption={{
                         value: ALL_CITIES,
-  label: isAr ? 'كل المدن' : 'All cities',
+                        label: isAr ? '+�+� +�+�+�+�+�' : 'All cities',
                       }}
                     />
                   </div>
@@ -182,13 +180,13 @@ export default function ServicesBrowsePage() {
                         setActiveCategory(null);
                       }}
                     >
-{isAr ? 'إعادة تعيين عوامل التصفية' : 'Reset filters'}
+                      {isAr ? '+�+�+�+�+� +�+�+�+�+� +�+�+�+�+�+�+�' : 'Reset filters'}
                     </Button>
                     <Button
                       className="h-11 bg-power text-white hover:bg-powerDark"
                       onClick={() => void fetchServices()}
                     >
-{tr(locale, 'home.search') || (isAr ? 'بحث' : 'Search')}
+                      {tr(locale, 'home.search') || (isAr ? '+�+�+�' : 'Search')}
                     </Button>
                   </div>
                 </div>
@@ -202,16 +200,14 @@ export default function ServicesBrowsePage() {
                       }`}
                     >
                       <span>
-<span>
-  {isAr ? 'اختر نوع الخدمة' : 'Choose service type'}
-</span>
+                        {isAr ? '+�+�+�+� +�+�+� +�+�+�+�+�+�' : 'Choose service type'}
                       </span>
                       <button
                         type="button"
                         onClick={() => setShowCategoryPopup(false)}
                         className="px-2 text-muted-foreground"
                       >
-{isAr ? 'إغلاق' : 'Close'}
+                        +�
                       </button>
                     </div>
                     <CategoryCards
@@ -237,89 +233,13 @@ export default function ServicesBrowsePage() {
           ref={resultsRef}
           className="mx-auto max-w-6xl px-4 pb-10 pt-6 md:pt-8"
         >
-          {/* Pinned card: For students & learning */}
-          <Card className="mb-6 border border-border/70 bg-gradient-to-l from-background via-card to-background shadow-[0_18px_40px_rgba(15,23,42,0.16)] relative overflow-hidden">
-          
-          
-          <CardHeader
-  className={`flex items-center gap-4 ${
-    isAr ? 'flex-row-reverse text-right' : 'text-left'
-  }`}
->
-  {/* Text side */}
-  <div className="flex-1">
-    <CardTitle className="text-lg md:text-xl">
-      {isAr ? 'للطلاب والتعلّم' : 'For students & learning'}
-    </CardTitle>
-    <p className="mt-1 text-xs text-muted-foreground md:text-sm">
-      {isAr
-        ? 'وصول سريع لخدمات مثل بنك موارد الطلبة، الدعم الأكاديمي، ومراجعة السيرة الذاتية.'
-        : 'Quick access to services like student resources, academic support, and CV review.'}
-    </p>
-  </div>
-
-  {/* Icon side */}
-  <div className="hidden md:flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary shadow-md">
-    <GraduationCap className="h-8 w-8" />
-  </div>
-</CardHeader>
-
-            
-            
-            
-             <CardContent
-              className={`space-y-2 ${isAr ? 'text-right' : 'text-left'}`}
-            >
-              <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground md:text-sm">
-                <li>
- 
-  {isAr
-    ? 'بنك موارد الطلبة: امتحانات سابقة، واجبات، ملاحظات، تقارير نموذجية وكتب علمية. مسؤولية حقوق النشر تقع بالكامل على من يرفع المحتوى.'
-    : 'Student Resource Bank: past exams, assignments, notes, sample reports, and scientific books. Uploaders are solely responsible for any copyright issues.'}
-</li>
-
-<li>
-  {isAr
-    ? 'خدمات أكاديمية وبحثية: مساعدة في المقترحات، هيكلة المراجع والتحرير الأكاديمي، وتوجيه الدراسة.'
-    : 'Academic & Research Support: help with proposals, literature review structure, editing and study coaching.'}
-</li>
-<li>
-  {isAr
-    ? 'ركن السيرة الذاتية والتوظيف: مراجعة CV، رسائل التغطية، وحسابات لينكدإن وطلبات المنح أو القبول الجامعي.'
-    : 'CV & Job Application Corner: CV review, cover letter feedback, LinkedIn help and scholarship/college applications.'}
-</li>
-<li>
-  {isAr
-    ? 'خدمات الترجمة واللغة: ترجمة أكاديمية عربية ⇄ إنجليزية وتصحيح لغوي للنحو والوضوح.'
-    : 'Language & Translation Help: AR ⇄ EN academic translation and proofreading for grammar and clarity.'}
-</li>
-
-              </ul>
-              <div
-                className={`pt-2 ${
-                  isAr ? 'flex justify-start' : 'flex justify-end'
-                }`}
-              >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setQ(
-                      'طالب امتحان واجبات ملخص مشروع تخرج سيرة ذاتية ترجمة اكاديمية',
-                    );
-                  }}
-                >
-                  {isAr ? 'عرض خدمات الطلاب' : 'Show student services'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           <div
-            className={`mb-4 flex items-center $\{ isAr ? 'justify-end text-right' : 'justify-between' \}`}
+            className={`mb-4 flex items-center justify-between ${
+              isAr ? 'flex-row-reverse text-right' : ''
+            }`}
           >
             <h2 className="text-xl font-bold md:text-2xl">
-  {isAr ? 'خدمات شائعة' : 'Popular services'}
+              {isAr ? '+�+�+�+�+� +�+�+�+�+�' : 'Popular services'}
             </h2>
           </div>
 
@@ -340,7 +260,7 @@ export default function ServicesBrowsePage() {
             </div>
           ) : services.length === 0 ? (
             <div className="rounded-md border p-4 text-sm text-muted-foreground">
-{isAr ? 'لا توجد خدمات بعد.' : 'No services yet.'}
+              {isAr ? '+�+� +�+�+�+� +�+�+�+�+� +�+�+�.' : 'No services yet.'}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

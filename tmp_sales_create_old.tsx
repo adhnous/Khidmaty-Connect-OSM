@@ -56,27 +56,27 @@ type TitleCategory = {
 };
 
 const TITLE_CATEGORIES: TitleCategory[] = [
-  { id: "shops", ar: "Ù…ØªØ§Ø¬Ø±", en: "Shops", icon: "ğŸ¬" },
-  { id: "cars", ar: "Ø³ÙŠØ§Ø±Ø§Øª ÙˆÙ…Ø±ÙƒØ¨Ø§Øª", en: "Cars & Vehicles", icon: "ğŸš—" },
-  { id: "motorcycles", ar: "Ø¯Ø±Ø§Ø¬Ø§Øª Ù†Ø§Ø±ÙŠØ©", en: "Motorcycles", icon: "ğŸï¸" },
-  { id: "property-sale", ar: "Ø¹Ù‚Ø§Ø±Ø§Øª Ù„Ù„Ø¨ÙŠØ¹", en: "Property for sale", icon: "ğŸ " },
-  { id: "property-rent", ar: "Ø¹Ù‚Ø§Ø±Ø§Øª Ù„Ù„Ø§ÙŠØ¬Ø§Ø±", en: "Property for rent", icon: "ğŸ¢" },
-  { id: "jobs", ar: "ÙˆØ¸Ø§Ø¦Ù", en: "Jobs", icon: "ğŸ’¼" },
-  { id: "teaching", ar: "ØªØ¯Ø±ÙŠØ³ ÙˆØªØ¯Ø±ÙŠØ¨", en: "Teaching & training", icon: "ğŸ“" },
-  { id: "services", ar: "Ø§Ù„Ø®Ø¯Ù…Ø§Øª", en: "Services", icon: "ğŸ› ï¸" },
-  { id: "companies", ar: "Ø´Ø±ÙƒØ§Øª ÙˆÙ…Ø¹Ø¯Ø§Øª", en: "Companies & equipment", icon: "ğŸ—ï¸" },
-  { id: "electronics", ar: "Ø§Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ§Øª", en: "Electronics", icon: "ğŸ“º" },
-  { id: "laptops", ar: "Ù„Ø§Ø¨ØªÙˆØ¨ ÙˆÙƒÙ…Ø¨ÙŠÙˆØªØ±", en: "Laptops & computers", icon: "ğŸ’»" },
-  { id: "mobiles", ar: "Ù…ÙˆØ¨Ø§ÙŠÙ„ - ØªØ§Ø¨Ù„Øª", en: "Mobile & tablet", icon: "ğŸ“±" },
-  { id: "video-games", ar: "Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„ÙÙŠØ¯ÙŠÙˆ ÙˆØ§Ù„Ø£Ø·ÙØ§Ù„", en: "Video games & kids", icon: "ğŸ®" },
-  { id: "home-garden", ar: "Ø§Ù„Ù…Ù†Ø²Ù„ ÙˆØ§Ù„Ø­Ø¯ÙŠÙ‚Ø©", en: "Home & garden", icon: "ğŸ›‹ï¸" },
-  { id: "sports", ar: "Ù…Ø¹Ø¯Ø§Øª Ø±ÙŠØ§Ø¶ÙŠØ© Ùˆ Ù„ÙŠØ§Ù‚Ø©", en: "Sports & fitness", icon: "ğŸƒâ€â™‚ï¸" },
-  { id: "kids-toys", ar: "Ù„ÙˆØ§Ø²Ù… Ø§Ù„Ø£Ø·ÙØ§Ù„ Ùˆ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨", en: "Kids & toys", icon: "ğŸ§¸" },
-  { id: "fashion-men", ar: "Ø£Ø²ÙŠØ§Ø¡ - Ù…ÙˆØ¶Ø© Ø±Ø¬Ø§Ù„ÙŠ", en: "Men's fashion", icon: "ğŸ‘”" },
-  { id: "fashion-women", ar: "Ø£Ø²ÙŠØ§Ø¡ - Ù…ÙˆØ¶Ø© Ù†Ø³Ø§Ø¦ÙŠØ©", en: "Women's fashion", icon: "ğŸ‘—" },
-  { id: "pets", ar: "Ø­ÙŠÙˆØ§Ù†Ø§Øª ÙˆØ§ÙƒØ³Ø³ÙˆØ§Ø±Ø§Øª", en: "Pets & accessories", icon: "ğŸ¾" },
-  { id: "food", ar: "Ø·Ø¹Ø§Ù… - ØºØ°Ø§Ø¡", en: "Food", icon: "ğŸ”" },
-  { id: "books-entertainment", ar: "ØªØ±ÙÙŠÙ‡ ÙˆÙƒØªØ¨ ÙˆÙ…Ù‚ØªÙ†ÙŠØ§Øª", en: "Books & entertainment", icon: "ğŸ“š" },
+  { id: "shops", ar: "+à+¬+º+¼+¦", en: "Shops", icon: "=ƒÅ¼" },
+  { id: "cars", ar: "+¦+è+º+¦+º+¬ +ê+à+¦+â+¿+º+¬", en: "Cars & Vehicles", icon: "=ƒÜù" },
+  { id: "motorcycles", ar: "+»+¦+º+¼+º+¬ +å+º+¦+è+¬", en: "Motorcycles", icon: "=ƒÅìn+Å" },
+  { id: "property-sale", ar: "+¦+é+º+¦+º+¬ +ä+ä+¿+è+¦", en: "Property for sale", icon: "=ƒÅá" },
+  { id: "property-rent", ar: "+¦+é+º+¦+º+¬ +ä+ä+º+è+¼+º+¦", en: "Property for rent", icon: "=ƒÅó" },
+  { id: "jobs", ar: "+ê+++º+ª+ü", en: "Jobs", icon: "=ƒÆ+" },
+  { id: "teaching", ar: "+¬+»+¦+è+¦ +ê+¬+»+¦+è+¿", en: "Teaching & training", icon: "=ƒÄô" },
+  { id: "services", ar: "+º+ä+«+»+à+º+¬", en: "Services", icon: "=ƒ¢án+Å" },
+  { id: "companies", ar: "+¦+¦+â+º+¬ +ê+à+¦+»+º+¬", en: "Companies & equipment", icon: "=ƒÅùn+Å" },
+  { id: "electronics", ar: "+º+ä+â+¬+¦+ê+å+è+º+¬", en: "Electronics", icon: "=ƒô¦" },
+  { id: "laptops", ar: "+ä+º+¿+¬+ê+¿ +ê+â+à+¿+è+ê+¬+¦", en: "Laptops & computers", icon: "=ƒÆ+" },
+  { id: "mobiles", ar: "+à+ê+¿+º+è+ä - +¬+º+¿+ä+¬", en: "Mobile & tablet", icon: "=ƒô¦" },
+  { id: "video-games", ar: "+ú+ä+¦+º+¿ +º+ä+ü+è+»+è+ê +ê+º+ä+ú+++ü+º+ä", en: "Video games & kids", icon: "=ƒÄ«" },
+  { id: "home-garden", ar: "+º+ä+à+å+¦+ä +ê+º+ä+¡+»+è+é+¬", en: "Home & garden", icon: "=ƒ¢ïn+Å" },
+  { id: "sports", ar: "+à+¦+»+º+¬ +¦+è+º+¦+è+¬ +ê +ä+è+º+é+¬", en: "Sports & fitness", icon: "=ƒÅâGÇìGÖén+Å" },
+  { id: "kids-toys", ar: "+ä+ê+º+¦+à +º+ä+ú+++ü+º+ä +ê +º+ä+ú+ä+¦+º+¿", en: "Kids & toys", icon: "=ƒº+" },
+  { id: "fashion-men", ar: "+ú+¦+è+º+í - +à+ê+¦+¬ +¦+¼+º+ä+è", en: "Men's fashion", icon: "=ƒæö" },
+  { id: "fashion-women", ar: "+ú+¦+è+º+í - +à+ê+¦+¬ +å+¦+º+ª+è+¬", en: "Women's fashion", icon: "=ƒæù" },
+  { id: "pets", ar: "+¡+è+ê+º+å+º+¬ +ê+º+â+¦+¦+ê+º+¦+º+¬", en: "Pets & accessories", icon: "=ƒÉ+" },
+  { id: "food", ar: "+++¦+º+à - +¦+¦+º+í", en: "Food", icon: "=ƒìö" },
+  { id: "books-entertainment", ar: "+¬+¦+ü+è+ç +ê+â+¬+¿ +ê+à+é+¬+å+è+º+¬", en: "Books & entertainment", icon: "=ƒôÜ" },
 ];
 
 // ------------------ Dynamic Leaflet ------------------
@@ -240,13 +240,13 @@ export default function CreateSaleItemPage() {
   // ------------------ Wizard Labels ------------------
   const wiz = useMemo(
     () => ({
-      title: locale === "ar" ? "Ø¥Ù†Ø´Ø§Ø¡ Ø¹Ù†ØµØ± Ù„Ù„Ø¨ÙŠØ¹" : "Create Sale Item",
-      subtitle: locale === "ar" ? "5 Ø®Ø·ÙˆØ§Øª Ø¨Ø³ÙŠØ·Ø©" : "5 simple steps",
-      category: locale === "ar" ? "Ø§Ù„ÙØ¦Ø©" : "Category",
-      details: locale === "ar" ? "Ø§Ù„ØªÙØ§ØµÙŠÙ„" : "Details",
-      location: locale === "ar" ? "Ø§Ù„Ù…ÙˆÙ‚Ø¹" : "Location",
-      media: locale === "ar" ? "Ø§Ù„ØµÙˆØ± ÙˆØ§Ù„ÙÙŠØ¯ÙŠÙˆ" : "Media",
-      confirm: locale === "ar" ? "ØªØ£ÙƒÙŠØ¯" : "Confirm",
+      title: locale === "ar" ? "+Ñ+å+¦+º+í +¦+å+¦+¦ +ä+ä+¿+è+¦" : "Create Sale Item",
+      subtitle: locale === "ar" ? "5 +«+++ê+º+¬ +¿+¦+è+++¬" : "5 simple steps",
+      category: locale === "ar" ? "+º+ä+ü+ª+¬" : "Category",
+      details: locale === "ar" ? "+º+ä+¬+ü+º+¦+è+ä" : "Details",
+      location: locale === "ar" ? "+º+ä+à+ê+é+¦" : "Location",
+      media: locale === "ar" ? "+º+ä+¦+ê+¦ +ê+º+ä+ü+è+»+è+ê" : "Media",
+      confirm: locale === "ar" ? "+¬+ú+â+è+»" : "Confirm",
     }),
     [locale]
   );
@@ -321,7 +321,7 @@ export default function CreateSaleItemPage() {
         variant: "destructive",
         title:
           locale === "ar"
-            ? "ÙŠØ±Ø¬Ù‰ Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ø­Ù‚ÙˆÙ„ Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© Ù‚Ø¨Ù„ Ø§Ù„Ù†Ø´Ø±"
+            ? "+è+¦+¼+ë +Ñ+¦+ä+º+¡ +º+ä+¡+é+ê+ä +º+ä+à+¡+»+»+¬ +é+¿+ä +º+ä+å+¦+¦"
             : "Please fix the highlighted fields before publishing",
       });
     }
@@ -374,7 +374,7 @@ export default function CreateSaleItemPage() {
       });
 
       toast({
-        title: locale === "ar" ? "ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø¹Ù†ØµØ± Ù„Ù„Ø¨ÙŠØ¹" : "Sale item created",
+        title: locale === "ar" ? "+¬+à +Ñ+å+¦+º+í +¦+å+¦+¦ +ä+ä+¿+è+¦" : "Sale item created",
       });
 
       window.location.href = `/sales/${id}`;
@@ -424,7 +424,7 @@ export default function CreateSaleItemPage() {
                     : wiz.confirm}
                 </span>
                 {n < 4 && (
-                  <span className="mx-2 text-muted-foreground">â€º</span>
+                  <span className="mx-2 text-muted-foreground">GÇ¦</span>
                 )}
               </div>
             ))}
@@ -436,13 +436,13 @@ export default function CreateSaleItemPage() {
               onSubmit={e => e.preventDefault()}
               className="space-y-6"
             >
-              {/* STEP 1 â€“ DETAILS */}
+              {/* STEP 1 GÇô DETAILS */}
               {step === 1 && (
                 <div className="space-y-4">
                   {/* TYPE (category) */}
                   <div className="space-y-1">
                     <FormLabel>
-                      {locale === "ar" ? "Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù†ØµØ±" : "Item type"}
+                      {locale === "ar" ? "+å+ê+¦ +º+ä+¦+å+¦+¦" : "Item type"}
                     </FormLabel>
                     <button
                       type="button"
@@ -461,10 +461,10 @@ export default function CreateSaleItemPage() {
                         (form.watch("tags") as string[])[0]
                           ? (form.watch("tags") as string[])[0]
                           : locale === "ar"
-                          ? "Ø§Ø®ØªØ± Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù†ØµØ±"
+                          ? "+º+«+¬+¦ +å+ê+¦ +º+ä+¦+å+¦+¦"
                           : "Choose item type"}
                       </span>
-                      <span className="text-xs text-muted-foreground">â–¼</span>
+                      <span className="text-xs text-muted-foreground">Gû+</span>
                     </button>
 
                     {/* GRID POPUP: big categories */}
@@ -473,7 +473,7 @@ export default function CreateSaleItemPage() {
                         <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
                           <span>
                             {locale === "ar"
-                              ? "Ø§Ø®ØªØ± Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù†ØµØ±"
+                              ? "+º+«+¬+¦ +å+ê+¦ +º+ä+¦+å+¦+¦"
                               : "Choose item category/type"}
                           </span>
                           <button
@@ -481,7 +481,7 @@ export default function CreateSaleItemPage() {
                             className="rounded px-2 py-0.5 hover:bg-muted"
                             onClick={() => setShowTitleCategories(false)}
                           >
-                            Ã—
+                            +ù
                           </button>
                         </div>
 
@@ -517,7 +517,7 @@ export default function CreateSaleItemPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {locale === "ar" ? "Ø§Ø³Ù… Ø§Ù„Ø¹Ù†ØµØ±" : "Item name"}
+                          {locale === "ar" ? "+º+¦+à +º+ä+¦+å+¦+¦" : "Item name"}
                         </FormLabel>
                         <Input {...field} />
                         <FormMessage />
@@ -540,7 +540,7 @@ export default function CreateSaleItemPage() {
                             type="text"
                             inputMode="decimal"
                             placeholder={
-                              locale === "ar" ? "Ù…Ø«Ø§Ù„: 50" : "e.g. 50"
+                              locale === "ar" ? "+à+½+º+ä: 50" : "e.g. 50"
                             }
                             value={
                               field.value === undefined ||
@@ -572,7 +572,7 @@ export default function CreateSaleItemPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            {locale === "ar" ? "Ø§Ù„Ø­Ø§Ù„Ø©" : "Condition"}
+                            {locale === "ar" ? "+º+ä+¡+º+ä+¬" : "Condition"}
                           </FormLabel>
                           <Select
                             value={field.value as any}
@@ -582,23 +582,23 @@ export default function CreateSaleItemPage() {
                               <SelectValue
                                 placeholder={
                                   locale === "ar"
-                                    ? "Ø§Ø®ØªØ± Ø§Ù„Ø­Ø§Ù„Ø©"
+                                    ? "+º+«+¬+¦ +º+ä+¡+º+ä+¬"
                                     : "Select condition"
                                 }
                               />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="new">
-                                {locale === "ar" ? "Ø¬Ø¯ÙŠØ¯" : "New"}
+                                {locale === "ar" ? "+¼+»+è+»" : "New"}
                               </SelectItem>
                               <SelectItem value="like-new">
-                                {locale === "ar" ? "Ø´Ø¨Ù‡ Ø¬Ø¯ÙŠØ¯" : "Like new"}
+                                {locale === "ar" ? "+¦+¿+ç +¼+»+è+»" : "Like new"}
                               </SelectItem>
                               <SelectItem value="used">
-                                {locale === "ar" ? "Ù…Ø³ØªØ¹Ù…Ù„" : "Used"}
+                                {locale === "ar" ? "+à+¦+¬+¦+à+ä" : "Used"}
                               </SelectItem>
                               <SelectItem value="for-parts">
-                                {locale === "ar" ? "Ù‚Ø·Ø¹" : "For parts"}
+                                {locale === "ar" ? "+é+++¦" : "For parts"}
                               </SelectItem>
                             </SelectContent>
                           </Select>
@@ -623,7 +623,7 @@ export default function CreateSaleItemPage() {
                           />
                           <FormLabel className="!mt-0">
                             {locale === "ar"
-                              ? "Ø£Ù‚Ø¨Ù„ Ø§Ù„Ù…Ø¨Ø§Ø¯Ù„Ø©"
+                              ? "+ú+é+¿+ä +º+ä+à+¿+º+»+ä+¬"
                               : "Open to trade"}
                           </FormLabel>
                         </div>
@@ -640,13 +640,13 @@ export default function CreateSaleItemPage() {
                         <FormItem>
                           <FormLabel>
                             {locale === "ar"
-                              ? "Ø¹Ù„Ù‰ Ù…Ø§Ø°Ø§ ØªØ¨Ø§Ø¯Ù„ØŸ"
+                              ? "+¦+ä+ë +à+º+¦+º +¬+¿+º+»+ä+ƒ"
                               : "Trade for what?"}
                           </FormLabel>
                           <Input
                             placeholder={
                               locale === "ar"
-                                ? "Ù‡Ø§ØªÙØŒ Ù„Ø§Ø¨ØªÙˆØ¨ØŒ Ø®Ø¯Ù…Ø§Øª"
+                                ? "+ç+º+¬+ü+î +ä+º+¿+¬+ê+¿+î +«+»+à+º+¬"
                                 : "Phone, laptop, services"
                             }
                             {...field}
@@ -674,7 +674,7 @@ export default function CreateSaleItemPage() {
                 </div>
               )}
 
-              {/* STEP 3 â€” LOCATION */}
+              {/* STEP 3 GÇö LOCATION */}
               {step === 2 && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -787,7 +787,7 @@ export default function CreateSaleItemPage() {
                         <Popup>
                           {selectedAddress ||
                             (locale === "ar"
-                              ? "Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø§Ù„Ù…Ø­Ø¯Ø¯"
+                              ? "+º+ä+à+ê+é+¦ +º+ä+à+¡+»+»"
                               : "Selected location")}
                         </Popup>
                       </Marker>
@@ -861,7 +861,7 @@ export default function CreateSaleItemPage() {
                           />
                           <FormLabel className="!mt-0">
                             {locale === "ar"
-                              ? "Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ø®Ø±ÙŠØ·Ø©"
+                              ? "+Ñ+«+ü+º+í +º+ä+à+ê+é+¦ +¦+ä+ë +º+ä+«+¦+è+++¬"
                               : "Hide exact location on map"}
                           </FormLabel>
                         </div>
@@ -872,11 +872,11 @@ export default function CreateSaleItemPage() {
                 </div>
               )}
 
-              {/* STEP 4 â€” MEDIA */}
+              {/* STEP 4 GÇö MEDIA */}
               {step === 3 && (
                 <div className="space-y-4">
                   <FormLabel>
-                    {locale === "ar" ? "ØµÙˆØ± Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†" : "Images"}
+                    {locale === "ar" ? "+¦+ê+¦ +º+ä+Ñ+¦+ä+º+å" : "Images"}
                   </FormLabel>
 
                   <Input
@@ -906,11 +906,11 @@ export default function CreateSaleItemPage() {
                 </div>
               )}
 
-              {/* STEP 5 â€” CONFIRM */}
+              {/* STEP 5 GÇö CONFIRM */}
               {step === 4 && (
                 <div className="space-y-2 text-sm text-muted-foreground">
                   {locale === "ar"
-                    ? "Ø±Ø§Ø¬Ø¹ Ø§Ù„ØªÙØ§ØµÙŠÙ„ Ø«Ù… Ø§Ù†Ø´Ø±"
+                    ? "+¦+º+¼+¦ +º+ä+¬+ü+º+¦+è+ä +½+à +º+å+¦+¦"
                     : "Review details then publish"}
                 </div>
               )}
@@ -923,16 +923,16 @@ export default function CreateSaleItemPage() {
                   onClick={goPrev}
                   disabled={step <= 1}
                 >
-                  {locale === "ar" ? "Ø±Ø¬ÙˆØ¹" : "Back"}
+                  {locale === "ar" ? "+¦+¼+ê+¦" : "Back"}
                 </Button>
 
                 {step < 4 ? (
                   <Button type="button" onClick={goNext}>
-                    {locale === "ar" ? "Ø§Ù„ØªØ§Ù„ÙŠ" : "Next"}
+                    {locale === "ar" ? "+º+ä+¬+º+ä+è" : "Next"}
                   </Button>
                 ) : (
                   <Button type="button" onClick={handleFinish}>
-                    {locale === "ar" ? "Ù†Ø´Ø±" : "Publish"}
+                    {locale === "ar" ? "+å+¦+¦" : "Publish"}
                   </Button>
                 )}
               </div>
