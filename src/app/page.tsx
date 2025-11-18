@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Search, MapPin, Shield, Smartphone } from "lucide-react";
+import { Play, Search, MapPin, Shield, Smartphone, GraduationCap } from "lucide-react";
 import { getClientLocale } from "@/lib/i18n";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -226,6 +226,109 @@ export default function Home() {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------
+            STUDENT RESOURCE BANK TEASER
+        ------------------------------------------------------------ */}
+        <section className="border-b bg-gradient-to-r from-amber-50 via-amber-100/60 to-background">
+          <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
+            <div
+              className={`relative overflow-hidden rounded-2xl border border-amber-200/70 bg-card/90 shadow-[0_18px_40px_rgba(15,23,42,0.16)] backdrop-blur-sm ${
+                isAr ? "text-right" : "text-left"
+              }`}
+            >
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-300/30 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
+
+              <div
+                className={`relative flex flex-col gap-6 p-5 md:flex-row md:items-center md:p-7 ${
+                  isAr ? "md:flex-row-reverse" : ""
+                }`}
+              >
+                {/* Left: icon + text */}
+                <div className="flex-1">
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 shadow-sm">
+                    <GraduationCap className="h-4 w-4" />
+                    <span>
+                      {isAr ? "ركن الطلبة الجديد" : "New • Student Resource Bank"}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-bold md:text-xl">
+                    {isAr
+                      ? "امتحانات، مذكرات، دعم أكاديمي وسيرة ذاتية"
+                      : "Study resources, academic support & CV help"}
+                  </h2>
+                  <p className="mt-2 text-xs text-muted-foreground md:text-sm">
+                    {isAr
+                      ? "شارك الامتحانات السابقة، الواجبات، المذكرات والتقارير، واستفد من دعم أكاديمي ومساعدة في السيرة الذاتية والترجمة."
+                      : "Share past exams, assignments, notes and reports, and get help with research, CVs and academic translation."}
+                  </p>
+
+                  <div
+                    className={`mt-4 flex flex-wrap gap-2 text-[11px] md:text-xs ${
+                      isAr ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+                      {isAr ? "بنك موارد الطلبة" : "Student resource bank"}
+                    </span>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+                      {isAr ? "دعم أكاديمي وبحثي" : "Academic & research support"}
+                    </span>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+                      {isAr ? "سيرة ذاتية وتوظيف" : "CV & job applications"}
+                    </span>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+                      {isAr ? "ترجمة وتدقيق لغوي" : "Translation & proofreading"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: bullets + CTA */}
+                <div className="flex flex-1 flex-col justify-between gap-3 text-xs text-muted-foreground md:text-sm">
+                  <ul className={`space-y-1 ${isAr ? "ml-6 list-disc text-right" : "mr-6 list-disc text-left"}`}>
+                    <li>
+                      {isAr
+                        ? "امتحانات سابقة، واجبات، مذكرات وتقارير نموذجية لجامعات مختلفة."
+                        : "Past exams, assignments, notes and sample reports from different universities."}
+                    </li>
+                    <li>
+                      {isAr
+                        ? "مساعدة في المقترحات، مراجعة الأدبيات، والتحضير للبحوث والتقارير."
+                        : "Help with proposals, literature reviews and preparing reports or research."}
+                    </li>
+                    <li>
+                      {isAr
+                        ? "مراجعة CV، خطابات التغطية، وطلبات المنح والقبول الجامعي."
+                        : "CV review, cover letter feedback and scholarship/college applications."}
+                    </li>
+                    <li>
+                      {isAr
+                        ? "ترجمة أكاديمية عربية ⇄ إنجليزية مع تدقيق لغوي."
+                        : "Academic AR ⇄ EN translation with grammar and clarity checks."}
+                    </li>
+                  </ul>
+
+                  <div
+                    className={`mt-3 flex ${
+                      isAr ? "justify-start md:justify-start" : "justify-end md:justify-end"
+                    }`}
+                  >
+                    <Button
+                      size="sm"
+                      className="bg-amber-500 text-white hover:bg-amber-600"
+                      asChild
+                    >
+                      <Link href="/student-bank">
+                        {isAr ? "استكشف ركن الطلبة" : "Explore Student Resource Bank"}
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>

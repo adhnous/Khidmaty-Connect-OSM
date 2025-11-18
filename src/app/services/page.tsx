@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ServiceCard } from '@/components/service-card';
@@ -21,6 +22,7 @@ const ALL_CITIES = 'ALL_CITIES';
 export default function ServicesBrowsePage() {
   const locale = getClientLocale();
   const isAr = locale === 'ar';
+  const router = useRouter();
 
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -304,6 +306,7 @@ export default function ServicesBrowsePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    router.push('/student-bank');
                     setQ(
                       'طالب امتحان واجبات ملخص مشروع تخرج سيرة ذاتية ترجمة اكاديمية',
                     );
