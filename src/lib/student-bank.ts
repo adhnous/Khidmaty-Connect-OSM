@@ -1,3 +1,6 @@
+import 'server-only';
+import { getAdmin } from '@/lib/firebase-admin';
+
 export type StudentResource = {
   id: string;
   title: string;
@@ -12,11 +15,12 @@ export type StudentResource = {
   // In future: Drive integration
   driveFileId?: string;
   driveLink?: string;
+  driveFolderId?: string;
   uploaderId?: string;
-  createdAt?: Date;
+  createdAt?: Date | unknown;
 };
 
-// Temporary mock data until Firestore + Drive are wired
+// Temporary mock data until Firestore is populated
 const MOCK_STUDENT_RESOURCES: StudentResource[] = [
   {
     id: 'mock-1',
@@ -92,32 +96,38 @@ export type StudentResourceListFilters = {
   language?: StudentResource['language'];
 };
 
-export async function listStudentResources(
-  filters: StudentResourceListFilters = {},
-): Promise<StudentResource[]> {
+export type CreateStudentResourceInput = Omit<
+  StudentResource,
+  'id' | 'createdAt'
+>;
+
+function applyFilters(
+  rows: StudentResource[],
+  filters: StudentResourceListFilters,
+): StudentResource[] {
   const { query, university, type, language } = filters;
-  let rows = [...MOCK_STUDENT_RESOURCES];
+  let out = [...rows];
 
   if (university) {
     const needle = university.toLowerCase();
-    rows = rows.filter((r) =>
+    out = out.filter((r) =>
       String(r.university || '').toLowerCase().includes(needle),
     );
   }
 
   if (type) {
-    rows = rows.filter((r) => r.type === type);
+    out = out.filter((r) => r.type === type);
   }
 
   if (language) {
-    rows = rows.filter(
+    out = out.filter(
       (r) => r.language === language || r.language === 'both',
     );
   }
 
   const q = query?.trim().toLowerCase();
   if (q) {
-    rows = rows.filter((r) => {
+    out = out.filter((r) => {
       const title = r.title.toLowerCase();
       const desc = String(r.description || '').toLowerCase();
       const course = String(r.course || '').toLowerCase();
@@ -133,6 +143,98 @@ export async function listStudentResources(
     });
   }
 
-  return rows;
+  return out;
 }
 
+export function folderIdForType(type: StudentResource['type']): string | undefined {
+  switch (type) {
+    case 'book':
+      return process.env.GOOGLE_DRIVE_STUDENT_BOOKS_FOLDER_ID;
+    case 'report':
+      return process.env.GOOGLE_DRIVE_STUDENT_JOURNALS_FOLDER_ID;
+    case 'exam':
+    case 'assignment':
+      return process.env.GOOGLE_DRIVE_STUDENT_EXAMS_FOLDER_ID;
+    case 'notes':
+      return process.env.GOOGLE_DRIVE_STUDENT_NOTES_FOLDER_ID;
+    default:
+      return process.env.GOOGLE_DRIVE_STUDENT_OTHER_FOLDER_ID;
+  }
+}
+
+export async function listStudentResources(
+  filters: StudentResourceListFilters = {},
+): Promise<StudentResource[]> {
+  try {
+    const { db } = await getAdmin();
+    const col = db.collection('student_resources');
+    const snap = await col.orderBy('createdAt', 'desc').limit(80).get();
+    let rows: StudentResource[] = snap.docs.map((d) => {
+      const data = d.data() as any;
+      return {
+        id: d.id,
+        title: String(data.title || ''),
+        description: data.description,
+        university: data.university,
+        faculty: data.faculty,
+        course: data.course,
+        year: data.year,
+        type: (data.type as StudentResource['type']) || 'other',
+        language: data.language,
+        subjectTags: Array.isArray(data.subjectTags)
+          ? (data.subjectTags as string[])
+          : [],
+      driveFileId: data.driveFileId,
+      driveLink: data.driveLink,
+        driveFolderId: data.driveFolderId,
+        uploaderId: data.uploaderId,
+        createdAt: data.createdAt,
+      };
+    });
+
+    if (!rows.length) {
+      rows = MOCK_STUDENT_RESOURCES;
+    }
+
+    return applyFilters(rows, filters);
+  } catch (err) {
+    console.error('listStudentResources fallback to mock', err);
+    return applyFilters(MOCK_STUDENT_RESOURCES, filters);
+  }
+}
+
+export async function createStudentResource(
+  input: CreateStudentResourceInput,
+): Promise<string> {
+  const { db, FieldValue } = await getAdmin();
+  const col = db.collection('student_resources');
+
+  const payload: any = {
+    title: String(input.title || '').trim(),
+    description: input.description ? String(input.description) : undefined,
+    university: input.university ? String(input.university) : undefined,
+    faculty: input.faculty ? String(input.faculty) : undefined,
+    course: input.course ? String(input.course) : undefined,
+    year: input.year ? String(input.year) : undefined,
+    type: input.type || 'other',
+    language: input.language || 'en',
+    subjectTags: Array.isArray(input.subjectTags)
+      ? input.subjectTags
+      : undefined,
+  driveFileId: input.driveFileId || undefined,
+  driveLink: input.driveLink || undefined,
+    driveFolderId: folderIdForType(input.type || 'other'),
+    uploaderId: input.uploaderId || undefined,
+    createdAt:
+      typeof FieldValue?.serverTimestamp === 'function'
+        ? FieldValue.serverTimestamp()
+        : new Date(),
+  };
+
+  const clean = Object.fromEntries(
+    Object.entries(payload).filter(([, v]) => v !== undefined && v !== null),
+  );
+
+  const ref = await col.add(clean);
+  return ref.id;
+}

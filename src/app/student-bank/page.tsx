@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,90 @@ export default function StudentBankPage() {
   const [type, setType] = useState<StudentResource['type']>('exam');
   const [language, setLanguage] = useState<'ar' | 'en' | 'both'>('en');
   const [description, setDescription] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  function mapFilterToType(filter: ResourceFilter): StudentResource['type'] | null {
+  switch (filter) {
+    case 'books':
+      return 'book';
+    case 'journals':
+      return 'report';
+    case 'exams':
+      return 'exam';
+    case 'notes':
+      return 'notes';
+    case 'other':
+      return 'other';
+    default:
+      return null;
+  }
+}
+
+function titlePlaceholder(isAr: boolean, type: StudentResource['type']): string {
+  if (isAr) {
+    switch (type) {
+      case 'book':
+        return 'مثال: كتاب فيزياء 1 – مرجع هندسي';
+      case 'report':
+        return 'مثال: تقرير مختبر فيزياء 101';
+      case 'notes':
+        return 'مثال: مذكرات تفاضل 1 – ملخص المحاضرات';
+      case 'assignment':
+        return 'مثال: واجب رقم 3 في البرمجة 1';
+      case 'exam':
+        return 'مثال: امتحان نهائي تفاضل 1 – هندسة طرابلس';
+      default:
+        return 'مثال: مورد دراسي مفيد';
+    }
+  }
+  switch (type) {
+    case 'book':
+      return 'e.g. Physics 1 book – engineering reference';
+    case 'report':
+      return 'e.g. Physics 101 lab report';
+    case 'notes':
+      return 'e.g. Calculus I revision notes';
+    case 'assignment':
+      return 'e.g. Assignment 3 – Programming I';
+    case 'exam':
+      return 'e.g. Final exam Calculus I – Tripoli Engineering';
+    default:
+      return 'e.g. Helpful study resource';
+  }
+}
+
+function descriptionPlaceholder(isAr: boolean, type: StudentResource['type']): string {
+  if (isAr) {
+    switch (type) {
+      case 'book':
+        return 'مثال: كتاب شرح مبسط مع أمثلة وتمارين، مناسب لسنة أولى هندسة.';
+      case 'report':
+        return 'مثال: تقرير مخبري منظم يحتوي على المقدمة، المنهج، النتائج والمناقشة.';
+      case 'notes':
+        return 'مثال: مذكرات مراجعة مختصرة تغطي أهم الأفكار مع أمثلة سريعة.';
+      case 'assignment':
+        return 'مثال: واجب يحتوي على 5 أسئلة محلولة مع خطوات الحل.';
+      case 'exam':
+        return 'مثال: امتحان نهائي مع نموذج إجابة مختصر، يغطي الفصول 1-5.';
+      default:
+        return 'يمكنك وصف نوع هذا المورد وكيف يساعد الطلبة.';
+    }
+  }
+  switch (type) {
+    case 'book':
+      return 'e.g. Clear explanations with examples and exercises, good for first-year engineering.';
+    case 'report':
+      return 'e.g. Well-structured lab report with intro, method, results and discussion.';
+    case 'notes':
+      return 'e.g. Short revision notes covering main ideas with quick examples.';
+    case 'assignment':
+      return 'e.g. Assignment with 5 solved questions and step-by-step solutions.';
+    case 'exam':
+      return 'e.g. Final exam with short answer key, covers chapters 1–5.';
+    default:
+      return 'Describe what this resource contains and how it helps students.';
+  }
+}
+
 
   useEffect(() => {
     let cancelled = false;
@@ -189,7 +273,11 @@ export default function StudentBankPage() {
               <button
                 key={opt.id}
                 type="button"
-                onClick={() => setResourceFilter(opt.id)}
+onClick={() => {
+  setResourceFilter(opt.id);
+  const mapped = mapFilterToType(opt.id);
+  if (mapped) setType(mapped);
+}}
                 className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] md:text-xs transition-all ${
                   resourceFilter === opt.id
                     ? 'border-amber-500 bg-amber-500 text-white shadow-[0_6px_14px_rgba(245,158,11,0.4)] scale-[1.03]'
@@ -325,18 +413,21 @@ export default function StudentBankPage() {
               try {
                 setSubmitting(true);
                 setSubmitMessage(null);
+                const formData = new FormData();
+                formData.append('title', title.trim());
+                if (description.trim()) formData.append('description', description.trim());
+                if (university.trim()) formData.append('university', university.trim());
+                if (course.trim()) formData.append('course', course.trim());
+                if (year.trim()) formData.append('year', year.trim());
+                formData.append('type', type);
+                formData.append('language', language);
+                const file = fileInputRef.current?.files?.[0];
+                if (file) {
+                  formData.append('file', file);
+                }
                 const res = await fetch('/api/student-bank/upload', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    title: title.trim(),
-                    description: description.trim() || undefined,
-                    university: university.trim() || undefined,
-                    course: course.trim() || undefined,
-                    year: year.trim() || undefined,
-                    type,
-                    language,
-                  }),
+                  body: formData,
                 });
                 if (!res.ok) {
                   throw new Error('upload_failed');
@@ -372,11 +463,8 @@ export default function StudentBankPage() {
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={
-                    isAr
-                      ? 'مثال: امتحان نهائي تفاضل 1 – هندسة طرابلس'
-                      : 'e.g. Final exam Calculus I – Tripoli Engineering'
-                  }
+                 placeholder={titlePlaceholder(isAr, type)}
+
                   className="h-8 md:h-9 text-xs md:text-sm"
                   dir={isAr ? 'rtl' : 'ltr'}
                 />
@@ -389,9 +477,8 @@ export default function StudentBankPage() {
                 <Input
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
-                  placeholder={
-                    isAr ? 'جامعة طرابلس – هندسة' : 'University of Tripoli – Engineering'
-                  }
+                placeholder={titlePlaceholder(isAr, type)}
+
                   className="h-8 md:h-9 text-xs md:text-sm"
                   dir={isAr ? 'rtl' : 'ltr'}
                 />
@@ -404,7 +491,8 @@ export default function StudentBankPage() {
                 <Input
                   value={course}
                   onChange={(e) => setCourse(e.target.value)}
-                  placeholder={isAr ? 'تفاضل 1' : 'Calculus I'}
+                 placeholder={titlePlaceholder(isAr, type)}
+
                   className="h-8 md:h-9 text-xs md:text-sm"
                   dir={isAr ? 'rtl' : 'ltr'}
                 />
@@ -417,7 +505,8 @@ export default function StudentBankPage() {
                 <Input
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  placeholder={isAr ? '2023 / ربيع' : '2023 / Spring'}
+                  placeholder={titlePlaceholder(isAr, type)}
+
                   className="h-8 md:h-9 text-xs md:text-sm"
                   dir={isAr ? 'rtl' : 'ltr'}
                 />
@@ -500,11 +589,19 @@ export default function StudentBankPage() {
                 rows={3}
                 className="text-xs md:text-sm"
                 dir={isAr ? 'rtl' : 'ltr'}
-                placeholder={
-                  isAr
-                    ? 'مثال: امتحان نهائي مع نموذج إجابة مختصر، يغطي الفصول 1-5.'
-                    : 'e.g. Final exam with short solution hints, covers chapters 1–5.'
-                }
+                placeholder={titlePlaceholder(isAr, type)}
+
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[11px] font-semibold md:text-xs">
+                {isAr ? 'ملف (اختياري، سيتم حفظه في المجلد المناسب)' : 'File (optional, saved to the matching folder)'}
+              </label>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                className="h-8 md:h-9 cursor-pointer text-xs md:text-sm"
               />
             </div>
 
