@@ -63,8 +63,7 @@ export default function StudentBankPage() {
   const filteredItems = items.filter((r) => {
     if (resourceFilter === 'all') return true;
     if (resourceFilter === 'books') return r.type === 'book';
-    if (resourceFilter === 'journals')
-      return r.type === 'report' || r.type === 'journal' || r.type === 'article';
+    if (resourceFilter === 'journals') return r.type === 'report';
     if (resourceFilter === 'exams') return r.type === 'exam' || r.type === 'assignment';
     if (resourceFilter === 'notes') return r.type === 'notes';
     // other
