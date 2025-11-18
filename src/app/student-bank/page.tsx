@@ -70,8 +70,6 @@ export default function StudentBankPage() {
     return (
       r.type !== 'book' &&
       r.type !== 'report' &&
-      r.type !== 'journal' &&
-      r.type !== 'article' &&
       r.type !== 'exam' &&
       r.type !== 'assignment' &&
       r.type !== 'notes'
