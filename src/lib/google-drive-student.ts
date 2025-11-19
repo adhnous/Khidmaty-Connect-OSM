@@ -76,12 +76,26 @@ export async function uploadStudentFileToDrive(options: {
   });
 
   const fileId = res.data.id || '';
-  const webViewLink = res.data.webViewLink || undefined;
+  let webViewLink = res.data.webViewLink || undefined;
   if (!fileId) throw new Error('Drive upload did not return a file id');
 
-  // Optionally we could also set the file permission to "anyone with link"
-  // here. For now, callers can do it separately if needed.
+  // Make the file accessible to anyone with the link so students
+  // can open it without logging into the owner account.
+  try {
+    await drive.permissions.create({
+      fileId,
+      requestBody: {
+        role: 'reader',
+        type: 'anyone',
+      },
+    });
+  } catch (err) {
+    console.error('Failed to set Drive file public', err);
+  }
+
+  if (!webViewLink) {
+    webViewLink = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+  }
 
   return { fileId, webViewLink };
 }
-

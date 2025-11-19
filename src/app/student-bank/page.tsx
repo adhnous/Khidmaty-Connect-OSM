@@ -11,6 +11,28 @@ import type { StudentResource } from '@/lib/student-bank';
 
 type ResourceFilter = 'all' | 'books' | 'journals' | 'exams' | 'notes' | 'other';
 
+function drivePreviewUrl(r: StudentResource): string | undefined {
+  // Prefer explicit file id when we have it.
+  if (r.driveFileId) {
+    return `https://drive.google.com/file/d/${r.driveFileId}/preview`;
+  }
+
+  if (!r.driveLink) return undefined;
+
+  // Try to convert a normal Drive view link into an embeddable preview link.
+  try {
+    const m = r.driveLink.match(/\/file\/d\/([^/]+)/);
+    if (m && m[1]) {
+      return `https://drive.google.com/file/d/${m[1]}/preview`;
+    }
+  } catch {
+    // ignore and fall through
+  }
+
+  // Fallback: use the raw link.
+  return r.driveLink;
+}
+
 export default function StudentBankPage() {
   const locale = getClientLocale();
   const isAr = locale === 'ar';
@@ -32,6 +54,9 @@ export default function StudentBankPage() {
   const [language, setLanguage] = useState<'ar' | 'en' | 'both'>('en');
   const [description, setDescription] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [previewItem, setPreviewItem] = useState<StudentResource | null>(null);
+  const previewRef = useRef<HTMLDivElement | null>(null);
+
   function mapFilterToType(filter: ResourceFilter): StudentResource['type'] | null {
   switch (filter) {
     case 'books':
@@ -144,6 +169,13 @@ function descriptionPlaceholder(isAr: boolean, type: StudentResource['type']): s
     };
   }, [isAr]);
 
+  // When a preview item is chosen, scroll the preview into view
+  useEffect(() => {
+    if (previewItem && previewRef.current) {
+      previewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [previewItem]);
+
   const filteredItems = items.filter((r) => {
     if (resourceFilter === 'all') return true;
     if (resourceFilter === 'books') return r.type === 'book';
@@ -159,6 +191,8 @@ function descriptionPlaceholder(isAr: boolean, type: StudentResource['type']): s
       r.type !== 'notes'
     );
   });
+
+  const previewUrl = previewItem ? drivePreviewUrl(previewItem) : undefined;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -369,7 +403,16 @@ onClick={() => {
                       isAr ? 'md:flex-row-reverse' : ''
                     }`}
                   >
-                    <Button size="sm" variant="outline" disabled>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!r.driveLink}
+                      onClick={() => {
+                        if (r.driveLink) {
+                          setPreviewItem(r);
+                        }
+                      }}
+                    >
                       {isAr ? 'عرض / تحميل (قريباً)' : 'View / download (soon)'}
                     </Button>
                   </div>
@@ -378,6 +421,46 @@ onClick={() => {
             </div>
           )}
         </section>
+
+        {/* INLINE FILE PREVIEW */}
+        {previewItem && previewUrl && (
+          <section className="mx-auto mt-4 max-w-5xl px-4 pb-8" ref={previewRef}>
+            <div className="rounded-xl border bg-card p-3 shadow-sm md:p-4">
+              <div
+                className={`mb-3 flex items-center justify-between ${
+                  isAr ? 'flex-row-reverse text-right' : 'text-left'
+                }`}
+              >
+                <h3 className="text-sm font-semibold md:text-base">
+                  {previewItem.title}
+                </h3>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPreviewItem(null)}
+                >
+                  {isAr ? 'إغلاق المعاينة' : 'Close preview'}
+                </Button>
+              </div>
+              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg border bg-muted">
+                <iframe
+                  src={previewUrl}
+                  className="h-full w-full"
+                  loading="lazy"
+                  // No allow-popups: blocks the Drive "open in new tab" icon.
+                  sandbox="allow-same-origin allow-scripts"
+                />
+                {/* Hide Drive's own toolbar / pop-out icon on the right edge */}
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background/95 to-transparent" />
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground md:text-xs">
+                {isAr
+                  ? 'يتم فتح الملف من Google Drive داخل هذا الإطار.'
+                  : 'The file is shown using the Google Drive viewer inside the app.'}
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* CONTRIBUTE FORM (DEMO ONLY) */}
         <section className="mx-auto max-w-5xl px-4 pb-12">
