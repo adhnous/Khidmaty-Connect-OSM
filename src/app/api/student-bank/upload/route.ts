@@ -16,6 +16,7 @@ type UploadJsonPayload = {
   year?: string;
   type?: string;
   language?: string;
+  subjectTags?: string[] | string;
 };
 
 const ALLOWED_TYPES: StudentResource['type'][] = [
@@ -53,6 +54,7 @@ export async function POST(req: Request) {
     let type: StudentResource['type'] = 'notes';
     let language: StudentResource['language'] = 'en';
     let file: File | null = null;
+    let subjectTags: string[] | undefined;
 
     if (contentType.includes('multipart/form-data')) {
       const form = await req.formData();
@@ -64,6 +66,13 @@ export async function POST(req: Request) {
       year = String(form.get('year') || '').trim() || undefined;
       type = normalizeType(form.get('type') as string | null);
       language = normalizeLanguage(form.get('language') as string | null);
+      const rawTags = String(form.get('subjectTags') || '').trim();
+      if (rawTags) {
+        subjectTags = rawTags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean);
+      }
       const f = form.get('file');
       if (f instanceof File) {
         file = f;
@@ -86,6 +95,18 @@ export async function POST(req: Request) {
       year = payload.year?.trim() || undefined;
       type = normalizeType(payload.type);
       language = normalizeLanguage(payload.language);
+      if (payload.subjectTags) {
+        if (Array.isArray(payload.subjectTags)) {
+          subjectTags = payload.subjectTags
+            .map((t) => String(t).trim())
+            .filter(Boolean);
+        } else if (typeof payload.subjectTags === 'string') {
+          subjectTags = payload.subjectTags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean);
+        }
+      }
     }
 
     if (!title) {
@@ -128,6 +149,7 @@ export async function POST(req: Request) {
   year,
   type,
   language,
+  subjectTags,
   driveFileId,
   driveLink,
   uploaderId,
