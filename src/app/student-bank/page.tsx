@@ -5,7 +5,18 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { GraduationCap, Search, FileText } from 'lucide-react';
+import {
+  GraduationCap,
+  Search,
+  FileText,
+  BookOpen,
+  FlaskConical,
+  Cpu,
+  Briefcase,
+  Stethoscope,
+  Brain,
+  Gavel,
+} from 'lucide-react';
 import { getClientLocale } from '@/lib/i18n';
 import type { StudentResource } from '@/lib/student-bank';
 
@@ -21,6 +32,67 @@ const KIND_TABS: { id: ResourceKind; labelAr: string; labelEn: string }[] = [
   { id: 'notes',    labelAr: 'مذكرات ومختصرات',  labelEn: 'Notes & summaries' },
   { id: 'other',    labelAr: 'أخرى',             labelEn: 'Other' },
 ];
+
+function renderKindIcon(kind: ResourceKind) {
+  const iconClass = 'h-3.5 w-3.5';
+  switch (kind) {
+    case 'books':
+      return <BookOpen className={iconClass} />;
+    case 'journals':
+      return <FileText className={iconClass} />;
+    case 'exams':
+      return <GraduationCap className={iconClass} />;
+    case 'notes':
+      return <FileText className={iconClass} />;
+    case 'other':
+    default:
+      return <Search className={iconClass} />;
+  }
+}
+
+function renderFieldIcon(fieldId: string) {
+  const iconClass = 'h-4 w-4 text-amber-500';
+  switch (fieldId) {
+    // Science
+    case 'science':
+    case 'science-research':
+    case 'science-exams':
+    case 'science-notes':
+      return <FlaskConical className={iconClass} />;
+    // Engineering
+    case 'engineering':
+    case 'engineering-research':
+    case 'engineering-exams':
+    case 'engineering-notes':
+      return <Cpu className={iconClass} />;
+    // Business
+    case 'business':
+    case 'business-research':
+    case 'business-exams':
+    case 'business-notes':
+      return <Briefcase className={iconClass} />;
+    // Medicine
+    case 'medicine':
+    case 'medicine-exams':
+    case 'medical-notes':
+    case 'medical-research':
+      return <Stethoscope className={iconClass} />;
+    // Humanities
+    case 'humanities':
+    case 'humanities-exams':
+    case 'humanities-notes':
+    case 'humanities-research':
+      return <Brain className={iconClass} />;
+    // Law
+    case 'law':
+    case 'law-exams':
+    case 'law-notes':
+    case 'law-research':
+      return <Gavel className={iconClass} />;
+    default:
+      return <BookOpen className={iconClass} />;
+  }
+}
 
 // Tree built from your description (shortened a bit but same idea)
 const TREE: Record<ResourceKind, FieldNode[]> = {
@@ -384,6 +456,7 @@ export default function StudentBankPage() {
   const [activeKind, setActiveKind] = useState<ResourceKind>('books');
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [title, setTitle] = useState('');
   const [university, setUniversity] = useState('');
@@ -481,6 +554,22 @@ export default function StudentBankPage() {
       if (!tags.includes(activeTopicId)) return false;
     } else if (activeFieldId && tags.length) {
       if (!tags.includes(activeFieldId)) return false;
+    }
+
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      const haystack = [
+        r.title,
+        r.description,
+        r.university,
+        r.course,
+        r.year,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      if (!haystack.includes(q)) return false;
     }
 
     return true;
@@ -660,7 +749,14 @@ export default function StudentBankPage() {
                     : 'border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 text-[12px] md:text-sm font-medium text-amber-900 hover:from-amber-200 hover:to-amber-300'
                 }`}
               >
-                {isAr ? tab.labelAr : tab.labelEn}
+                <span
+                  className={`flex items-center gap-1 ${
+                    isAr ? 'flex-row-reverse' : ''
+                  }`}
+                >
+                  {renderKindIcon(tab.id)}
+                  <span>{isAr ? tab.labelAr : tab.labelEn}</span>
+                </span>
               </button>
             ))}
           </div>
@@ -697,9 +793,12 @@ export default function StudentBankPage() {
                   }`}
                 >
                   <div>
-                    <p className="text-sm font-semibold md:text-base">
-                      {isAr ? field.labelAr : field.labelEn}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      {renderFieldIcon(field.id)}
+                      <p className="text-sm font-semibold md:text-base">
+                        {isAr ? field.labelAr : field.labelEn}
+                      </p>
+                    </div>
                     <p className="mt-1 text-[11px] text-muted-foreground md:text-xs">
                       {isAr
                         ? 'اختر الموضوع الفرعي داخل هذا المجال من القائمة أدناه.'
@@ -755,13 +854,20 @@ export default function StudentBankPage() {
                         });
                       }
                     }}
-                    className={`rounded-full border px-4 py-1.5 text-xs font-semibold md:text-sm ${
+                    className={`rounded-full border px-4 py-1.5 text-xs font-semibold md:text-sm transition-all ${
                       activeTopicId === topic.id
-                        ? 'border-amber-600 bg-gradient-to-r from-amber-500 to-amber-700 text-white shadow-[0_8px_18px_rgba(217,119,6,0.75)]'
-                        : 'border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-900 hover:from-amber-200 hover:to-amber-300'
+                        ? 'border-amber-600 bg-gradient-to-r from-amber-500 to-amber-700 text-white shadow-[0_10px_24px_rgba(217,119,6,0.8)]'
+                        : 'border-amber-200 bg-gradient-to-r from-amber-50/40 via-amber-50/10 to-amber-100/50 text-amber-900 shadow-[0_6px_16px_rgba(251,191,36,0.22)] hover:from-amber-100 hover:via-amber-100 hover:to-amber-200'
                     }`}
                   >
-                    {isAr ? topic.labelAr : topic.labelEn}
+                    <span
+                      className={`flex items-center gap-1 ${
+                        isAr ? 'flex-row-reverse' : ''
+                      }`}
+                    >
+                      {renderFieldIcon(activeField.id)}
+                      <span>{isAr ? topic.labelAr : topic.labelEn}</span>
+                    </span>
                   </button>
                 ))}
               </div>
