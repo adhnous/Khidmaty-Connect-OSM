@@ -877,9 +877,7 @@ export default function StudentBankPage() {
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1 text-[11px] text-muted-foreground md:text-xs">
             <Search className="h-3.5 w-3.5" />
             <span>
-              {isAr
-                ? 'لاحقًا سنضيف بحثًا متقدمًا حسب الجامعة، المقرر، السنة والمزيد.'
-                : 'Soon you will be able to search by university, course, year and more.'}
+                <span>{isAr ? 'بحث' : 'Search'}</span>
             </span>
           </div>
 
@@ -981,7 +979,11 @@ export default function StudentBankPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-xs font-semibold md:text-sm"
+                        className={`rounded-full border text-xs font-semibold md:text-sm ${
+                          r.driveLink || r.driveFileId
+                            ? 'border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-900 hover:from-amber-200 hover:to-amber-300'
+                            : 'border-slate-200 bg-muted/40 text-muted-foreground'
+                        }`}
                         disabled={!r.driveLink && !r.driveFileId}
                         onClick={() => {
                           if (r.driveLink || r.driveFileId) {
