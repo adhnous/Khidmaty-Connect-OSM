@@ -884,6 +884,27 @@ export default function StudentBankPage() {
             </span>
           </div>
 
+          {/* Search bar (client-side filter) */}
+          <div
+            className={`mb-4 flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1.5 text-[11px] text-muted-foreground shadow-sm md:text-xs ${
+              isAr ? 'flex-row-reverse' : ''
+            }`}
+          >
+            <Search className="h-3.5 w-3.5 text-amber-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              dir={isAr ? 'rtl' : 'ltr'}
+              className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/70 md:text-sm"
+              placeholder={
+                isAr
+                  ? 'ابحث بعنوان المورد، الجامعة، المقرر أو السنة...'
+                  : 'Search by title, university, course or year...'
+              }
+            />
+          </div>
+
           {/* Results */}
           <div ref={resultsRef}>
             {error && (
