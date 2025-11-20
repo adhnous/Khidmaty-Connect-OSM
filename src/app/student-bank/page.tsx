@@ -861,11 +861,10 @@ export default function StudentBankPage() {
                     }`}
                   >
                     <span
-                      className={`flex items-center gap-1 ${
+                      className={`flex items-center ${
                         isAr ? 'flex-row-reverse' : ''
                       }`}
                     >
-                      {renderFieldIcon(activeField.id)}
                       <span>{isAr ? topic.labelAr : topic.labelEn}</span>
                     </span>
                   </button>
