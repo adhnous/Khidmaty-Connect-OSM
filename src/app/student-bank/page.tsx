@@ -1047,6 +1047,20 @@ export default function StudentBankPage() {
                 ? 'هذا النموذج للتجربة حالياً. في الإصدارات القادمة سيتم حفظ الموارد وربطها بحسابك بشكل كامل.'
                 : 'Share helpful exams, notes, books or reports. Your resource will be stored and sent to the owner console, then published in the Student Bank once it is approved.'}
             </p>
+            <div
+           className={`mt-2 flex text-[11px] md:text-xs ${
+  isAr ? 'flex-row-reverse' : ''
+}`}
+>
+  <Button variant="outline" size="sm" asChild>
+    <Link href="/student-bank/my">
+      {isAr
+        ? 'عرض ملفاتي المرفوعة'
+        : 'View my uploaded resources'}
+    </Link>
+  </Button>
+</div>
+
           </div>
 
           <form
@@ -1071,15 +1085,16 @@ export default function StudentBankPage() {
                 let token: string;
                 try {
                   token = await getIdTokenOrThrow();
-                } catch {
-                  setSubmitMessage(
-                    isAr
-                      ? 'O�O1O�O� O�O�O3OU, OU,U.U^O�O_ U^O�O\"O�U�O OU,O�U+ U.O1 U.O\"OO\'O�Oc.'
-                      : 'Please sign in to your account before uploading a resource.',
-                  );
-                  setSubmitting(false);
-                  return;
-                }
+             } catch {
+  setSubmitMessage(
+    isAr
+      ? 'الرجاء تسجيل الدخول إلى حسابك قبل رفع أي مورد.'
+      : 'Please sign in to your account before uploading a resource.',
+  );
+  setSubmitting(false);
+  return;
+}
+
 	
 	                const formData = new FormData();
 	                formData.append('title', title.trim());
