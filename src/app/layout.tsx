@@ -43,9 +43,11 @@ export const metadata: Metadata = {
   description: 'وسيلتك للتواصل مع المهنيين المحترفين في ليبيا',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: {
+  children: React.ReactNode;
+}) {
   // Always use Arabic as the default language
   const locale = 'ar';
   const dir = 'rtl';

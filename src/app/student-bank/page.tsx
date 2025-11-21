@@ -19,15 +19,14 @@ import {
 } from 'lucide-react';
 import { getClientLocale } from '@/lib/i18n';
 import type { StudentResource } from '@/lib/student-bank';
-
-type ResourceKind = 'books' | 'journals' | 'exams' | 'notes' | 'other';
+import { kindsToTypes, type ResourceKind } from './config';
 
 type TopicNode = { id: string; labelAr: string; labelEn: string };
 type FieldNode = { id: string; labelAr: string; labelEn: string; topics: TopicNode[] };
 
 const KIND_TABS: { id: ResourceKind; labelAr: string; labelEn: string }[] = [
   { id: 'books',    labelAr: 'كتب ومراجع',       labelEn: 'Books & references' },
-  { id: 'journals', labelAr: 'مقالات وبحوث',     labelEn: 'Articles & research' },
+  { id: 'journals', labelAr: '(دراسات سابقة)مقالات وبحوث',     labelEn: 'Articles & research' },
   { id: 'exams',    labelAr: 'امتحانات وواجبات', labelEn: 'Exams & assignments' },
   { id: 'notes',    labelAr: 'مذكرات ومختصرات',  labelEn: 'Notes & summaries' },
   { id: 'other',    labelAr: 'أخرى',             labelEn: 'Other' },
@@ -416,20 +415,7 @@ const TREE: Record<ResourceKind, FieldNode[]> = {
   ],
 };
 
-function kindsToTypes(kind: ResourceKind): StudentResource['type'][] {
-  switch (kind) {
-    case 'books':
-      return ['book'];
-    case 'journals':
-      return ['report'];
-    case 'exams':
-      return ['exam', 'assignment'];
-    case 'notes':
-      return ['notes'];
-    case 'other':
-      return ['other'];
-  }
-}
+// kindsToTypes is defined in ./config
 
 function drivePreviewUrl(r: StudentResource): string | undefined {
   if (r.driveFileId) {
@@ -730,7 +716,7 @@ export default function StudentBankPage() {
         {/* LIST SECTION */}
         <section
           id="browse"
-          className="mx-auto max-w-5xl border-t bg-background px-4 py-8 md:py-10"
+          className="mx-auto max-w-5xl border-t bg-gradient-to-r from-amber-50 via-amber-100/60 to-background px-4 py-8 md:py-10"
         >
           {/* Tabs */}
           <div
@@ -784,12 +770,12 @@ export default function StudentBankPage() {
                   key={field.id}
                   type="button"
                   onClick={() => handleFieldClick(field.id)}
-                  className={`group flex flex-col justify-between rounded-2xl border bg-card px-4 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] ${
+                  className={`group relative flex flex-col justify-between rounded-2xl border bg-card px-4 py-3 text-left shadow-[0_6px_0_rgba(248,250,252,1),0_18px_32px_rgba(15,23,42,0.12)] transition-all hover:-translate-y-1 hover:shadow-[0_10px_0_rgba(248,250,252,1),0_26px_40px_rgba(15,23,42,0.18)] ${
                     isAr ? 'items-end text-right' : 'items-start text-left'
                   } ${
                     selected
-                      ? 'border-amber-500 bg-amber-50/80'
-                      : 'border-border'
+                      ? 'border-amber-500 bg-gradient-to-br from-amber-100 via-amber-50 to-card'
+                      : 'border-slate-300 bg-gradient-to-br from-slate-50 via-card/95 to-slate-100'
                   }`}
                 >
                   <div>
@@ -930,7 +916,7 @@ export default function StudentBankPage() {
                 {filteredItems.map((r) => (
                   <div
                     key={r.id}
-                    className="flex flex-col gap-2 rounded-xl border bg-card p-3 text-xs shadow-sm md:flex-row md:items-center md:justify-between md:p-4 md:text-sm"
+                    className="group flex flex-col gap-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-card/95 to-amber-100 p-3 text-xs shadow-[0_10px_28px_rgba(15,23,42,0.1)] transition-all hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(15,23,42,0.18)] md:flex-row md:items-center md:justify-between md:p-4 md:text-sm"
                   >
                     <div className={isAr ? 'text-right' : 'text-left'}>
                       <h3 className="font-semibold text-foreground">
@@ -1007,7 +993,7 @@ export default function StudentBankPage() {
             className="mx-auto mt-4 max-w-5xl px-4 pb-8"
             ref={previewRef}
           >
-            <div className="rounded-xl border bg-card p-3 shadow-sm md:p-4">
+            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-card/95 to-amber-100 p-3 shadow-[0_16px_40px_rgba(15,23,42,0.16)] md:p-4">
               <div
                 className={`mb-3 flex items-center justify-between ${
                   isAr ? 'flex-row-reverse text-right' : 'text-left'
@@ -1063,7 +1049,7 @@ export default function StudentBankPage() {
           </div>
 
           <form
-            className={`space-y-3 rounded-2xl border bg-card p-4 text-xs md:text-sm ${
+            className={`space-y-3 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-card/95 to-amber-100 p-4 text-xs shadow-[0_12px_34px_rgba(15,23,42,0.14)] md:text-sm ${
               isAr ? 'text-right' : 'text-left'
             }`}
             onSubmit={async (e) => {
