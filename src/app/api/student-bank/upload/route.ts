@@ -28,6 +28,20 @@ const ALLOWED_TYPES: StudentResource['type'][] = [
   'other',
 ];
 
+// Basic server-side file validation
+const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20MB
+const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'image/jpeg',
+  'image/png',
+];
+
 function normalizeType(raw?: string | null): StudentResource['type'] {
   const s = String(raw || '').toLowerCase();
   if (!s) return 'notes';
@@ -75,6 +89,19 @@ export async function POST(req: Request) {
       }
       const f = form.get('file');
       if (f instanceof File) {
+        // Enforce simple size/type limits
+        if (f.size > MAX_FILE_BYTES) {
+          return NextResponse.json(
+            { error: 'file_too_large', maxBytes: MAX_FILE_BYTES },
+            { status: 400 },
+          );
+        }
+        if (f.type && !ALLOWED_FILE_TYPES.includes(f.type)) {
+          return NextResponse.json(
+            { error: 'unsupported_file_type', allowedTypes: ALLOWED_FILE_TYPES },
+            { status: 400 },
+          );
+        }
         file = f;
       }
     } else {
@@ -113,12 +140,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'missing_title' }, { status: 400 });
     }
 
-    // Optional: identify uploader if token is provided
-    let uploaderId: string | undefined;
+    // Require a signed-in user for uploads
     const authInfo = await requireAuthedUser(req);
-    if (authInfo.ok) {
-      uploaderId = authInfo.uid;
+    if (!authInfo.ok) {
+      return NextResponse.json({ error: authInfo.error }, { status: authInfo.code });
     }
+    const uploaderId: string | undefined = authInfo.uid;
 
     let driveFileId: string | undefined;
     let driveLink: string | undefined;

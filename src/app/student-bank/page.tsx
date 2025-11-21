@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { getClientLocale } from '@/lib/i18n';
 import type { StudentResource } from '@/lib/student-bank';
+import { getIdTokenOrThrow } from '@/lib/auth-client';
 import { kindsToTypes, type ResourceKind } from './config';
 
 type TopicNode = { id: string; labelAr: string; labelEn: string };
@@ -1039,12 +1040,12 @@ export default function StudentBankPage() {
             <h2 className="text-lg font-bold md:text-xl">
               {isAr
                 ? 'أضف مورداً جديداً (تجريبي)'
-                : 'Contribute a student resource (demo)'}
+                : 'Contribute a student resource'}
             </h2>
             <p className="text-xs text-muted-foreground md:text-sm">
               {isAr
                 ? 'هذا النموذج للتجربة حالياً. في الإصدارات القادمة سيتم حفظ الموارد وربطها بحسابك بشكل كامل.'
-                : 'This form is for design/demo only right now. In the next version, uploads will be stored and linked to your account.'}
+                : 'Share helpful exams, notes, books or reports. Your resource will be stored and sent to the owner console, then published in the Student Bank once it is approved.'}
             </p>
           </div>
 
@@ -1065,6 +1066,20 @@ export default function StudentBankPage() {
 	              try {
 	                setSubmitting(true);
 	                setSubmitMessage(null);
+
+                // Ensure user is signed in and attach auth token
+                let token: string;
+                try {
+                  token = await getIdTokenOrThrow();
+                } catch {
+                  setSubmitMessage(
+                    isAr
+                      ? 'O�O1O�O� O�O�O3OU, OU,U.U^O�O_ U^O�O\"O�U�O OU,O�U+ U.O1 U.O\"OO\'O�Oc.'
+                      : 'Please sign in to your account before uploading a resource.',
+                  );
+                  setSubmitting(false);
+                  return;
+                }
 	
 	                const formData = new FormData();
 	                formData.append('title', title.trim());
@@ -1098,6 +1113,9 @@ export default function StudentBankPage() {
 
                 const res = await fetch('/api/student-bank/upload', {
                   method: 'POST',
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
                   body: formData,
                 });
                 if (!res.ok) throw new Error('upload_failed');
@@ -1114,13 +1132,13 @@ export default function StudentBankPage() {
                 setSubmitMessage(
                   isAr
                     ? 'تم استلام الإرسال التجريبي. لاحقًا سيتم حفظه ومراجعته بالكامل.'
-                    : 'Demo submission received. Later this will be fully saved and moderated once storage is enabled.',
+                    : 'Thank you — your resource was received and is now waiting for review. It will appear in the Student Bank once it is approved.',
                 );
               } catch {
                 setSubmitMessage(
                   isAr
                     ? 'تعذر إرسال المورد التجريبي الآن.'
-                    : 'Could not submit your demo resource right now.',
+                    : 'Could not submit your resource right now. Please check the file and try again.',
                 );
               } finally {
                 setSubmitting(false);
@@ -1294,7 +1312,7 @@ export default function StudentBankPage() {
               <p>
                 {isAr
                   ? 'في هذا الإصدار التجريبي قد لا يتم حفظ الملفات أو مشاركتها بشكل نهائي بعد. الهدف هو تجربة الفكرة وتجربة الواجهة.'
-                  : 'In this demo version files may not yet be fully stored or shared. The goal is to validate the idea and the UX.'}
+                  : 'Owner review is required before files and details are published. This helps keep the Student Resource Bank high quality and safe.'}
               </p>
               <div className={isAr ? 'flex flex-row-reverse gap-2' : 'flex gap-2'}>
                 <Button type="submit" size="sm" disabled={submitting}>
@@ -1304,7 +1322,7 @@ export default function StudentBankPage() {
                       : 'Submitting...'
                     : isAr
                     ? 'إرسال كتجربة فقط'
-                    : 'Submit as demo only'}
+                    : 'Submit resource for review'}
                 </Button>
               </div>
             </div>
