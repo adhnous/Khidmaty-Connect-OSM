@@ -140,20 +140,21 @@ export async function POST(req: Request) {
       }
     }
 
-   const id = await createStudentResource({
-  title,
-  description,
-  university,
-  faculty,
-  course,
-  year,
-  type,
-  language,
-  subjectTags,
-  driveFileId,
-  driveLink,
-  uploaderId,
-});
+    const id = await createStudentResource({
+      title,
+      description,
+      university,
+      faculty,
+      course,
+      year,
+      type,
+      language,
+      subjectTags,
+      driveFileId,
+      driveLink,
+      uploaderId,
+      status: 'pending',
+    });
 
 
     return NextResponse.json({

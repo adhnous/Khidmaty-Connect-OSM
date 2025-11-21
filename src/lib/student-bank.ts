@@ -11,6 +11,7 @@ export type StudentResource = {
   year?: string;
   type: 'exam' | 'assignment' | 'notes' | 'report' | 'book' | 'other';
   language?: 'ar' | 'en' | 'both';
+  status?: 'pending' | 'approved' | 'rejected';
   subjectTags?: string[];
   // In future: Drive integration
   driveFileId?: string;
@@ -33,6 +34,7 @@ const MOCK_STUDENT_RESOURCES: StudentResource[] = [
     year: '2023',
     type: 'exam',
     language: 'en',
+    status: 'approved',
     subjectTags: ['math', 'calculus', 'engineering'],
   },
   {
@@ -46,6 +48,7 @@ const MOCK_STUDENT_RESOURCES: StudentResource[] = [
     year: '2022',
     type: 'report',
     language: 'both',
+    status: 'approved',
     subjectTags: ['physics', 'lab', 'report'],
   },
   {
@@ -59,6 +62,7 @@ const MOCK_STUDENT_RESOURCES: StudentResource[] = [
     year: '2021',
     type: 'notes',
     language: 'en',
+    status: 'approved',
     subjectTags: ['economics', 'micro', 'notes'],
   },
   {
@@ -72,6 +76,7 @@ const MOCK_STUDENT_RESOURCES: StudentResource[] = [
     year: 'Any',
     type: 'book',
     language: 'en',
+    status: 'approved',
     subjectTags: ['physics', 'mechanics', 'engineering', 'book'],
   },
   {
@@ -85,6 +90,7 @@ const MOCK_STUDENT_RESOURCES: StudentResource[] = [
     year: 'Any',
     type: 'book',
     language: 'both',
+    status: 'approved',
     subjectTags: ['chemistry', 'organic', 'medicine', 'pharmacy', 'book'],
   },
 ];
@@ -181,6 +187,7 @@ export async function listStudentResources(
         year: data.year,
         type: (data.type as StudentResource['type']) || 'other',
         language: data.language,
+        status: (data.status as StudentResource['status']) || undefined,
         subjectTags: Array.isArray(data.subjectTags)
           ? (data.subjectTags as string[])
           : [],
@@ -191,6 +198,9 @@ export async function listStudentResources(
         createdAt: data.createdAt,
       };
     });
+
+    // Only include approved resources (or legacy ones without a status).
+    rows = rows.filter((r) => !r.status || r.status === 'approved');
 
     if (!rows.length) {
       rows = MOCK_STUDENT_RESOURCES;
@@ -218,6 +228,7 @@ export async function createStudentResource(
     year: input.year ? String(input.year) : undefined,
     type: input.type || 'other',
     language: input.language || 'en',
+    status: input.status || 'pending',
     subjectTags: Array.isArray(input.subjectTags)
       ? input.subjectTags
       : undefined,
