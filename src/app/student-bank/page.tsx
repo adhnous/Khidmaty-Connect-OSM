@@ -913,11 +913,11 @@ export default function StudentBankPage() {
                   : 'No resources match this selection yet.'}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-4 items-stretch">
                 {filteredItems.map((r) => (
                   <div
                     key={r.id}
-                    className="group flex flex-col gap-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-card/95 to-amber-100 p-3 text-xs shadow-[0_10px_28px_rgba(15,23,42,0.1)] transition-all hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(15,23,42,0.18)] md:flex-row md:items-center md:justify-between md:p-4 md:text-sm"
+                    className="group flex h-full min-h-[150px] flex-col justify-between gap-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-card/95 to-amber-100 p-3 text-xs shadow-[0_10px_28px_rgba(15,23,42,0.1)] transition-all hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(15,23,42,0.18)] md:p-4 md:text-sm"
                   >
                     <div className={isAr ? 'text-right' : 'text-left'}>
                       <h3 className="font-semibold text-foreground">
