@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Search, MapPin, Shield, Smartphone, GraduationCap } from "lucide-react";
+import { Play, Search, MapPin, Shield, Smartphone, GraduationCap, Droplet } from "lucide-react";
 import { getClientLocale } from "@/lib/i18n";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -324,6 +324,108 @@ export default function Home() {
                     >
                       <Link href="/student-bank">
                         {isAr ? "استكشف ركن الطلبة" : "Explore Student Resource Bank"}
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------
+            BLOOD DONOR TEASER
+        ------------------------------------------------------------ */}
+        <section className="border-b bg-gradient-to-r from-rose-50 via-rose-100/60 to-background">
+          <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
+            <div
+              className={`relative overflow-hidden rounded-2xl border border-rose-200/70 bg-card/90 shadow-[0_18px_40px_rgba(15,23,42,0.16)] backdrop-blur-sm ${
+                isAr ? "text-right" : "text-left"
+              }`}
+            >
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-rose-300/30 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
+
+              <div
+                className={`relative flex flex-col gap-6 p-5 md:flex-row md:items-center md:p-7 ${
+                  isAr ? "md:flex-row-reverse" : ""
+                }`}
+              >
+                {/* Left: icon + text */}
+                <div className="flex-1">
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-rose-400/60 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-800 shadow-sm">
+                    <Droplet className="h-4 w-4" />
+                    <span>
+                     {isAr
+  ? "خدمة جديدة — متبرعي الدم والأنواع النادرة"
+  : "New — Blood donors & rare types"}
+
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-bold md:text-xl">
+                    {isAr
+                      ? "متبرعي الدم والأنواع النادرة"
+                      : "Blood donors and rare blood types"}
+                  </h2>
+                  <p className="mt-2 text-xs text-muted-foreground md:text-sm">
+                    {isAr
+                      ? "ساعد في إنقاذ الأرواح عن طريق التسجيل كمتبرع بالدم أو البحث عن متبرعين حسب فصيلة الدم، المدينة، والأنواع النادرة."
+                      : "Help save lives by registering as a blood donor or searching for donors by type, city and rare groups."}
+                  </p>
+
+                  <div
+                    className={`mt-4 flex flex-wrap gap-2 text-[11px] md:text-xs ${
+                      isAr ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <span className="rounded-full bg-rose-100 px-3 py-1 text-rose-900">
+                      {isAr ? "متبرعي الدم" : "Blood donors"}
+                    </span>
+                    <span className="rounded-full bg-rose-100 px-3 py-1 text-rose-900">
+                      {isAr ? "الأنواع النادرة" : "Rare blood types"}
+                    </span>
+                    <span className="rounded-full bg-rose-100 px-3 py-1 text-rose-900">
+                      {isAr ? "جهات اتصال موثوقة" : "Trusted contact details"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: bullets + CTA */}
+                <div className="flex flex-1 flex-col justify-between gap-3 text-xs text-muted-foreground md:text-sm">
+                  <ul
+                    className={`space-y-1 ${
+                      isAr ? "ml-6 list-disc text-right" : "mr-6 list-disc text-left"
+                    }`}
+                  >
+                    <li>
+                      {isAr
+                        ? "بحث سريع عن متبرعين حسب فصيلة الدم والمدينة."
+                        : "Quickly search for donors by blood type and city."}
+                    </li>
+                    <li>
+                      {isAr
+                        ? "تمييز الفصائل النادرة لتسهيل الوصول إليها في الحالات الطارئة."
+                        : "Highlight rare types to make them easier to find in emergencies."}
+                    </li>
+                    <li>
+                      {isAr
+                        ? "إمكانية تسجيل نفسك كمتبرع وتحديث بياناتك لاحقًا."
+                        : "Register yourself as a donor and update your details later."}
+                    </li>
+                  </ul>
+
+                  <div
+                    className={`mt-3 flex ${
+                      isAr ? "justify-start md:justify-start" : "justify-end md:justify-end"
+                    }`}
+                  >
+                    <Button
+                      size="sm"
+                      className="bg-rose-500 text-white hover:bg-rose-600"
+                      asChild
+                    >
+                      <Link href="/blood-donors">
+                        {isAr ? "استكشف خدمة متبرعي الدم" : "Explore blood donors"}
                       </Link>
                     </Button>
                   </div>
