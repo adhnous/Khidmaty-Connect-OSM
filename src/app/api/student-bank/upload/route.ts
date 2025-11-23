@@ -30,7 +30,7 @@ const ALLOWED_TYPES: StudentResource['type'][] = [
 ];
 
 // Basic server-side file validation
-const MAX_FILE_BYTES = 40 * 1024 * 1024; // 40MB
+const MAX_FILE_BYTES = 50 * 1024 * 1024; // 40MB
 const ALLOWED_FILE_TYPES = [
   'application/pdf',
   'application/msword',
@@ -43,6 +43,8 @@ const ALLOWED_FILE_TYPES = [
   'image/png',
 ];
 
+const ALLOWED_DRIVE_HOSTS = ['drive.google.com', 'docs.google.com'];
+
 function normalizeType(raw?: string | null): StudentResource['type'] {
   const s = String(raw || '').toLowerCase();
   if (!s) return 'notes';
@@ -54,6 +56,19 @@ function normalizeLanguage(raw?: string | null): StudentResource['language'] {
   const s = String(raw || '').toLowerCase();
   if (s === 'ar' || s === 'both') return s;
   return 'en';
+}
+
+function sanitizeDriveLink(raw?: string | null): string | undefined {
+  const s = String(raw || '').trim();
+  if (!s) return undefined;
+  try {
+    const url = new URL(s);
+    if (url.protocol !== 'https:') return undefined;
+    if (!ALLOWED_DRIVE_HOSTS.includes(url.hostname)) return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 export async function POST(req: Request) {
@@ -84,7 +99,11 @@ export async function POST(req: Request) {
       language = normalizeLanguage(form.get('language') as string | null);
       const rawDriveLink = String(form.get('driveLink') || '').trim();
       if (rawDriveLink) {
-        manualDriveLink = rawDriveLink;
+        const safe = sanitizeDriveLink(rawDriveLink);
+        if (!safe) {
+          return NextResponse.json({ error: 'invalid_drive_link' }, { status: 400 });
+        }
+        manualDriveLink = safe;
       }
       const rawTags = String(form.get('subjectTags') || '').trim();
       if (rawTags) {
@@ -99,7 +118,7 @@ export async function POST(req: Request) {
         if (f.size > MAX_FILE_BYTES) {
           return NextResponse.json(
             { error: 'file_too_large', maxBytes: MAX_FILE_BYTES },
-            { status: 400 },
+            { status: 413 },
           );
         }
         if (f.type && !ALLOWED_FILE_TYPES.includes(f.type)) {
@@ -128,7 +147,13 @@ export async function POST(req: Request) {
       year = payload.year?.trim() || undefined;
       type = normalizeType(payload.type);
       language = normalizeLanguage(payload.language);
-      manualDriveLink = payload.driveLink?.trim() || undefined;
+      if (payload.driveLink) {
+        const safe = sanitizeDriveLink(payload.driveLink);
+        if (!safe) {
+          return NextResponse.json({ error: 'invalid_drive_link' }, { status: 400 });
+        }
+        manualDriveLink = safe;
+      }
       if (payload.subjectTags) {
         if (Array.isArray(payload.subjectTags)) {
           subjectTags = payload.subjectTags

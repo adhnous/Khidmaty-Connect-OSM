@@ -1139,7 +1139,9 @@ export default function StudentBankPage() {
                   body: formData,
                 });
 
-                if (res.status === 413) {
+                const json = await res.json().catch(() => ({} as any));
+
+                if (res.status === 413 || (json as any)?.error === 'file_too_large') {
                   setSubmitMessage(
                     isAr
                       ? 'هذا الملف أكبر من الحد المسموح به في الخادم. من فضلك ارفعه إلى حسابك في Google Drive ثم الصق رابط المشاركة في الحقل المخصص، وأعد الإرسال.'
@@ -1336,6 +1338,25 @@ export default function StudentBankPage() {
                 className="h-8 cursor-pointer text-xs md:h-9 md:text-sm"
               />
             </div>
+
+            {(showManualLinkField || manualDriveLink) && (
+              <div className="space-y-1">
+                <label className="block text-[11px] font-semibold md:text-xs">
+                  {isAr
+                    ? 'رابط Google Drive (بديل عند كبر حجم الملف)'
+                    : 'Google Drive link (fallback when file is too large)'}
+                </label>
+                <Input
+                  value={manualDriveLink}
+                  onChange={(e) => setManualDriveLink(e.target.value)}
+                  className="h-8 text-xs md:h-9 md:text-sm"
+                  dir={isAr ? 'rtl' : 'ltr'}
+                  placeholder={
+                    isAr ? 'https://drive.google.com/...' : 'https://drive.google.com/...'
+                  }
+                />
+              </div>
+            )}
 
             <div
               className={`flex flex-col gap-2 text-[11px] text-muted-foreground md:flex-row md:items-center md:justify-between md:text-xs ${

@@ -11,7 +11,7 @@ export default function AddListingChooserPage() {
   const isAr = locale === "ar";
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-amber-50 via-background to-background">
       <main className="flex-1">
         <div className="mx-auto max-w-3xl px-4 py-10">
           <h1
@@ -32,9 +32,9 @@ export default function AddListingChooserPage() {
               : "Register your service, shop, or items so people near you can discover you and get recommendations when they search for nearby services or sale items."}
           </p>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2 rounded-3xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-card to-amber-100/80 p-4 shadow-[0_22px_45px_rgba(245,158,11,0.22)]">
             {/* Service card */}
-            <Card className="relative h-full overflow-hidden border border-border/70 bg-card/90 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/80 hover:shadow-xl">
+            <Card className="relative h-full overflow-hidden border border-primary/20 bg-gradient-to-br from-primary/5 via-card to-primary/10 shadow-lg shadow-primary/25 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/35">
               <CardHeader className={isAr ? "text-right" : ""}>
                 <CardTitle className="flex items-center gap-3">
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
@@ -62,7 +62,7 @@ export default function AddListingChooserPage() {
             </Card>
 
             {/* Sale item card */}
-            <Card className="relative h-full overflow-hidden border border-border/70 bg-card/90 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/80 hover:shadow-xl">
+            <Card className="relative h-full overflow-hidden border border-amber-300/70 bg-gradient-to-br from-amber-50 via-card to-amber-100 shadow-lg shadow-amber-200/60 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-300/80">
               <CardHeader className={isAr ? "text-right" : ""}>
                 <CardTitle className="flex items-center gap-3">
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
