@@ -915,7 +915,7 @@ export default function StudentBankPage() {
                   : 'No resources match this selection yet.'}
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-4 items-stretch">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 items-stretch">
                 {filteredItems.map((r) => (
                   <div
                     key={r.id}
