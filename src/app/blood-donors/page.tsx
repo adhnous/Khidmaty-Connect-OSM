@@ -124,7 +124,7 @@ export default function BloodDonorsPage() {
 
         {/* LIST + FILTERS */}
         <section className="mx-auto max-w-5xl px-4 py-8 md:py-10">
-          <div className="grid gap-6 items-start md:grid-cols-2">
+          <div className="grid gap-6 items-start lg:grid-cols-2">
             <div>
               <div
                 className={`mb-4 grid gap-3 text-[11px] md:grid-cols-4 md:text-xs ${
@@ -215,7 +215,7 @@ export default function BloodDonorsPage() {
                   : 'No donors found for this filter yet.'}
               </p>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 lg:grid-cols-2">
                 {items.map((d) => (
                   <div
                     key={d.id}
