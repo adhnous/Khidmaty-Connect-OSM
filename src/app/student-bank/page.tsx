@@ -762,7 +762,7 @@ export default function StudentBankPage() {
           {/* Field cards */}
           <div
             ref={fieldsRef}
-            className={`mb-6 grid gap-4 text-[11px] md:grid-cols-2 md:text-xs ${
+            className={`mb-6 grid grid-cols-2 gap-3 text-[11px] md:grid-cols-3 md:text-xs ${
               highlightFields ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-background' : ''
             }`}
           >
@@ -915,7 +915,7 @@ export default function StudentBankPage() {
                   : 'No resources match this selection yet.'}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 items-stretch">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5 items-stretch">
                 {filteredItems.map((r) => (
                   <div
                     key={r.id}

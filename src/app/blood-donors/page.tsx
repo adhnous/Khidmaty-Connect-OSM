@@ -262,7 +262,7 @@ export default function BloodDonorsPage() {
                       : 'No donors found for this filter yet.'}
                   </p>
                 ) : (
-                  <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                     {items.map((d) => (
                       <div
                         key={d.id}
@@ -571,4 +571,3 @@ export default function BloodDonorsPage() {
     </div>
   );
 }
-

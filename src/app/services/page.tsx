@@ -333,7 +333,7 @@ export default function ServicesBrowsePage() {
           )}
 
           {loading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
@@ -346,7 +346,7 @@ export default function ServicesBrowsePage() {
 {isAr ? 'لا توجد خدمات بعد.' : 'No services yet.'}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
               {services.map((s) => (
                 <ServiceCard
                   key={s.id}
