@@ -454,6 +454,8 @@ export default function StudentBankPage() {
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [manualDriveLink, setManualDriveLink] = useState('');
+  const [showManualLinkField, setShowManualLinkField] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewItem, setPreviewItem] = useState<StudentResource | null>(null);
@@ -1125,6 +1127,9 @@ export default function StudentBankPage() {
                 if (file) {
                   formData.append('file', file);
                 }
+                if (manualDriveLink.trim()) {
+                  formData.append('driveLink', manualDriveLink.trim());
+                }
 
                 const res = await fetch('/api/student-bank/upload', {
                   method: 'POST',
@@ -1133,6 +1138,17 @@ export default function StudentBankPage() {
                   },
                   body: formData,
                 });
+
+                if (res.status === 413) {
+                  setSubmitMessage(
+                    isAr
+                      ? 'هذا الملف أكبر من الحد المسموح به في الخادم. من فضلك ارفعه إلى حسابك في Google Drive ثم الصق رابط المشاركة في الحقل المخصص، وأعد الإرسال.'
+                      : 'This file is too large for the server limits. Please upload it to your own Google Drive and paste the share link in the field below, then submit again.',
+                  );
+                  setShowManualLinkField(true);
+                  throw new Error('payload_too_large');
+                }
+
                 if (!res.ok) throw new Error('upload_failed');
 
                 setTitle('');
@@ -1142,6 +1158,8 @@ export default function StudentBankPage() {
                 setYear('');
                 setType('exam');
                 setLanguage('en');
+                setManualDriveLink('');
+                setShowManualLinkField(false);
                 if (fileInputRef.current) fileInputRef.current.value = '';
 
                 setSubmitMessage(

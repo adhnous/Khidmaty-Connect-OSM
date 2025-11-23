@@ -1,0 +1,30 @@
+                setUniversity('');
+                setCourse('');
+                setYear('');
+                setType('exam');
+                setLanguage('en');
+                setManualDriveLink('');
+                setShowManualLinkField(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+
+                setSubmitMessage(
+                  isAr
+                    ? 'تم استلام الإرسال التجريبي. لاحقًا سيتم حفظه ومراجعته بالكامل.'
+                    : 'Thank you — your resource was received and is now waiting for review. It will appear in the Student Bank once it is approved.',
+                );
+              } catch {
+                setSubmitMessage(
+                  isAr
+                    ? 'تعذر إرسال المورد التجريبي الآن.'
+                    : 'Could not submit your resource right now. Please check the file and try again.',
+                );
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-semibold md:text-xs">
+                  {isAr ? 'عنوان المورد' : 'Resource title'}
+                </label>

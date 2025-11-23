@@ -17,6 +17,7 @@ type UploadJsonPayload = {
   type?: string;
   language?: string;
   subjectTags?: string[] | string;
+  driveLink?: string;
 };
 
 const ALLOWED_TYPES: StudentResource['type'][] = [
@@ -29,7 +30,7 @@ const ALLOWED_TYPES: StudentResource['type'][] = [
 ];
 
 // Basic server-side file validation
-const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20MB
+const MAX_FILE_BYTES = 40 * 1024 * 1024; // 40MB
 const ALLOWED_FILE_TYPES = [
   'application/pdf',
   'application/msword',
@@ -69,6 +70,7 @@ export async function POST(req: Request) {
     let language: StudentResource['language'] = 'en';
     let file: File | null = null;
     let subjectTags: string[] | undefined;
+    let manualDriveLink: string | undefined;
 
     if (contentType.includes('multipart/form-data')) {
       const form = await req.formData();
@@ -80,6 +82,10 @@ export async function POST(req: Request) {
       year = String(form.get('year') || '').trim() || undefined;
       type = normalizeType(form.get('type') as string | null);
       language = normalizeLanguage(form.get('language') as string | null);
+      const rawDriveLink = String(form.get('driveLink') || '').trim();
+      if (rawDriveLink) {
+        manualDriveLink = rawDriveLink;
+      }
       const rawTags = String(form.get('subjectTags') || '').trim();
       if (rawTags) {
         subjectTags = rawTags
@@ -122,6 +128,7 @@ export async function POST(req: Request) {
       year = payload.year?.trim() || undefined;
       type = normalizeType(payload.type);
       language = normalizeLanguage(payload.language);
+      manualDriveLink = payload.driveLink?.trim() || undefined;
       if (payload.subjectTags) {
         if (Array.isArray(payload.subjectTags)) {
           subjectTags = payload.subjectTags
@@ -165,6 +172,10 @@ export async function POST(req: Request) {
       } catch (e) {
         console.error('Drive upload failed, continuing with metadata only', e);
       }
+    }
+
+    if (!driveLink && manualDriveLink) {
+      driveLink = manualDriveLink;
     }
 
     const id = await createStudentResource({

@@ -191,7 +191,7 @@ export default function BloodDonorsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border bg-card p-4 text-xs md:text-sm">
+          <div className="rounded-3xl border border-rose-200/80 bg-gradient-to-br from-rose-50 via-card to-rose-100/70 p-4 text-xs shadow-[0_22px_45px_rgba(244,63,94,0.20)] md:p-5 md:text-sm">
             {error && (
               <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700 md:text-sm">
                 {error}
@@ -274,7 +274,7 @@ export default function BloodDonorsPage() {
 
           <div>
           {/* Contribute form */}
-          <section className="rounded-2xl border bg-card p-4 text-xs md:p-5 md:text-sm">
+          <section className="rounded-3xl border border-rose-200/80 bg-gradient-to-br from-rose-50 via-card to-rose-100/70 p-4 text-xs shadow-[0_22px_45px_rgba(244,63,94,0.20)] md:p-5 md:text-sm">
             <h2 className="mb-2 text-sm font-bold md:text-base">
               {isAr ? 'سجّل كمتبرع بالدم' : 'Register as a blood donor'}
             </h2>
