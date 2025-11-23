@@ -136,15 +136,16 @@ export default function BloodDonorsPage() {
                 {isAr ? 'فصيلة الدم' : 'Blood type'}
               </label>
               <select
-                className="w-full rounded border px-2 py-1 text-xs md:text-sm"
-                value={bloodTypeFilter}
+               className="w-full rounded border border-rose-200 bg-white/80 px-2 py-1 text-xs text-rose-700 shadow-sm outline-none transition hover:border-rose-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 md:text-sm"
+  value={bloodTypeFilter}
                 onChange={(e) =>
                   setBloodTypeFilter(
                     e.target.value as BloodDonorListItem['bloodType'] | ''
                   )
                 }
               >
-                <option value="">{isAr ? 'أي' : 'Any'}</option>
+               <option value="">{isAr ? 'أي فصيلة' : 'Any type'}</option>
+
                 {BLOOD_TYPES.map((bt) => (
                   <option key={bt} value={bt}>
                     {bt}
@@ -374,8 +375,8 @@ export default function BloodDonorsPage() {
                   {isAr ? 'فصيلة الدم' : 'Blood type'}
                 </label>
                 <select
-                  className="h-8 w-full rounded border px-2 text-xs md:h-9 md:text-sm"
-                  value={bloodType}
+                   className="h-8 w-full rounded border border-rose-200 bg-white/80 px-2 text-xs text-rose-700 shadow-sm outline-none transition hover:border-rose-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 md:h-9 md:text-sm"
+  value={bloodType}
                   onChange={(e) =>
                     setBloodType(e.target.value as BloodDonorListItem['bloodType'])
                   }
