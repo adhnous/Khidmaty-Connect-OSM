@@ -290,7 +290,13 @@ export default function BloodDonorsPage() {
                             )}
                             {d.availability && (
                               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-800">
-                                {d.availability}
+                                {isAr
+                                  ? d.availability === 'available'
+                                    ? 'U.O�U^U?O�'
+                                    : d.availability === 'maybe'
+                                    ? 'O�O"U.O'
+                                    : 'O�USO� U.O�U^U?O�'
+                                  : d.availability}
                               </span>
                             )}
                           </div>
