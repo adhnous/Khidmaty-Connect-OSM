@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import Image from 'next/image';
 import CityPicker from '@/components/city-picker';
-import { libyanCities } from '@/lib/cities';
+import { libyanCities, cityLabel } from '@/lib/cities';
 import { getClientLocale } from '@/lib/i18n';
 import { getIdTokenOrThrow } from '@/lib/auth-client';
 
@@ -166,7 +167,7 @@ export default function BloodDonorsPage() {
             {/* Filters + list */}
             <div>
               <div
-                className={`mb-4 grid gap-3 text-[11px] md:grid-cols-4 md:text-xs ${
+                className={`mb-4 grid gap-3 rounded-2xl border border-rose-200/70 bg-white/80 p-3 text-[11px] shadow-sm md:grid-cols-4 md:p-4 md:text-xs ${
                   isAr ? 'text-right' : 'text-left'
                 }`}
               >
@@ -269,6 +270,30 @@ export default function BloodDonorsPage() {
                         className="flex flex-col justify-between rounded-xl border bg-background/60 p-3 text-xs shadow-sm md:p-4 md:text-sm"
                       >
                         <div className={isAr ? 'text-right' : 'text-left'}>
+                          <div className="mb-2 flex justify-center">
+                            <Image
+                              src="/blood-donor-card.png"
+                              alt={isAr ? 'تبرع بالدم' : 'Donate blood'}
+                              width={96}
+                              height={64}
+                              className="h-16 w-auto object-contain"
+                            />
+                          </div>
+                          <div className="mb-2 text-[11px] font-semibold leading-snug text-indigo-700">
+                            {isAr ? (
+                              <>
+                                <div>تبرع بدمك</div>
+                                <div>هناك من هو في خطر</div>
+                                <div>ينتظرك</div>
+                              </>
+                            ) : (
+                              <>
+                                <div>Donate your blood</div>
+                                <div>Someone in danger</div>
+                                <div>is waiting for you</div>
+                              </>
+                            )}
+                          </div>
                           <div className="flex items-center justify-between gap-2">
                             <h3 className="text-sm font-semibold md:text-base">
                               {d.name}
@@ -280,7 +305,7 @@ export default function BloodDonorsPage() {
                           <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground md:text-xs">
                             {d.city && (
                               <span className="rounded-full bg-muted px-2 py-0.5">
-                                {d.city}
+                                {cityLabel(isAr ? 'ar' : 'en', d.city)}
                               </span>
                             )}
                             {d.rare && (
