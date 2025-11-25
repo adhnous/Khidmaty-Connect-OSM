@@ -1124,11 +1124,14 @@ export default function StudentBankPage() {
 	                }
 
                 const file = fileInputRef.current?.files?.[0];
-                if (file) {
+                const driveLinkTrimmed = manualDriveLink.trim();
+                // If a manual Drive link is provided, skip uploading the file
+                // to avoid hitting platform payload limits again.
+                if (file && !driveLinkTrimmed) {
                   formData.append('file', file);
                 }
-                if (manualDriveLink.trim()) {
-                  formData.append('driveLink', manualDriveLink.trim());
+                if (driveLinkTrimmed) {
+                  formData.append('driveLink', driveLinkTrimmed);
                 }
 
                 const res = await fetch('/api/student-bank/upload', {
