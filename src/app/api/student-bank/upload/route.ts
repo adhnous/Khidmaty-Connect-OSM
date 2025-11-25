@@ -30,7 +30,7 @@ const ALLOWED_TYPES: StudentResource['type'][] = [
 ];
 
 // Basic server-side file validation
-const MAX_FILE_BYTES = 50 * 1024 * 1024; // 40MB
+const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100MB
 const ALLOWED_FILE_TYPES = [
   'application/pdf',
   'application/msword',
