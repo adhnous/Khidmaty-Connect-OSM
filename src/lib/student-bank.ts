@@ -19,6 +19,9 @@ export type StudentResource = {
   driveFolderId?: string;
   uploaderId?: string;
   createdAt?: Date | unknown;
+  // Optional flag to hide a resource
+  // from the owner console listing.
+  hiddenFromOwner?: boolean;
 };
 
 // Temporary mock data until Firestore is populated
@@ -232,10 +235,11 @@ export async function createStudentResource(
     subjectTags: Array.isArray(input.subjectTags)
       ? input.subjectTags
       : undefined,
-  driveFileId: input.driveFileId || undefined,
-  driveLink: input.driveLink || undefined,
+    driveFileId: input.driveFileId || undefined,
+    driveLink: input.driveLink || undefined,
     driveFolderId: folderIdForType(input.type || 'other'),
     uploaderId: input.uploaderId || undefined,
+    hiddenFromOwner: input.hiddenFromOwner || undefined,
     createdAt:
       typeof FieldValue?.serverTimestamp === 'function'
         ? FieldValue.serverTimestamp()

@@ -18,6 +18,7 @@ type UploadJsonPayload = {
   language?: string;
   subjectTags?: string[] | string;
   driveLink?: string;
+  testOnly?: boolean;
 };
 
 const ALLOWED_TYPES: StudentResource['type'][] = [
@@ -30,7 +31,8 @@ const ALLOWED_TYPES: StudentResource['type'][] = [
 ];
 
 // Basic server-side file validation
-const MAX_FILE_BYTES = 40 * 1024 * 1024; // 40MB
+const MAX_FILE_BYTES =
+  Number(process.env.STUDENT_BANK_MAX_FILE_BYTES || 40 * 1024 * 1024); // default ~40MB
 const ALLOWED_FILE_TYPES = [
   'application/pdf',
   'application/msword',
@@ -86,6 +88,7 @@ export async function POST(req: Request) {
     let file: File | null = null;
     let subjectTags: string[] | undefined;
     let manualDriveLink: string | undefined;
+    let testOnly = false;
 
     if (contentType.includes('multipart/form-data')) {
       const form = await req.formData();
@@ -97,6 +100,7 @@ export async function POST(req: Request) {
       year = String(form.get('year') || '').trim() || undefined;
       type = normalizeType(form.get('type') as string | null);
       language = normalizeLanguage(form.get('language') as string | null);
+      testOnly = String(form.get('testOnly') || '').trim() === '1';
       const rawDriveLink = String(form.get('driveLink') || '').trim();
       if (rawDriveLink) {
         const safe = sanitizeDriveLink(rawDriveLink);
@@ -147,6 +151,7 @@ export async function POST(req: Request) {
       year = payload.year?.trim() || undefined;
       type = normalizeType(payload.type);
       language = normalizeLanguage(payload.language);
+      testOnly = Boolean(payload.testOnly);
       if (payload.driveLink) {
         const safe = sanitizeDriveLink(payload.driveLink);
         if (!safe) {
@@ -195,6 +200,9 @@ export async function POST(req: Request) {
         driveFileId = uploaded.fileId;
         driveLink = uploaded.webViewLink;
       } catch (e) {
+        // Keep behaviour as before: log the error
+        // but continue storing the metadata so the
+        // owner can still see the resource.
         console.error('Drive upload failed, continuing with metadata only', e);
       }
     }
@@ -216,6 +224,7 @@ export async function POST(req: Request) {
       driveFileId,
       driveLink,
       uploaderId,
+      hiddenFromOwner: testOnly || undefined,
       status: 'pending',
     });
 

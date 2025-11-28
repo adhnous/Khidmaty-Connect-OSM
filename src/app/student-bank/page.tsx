@@ -456,6 +456,9 @@ export default function StudentBankPage() {
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [manualDriveLink, setManualDriveLink] = useState('');
   const [showManualLinkField, setShowManualLinkField] = useState(false);
+  const [testOnly, setTestOnly] = useState(false);
+  const [uploadsEnabled, setUploadsEnabled] = useState(true);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewItem, setPreviewItem] = useState<StudentResource | null>(null);
@@ -466,6 +469,33 @@ export default function StudentBankPage() {
 
   const [highlightFields, setHighlightFields] = useState(false);
   const [highlightTopics, setHighlightTopics] = useState(false);
+
+  // Load simple settings (whether uploads are enabled)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/student-bank/settings', { cache: 'no-store' });
+        const json = await res.json().catch(() => ({} as any));
+        if (!cancelled && res.ok) {
+          const enabled =
+            typeof json.uploadsEnabled === 'boolean' ? json.uploadsEnabled : true;
+          setUploadsEnabled(enabled);
+        }
+      } catch {
+        if (!cancelled) {
+          setUploadsEnabled(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setSettingsLoaded(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Load list from API
   useEffect(() => {
@@ -1033,6 +1063,7 @@ export default function StudentBankPage() {
         )}
 
         {/* CONTRIBUTE FORM (upload kept as before) */}
+        {uploadsEnabled && (
         <section className="mx-auto max-w-5xl px-4 pb-12">
           <div
             className={`mb-4 flex flex-col gap-2 ${
@@ -1062,6 +1093,21 @@ export default function StudentBankPage() {
     </Link>
   </Button>
 </div>
+            <div className="mt-2 flex text-[11px] md:text-xs">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-muted/40 px-3 py-1">
+                <input
+                  type="checkbox"
+                  className="h-3 w-3"
+                  checked={testOnly}
+                  onChange={(e) => setTestOnly(e.target.checked)}
+                />
+                <span>
+                  {isAr
+                    ? 'إرسال كتجربة فقط (لن يظهر في لوحة المالك)'
+                    : 'Send as test only (hide from owner app)'}
+                </span>
+              </label>
+            </div>
 
           </div>
 
@@ -1119,9 +1165,12 @@ export default function StudentBankPage() {
 	                tags.push(activeKind);
 	                if (activeFieldId) tags.push(activeFieldId);
 	                if (activeTopicId) tags.push(activeTopicId);
-	                if (tags.length) {
-	                  formData.append('subjectTags', tags.join(','));
-	                }
+                if (tags.length) {
+                  formData.append('subjectTags', tags.join(','));
+                }
+                if (testOnly) {
+                  formData.append('testOnly', '1');
+                }
 
                 const file = fileInputRef.current?.files?.[0];
                 const driveLinkTrimmed = manualDriveLink.trim();
@@ -1151,10 +1200,56 @@ export default function StudentBankPage() {
                       : 'This file is too large for the server limits. Please upload it to your own Google Drive and paste the share link in the field below, then submit again.',
                   );
                   setShowManualLinkField(true);
-                  throw new Error('payload_too_large');
+                  setSubmitting(false);
+                  return;
                 }
 
-                if (!res.ok) throw new Error('upload_failed');
+                if (!res.ok) {
+                  const code = (json as any)?.error as string | undefined;
+                  if (code === 'invalid_drive_link') {
+                    setSubmitMessage(
+                      isAr
+                        ? 'رابط Google Drive غير صالح. تأكد أنه يبدأ بـ https://drive.google.com أو https://docs.google.com وأنه رابط مشاركة.'
+                        : 'The Google Drive link looks invalid. Please use a share link from https://drive.google.com or https://docs.google.com.',
+                    );
+                  } else if (code === 'unsupported_file_type') {
+                    setSubmitMessage(
+                      isAr
+                        ? 'نوع الملف غير مدعوم. الرجاء استخدام PDF أو Word أو PowerPoint أو Excel أو صورة (JPG/PNG).'
+                        : 'Unsupported file type. Please upload a PDF, Word, PowerPoint, Excel, or image (JPG/PNG).',
+                    );
+                  } else if (code === 'missing_title') {
+                    setSubmitMessage(
+                      isAr
+                        ? 'الرجاء إدخال عنوان للمادة.'
+                        : 'Please enter a title for your resource.',
+                    );
+                  } else if (code === 'drive_upload_failed') {
+                    setSubmitMessage(
+                      isAr
+                        ? 'تعذر حفظ الملف في Google Drive. يمكنك رفع الملف يدويًا إلى حسابك في Google Drive ثم لصق رابط المشاركة هنا، أو المحاولة مرة أخرى لاحقًا.'
+                        : 'We could not save the file to Google Drive. Please upload it to your own Google Drive and paste the share link here, or try again later.',
+                    );
+                  } else if (
+                    code === 'missing_token' ||
+                    code === 'invalid_token' ||
+                    res.status === 401
+                  ) {
+                    setSubmitMessage(
+                      isAr
+                        ? 'انتهت صلاحية تسجيل الدخول. الرجاء تسجيل الدخول مرة أخرى ثم إعادة المحاولة.'
+                        : 'Your sign-in session has expired. Please sign in again and then retry the upload.',
+                    );
+                  } else {
+                    setSubmitMessage(
+                      isAr
+                        ? 'تعذر رفع المادة الآن. يرجى التحقق من الملف أو الرابط ثم إعادة المحاولة لاحقًا.'
+                        : 'Could not submit your resource right now. Please check the file or link and try again later.',
+                    );
+                  }
+                  setSubmitting(false);
+                  return;
+                }
 
                 setTitle('');
                 setDescription('');
@@ -1165,6 +1260,7 @@ export default function StudentBankPage() {
                 setLanguage('en');
                 setManualDriveLink('');
                 setShowManualLinkField(false);
+                setTestOnly(false);
                 if (fileInputRef.current) fileInputRef.current.value = '';
 
                 setSubmitMessage(
@@ -1391,6 +1487,7 @@ export default function StudentBankPage() {
             )}
           </form>
         </section>
+        )}
       </main>
     </div>
   );
