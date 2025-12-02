@@ -3,23 +3,45 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { getClientLocale } from "@/lib/i18n";
+import { getClientLocale, tr } from "@/lib/i18n";
 import { getFeatures } from "@/lib/settings";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Globe, User as UserIcon, Menu, Bell, Shield, Handshake } from "lucide-react";
+import {
+  LogOut,
+  Globe,
+  User as UserIcon,
+  Menu,
+  Bell,
+  Shield,
+  Handshake,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { auth, db } from "@/lib/firebase";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useToast } from "@/hooks/use-toast";
-import { getFcmToken, saveFcmToken } from "@/lib/messaging";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 function cx(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
+
+type NavItem = {
+  href: string;
+  label: string;
+};
 
 export default function TopNav() {
   const pathname = usePathname();
@@ -27,48 +49,13 @@ export default function TopNav() {
   const locale = getClientLocale();
   const { user, userProfile } = useAuth();
   const [open, setOpen] = useState(false);
-  const { toast } = useToast();
-  const [notifLoading, setNotifLoading] = useState(false);
   const [unread, setUnread] = useState(0);
   const [showCityViews, setShowCityViews] = useState(true);
 
-  const enableNotifications = async () => {
-    if (!user) return;
-    try {
-      setNotifLoading(true);
-      const token = await getFcmToken();
-      if (!token) {
-        const granted = typeof Notification !== "undefined" && Notification.permission === "granted";
-        toast({
-          variant: "destructive",
-          title: getClientLocale() === "ar" ? "لم يتم تفعيل الإشعارات" : "Notifications not enabled",
-          description: granted
-            ? getClientLocale() === "ar"
-              ? "مشكلة إعدادات على الخادم."
-              : "Server configuration issue (VAPID)."
-            : getClientLocale() === "ar"
-              ? "تم رفض الإذن أو غير مدعوم."
-              : "Permission denied or unsupported."
-        });
-        return;
-      }
-      await saveFcmToken(user.uid, token);
-      toast({
-        title: getClientLocale() === "ar" ? "تم تفعيل الإشعارات" : "Notifications enabled",
-        description:
-          getClientLocale() === "ar"
-            ? "ستتلقى تنبيهات عند وجود نشاط جديد."
-            : "You will receive alerts for new activity."
-      });
-    } catch {
-      toast({
-        variant: "destructive",
-        title: getClientLocale() === "ar" ? "فشل التفعيل" : "Enable failed"
-      });
-    } finally {
-      setNotifLoading(false);
-    }
-  };
+  const role = userProfile?.role || null;
+  const isOwner = role === "owner";
+  const isProviderLike =
+    role === "provider" || role === "admin" || role === "owner";
 
   // Subscribe to unread conversations count
   useEffect(() => {
@@ -99,60 +86,32 @@ export default function TopNav() {
       return () => {
         try {
           unsub();
-        } catch {}
+        } catch {
+          // ignore
+        }
       };
     } catch {
       setUnread(0);
     }
   }, [user?.uid]);
 
-  const links = useMemo(() => {
-    const items = [
-      { href: "/services", label: locale === "ar" ? "تصفح الخدمات" : "Browse Services" }
-    ];
-    if (showCityViews) {
-      items.push({
-        href: "/city-views",
-        label: locale === "ar" ? "مشاهد المدن" : "City Views"
-      });
-    }
-    // Expose Sales feed in primary navigation
-    items.push({
-      href: "/sales",
-      label: locale === "ar" ? "البيع والتجارة" : "Sales & Trade"
-    });
-    const role = userProfile?.role;
-    const canSeeProvider = role === "provider" || role === "admin" || role === "owner";
-    if (canSeeProvider) {
-      items.push(
-        { href: "/dashboard", label: locale === "ar" ? "لوحة المزود" : "Provider Dashboard" },
-        { href: "/dashboard/services", label: locale === "ar" ? "إعلاناتي" : "My Services" },
-{
-  href: "/add",
-  label:
-    locale === "ar"
-      ? "إضافة خدمة أو عنصر للبيع"
-      : "Add service or sale item",
-},
-        { href: "/dashboard/settings", label: locale === "ar" ? "الإعدادات" : "Settings" }
-      );
-    }
-    return items;
-  }, [locale, userProfile?.role, showCityViews]);
-
+  // Feature flags (e.g. showCityViews)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const f = await getFeatures();
         if (!cancelled) setShowCityViews(f?.showCityViews !== false);
-      } catch {}
+      } catch {
+        // ignore
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
+  // Live updates for feature flags
   useEffect(() => {
     try {
       const ref = doc(db, "settings", "features");
@@ -163,10 +122,67 @@ export default function TopNav() {
       return () => {
         try {
           unsub();
-        } catch {}
+        } catch {
+          // ignore
+        }
       };
-    } catch {}
+    } catch {
+      // ignore
+    }
   }, []);
+
+  const links: NavItem[] = useMemo(() => {
+    const items: NavItem[] = [];
+
+    items.push({
+      href: "/services",
+      label: tr(locale, "header.browse", "Browse Services"),
+    });
+
+    if (showCityViews) {
+      items.push({
+        href: "/city-views",
+        label: locale === "ar" ? "مناظر المدن" : "City Views",
+      });
+    }
+
+    items.push({
+      href: "/sales",
+      label: locale === "ar" ? "البيع والتجارة" : "Sales & Trade",
+    });
+
+    if (isProviderLike) {
+      items.push({
+        href: "/dashboard",
+        label: tr(locale, "header.providerDashboard", "Provider Dashboard"),
+      });
+
+      // OWNER‑ONLY items
+      if (isOwner) {
+        items.push(
+          {
+            href: "/dashboard/services",
+            label: tr(locale, "header.myServices", "My Services"),
+          },
+          {
+            href: "/add",
+            label: tr(
+              locale,
+              "header.addService",
+              "Add service or sale item",
+            ),
+          },
+        );
+      }
+
+      items.push({
+        href: "/dashboard/settings",
+        label: locale === "ar" ? "الإعدادات" : "Settings",
+      });
+    }
+
+    return items;
+  }, [locale, showCityViews, isProviderLike, isOwner]);
 
   const changeLocale = async () => {
     try {
@@ -175,7 +191,9 @@ export default function TopNav() {
         document.cookie = `locale=${next}; path=/; max-age=31536000`;
       }
       router.refresh();
-    } catch {}
+    } catch {
+      // ignore
+    }
   };
 
   const onSignOut = async () => {
@@ -203,10 +221,10 @@ export default function TopNav() {
       className="fixed inset-x-0 z-[100] bg-black text-white border-b border-white/10"
       style={{
         top: "calc(var(--ad-height) + env(safe-area-inset-top))",
-        height: "var(--navH, 56px)"
+        height: "var(--navH, 56px)",
       }}
       role="navigation"
-      aria-label={locale === "ar" ? "شريط التنقل" : "Top navigation"}
+      aria-label={locale === "ar" ? "التنقل العلوي" : "Top navigation"}
     >
       <div className="mx-auto flex h-full max-w-7xl items-center gap-3 px-4 sm:px-6">
         {/* Brand on the right (RTL) */}
@@ -220,7 +238,7 @@ export default function TopNav() {
             <Handshake className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2" />
           </div>
           <div className="font-bold tracking-wide truncate text-orange-400">
-            Khidmaty · خدمتي
+            Khidmaty
           </div>
         </Link>
 
@@ -232,7 +250,7 @@ export default function TopNav() {
               href={l.href}
               className={cx(
                 "rounded px-3 py-2 text-sm hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[44px]",
-                isActive(l.href) && "bg-white/15 font-medium"
+                isActive(l.href) && "bg-white/15 font-medium",
               )}
             >
               {l.label}
@@ -286,37 +304,45 @@ export default function TopNav() {
                     </AvatarFallback>
                   </Avatar>
                   <span className="ms-2 hidden text-xs sm:inline">
-                    {user?.email ?? (locale === "ar" ? "الحساب" : "Account")}
+                    {user?.email ?? tr(locale, "header.profile", "Account")}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-40">
-                {userProfile?.role === "provider" ||
-                userProfile?.role === "admin" ||
-                userProfile?.role === "owner" ? (
+                {isProviderLike ? (
                   <>
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/profile">
-                        {locale === "ar" ? "الملف الشخصي" : "Profile"}
+                        {tr(locale, "header.profile", "Profile")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard">
-                        {locale === "ar" ? "لوحة المزود" : "Provider Dashboard"}
+                        {tr(
+                          locale,
+                          "header.providerDashboard",
+                          "Provider Dashboard",
+                        )}
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/services">
-                        {locale === "ar" ? "إعلاناتي" : "My Services"}
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-  <Link href="/add">
-    {locale === "ar"
-      ? "إضافة خدمة أو عنصر للبيع"
-      : "Add service or sale item"}
-  </Link>
-</DropdownMenuItem>
+                    {isOwner && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard/services">
+                            {tr(locale, "header.myServices", "My Services")}
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/add">
+                            {tr(
+                              locale,
+                              "header.addService",
+                              "Add service or sale item",
+                            )}
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/settings">
                         {locale === "ar" ? "الإعدادات" : "Settings"}
@@ -326,13 +352,16 @@ export default function TopNav() {
                 ) : (
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/profile">
-                      {locale === "ar" ? "الملف الشخصي" : "Profile"}
+                      {tr(locale, "header.profile", "Profile")}
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={onSignOut} className="text-red-500">
+                <DropdownMenuItem
+                  onClick={onSignOut}
+                  className="text-red-500"
+                >
                   <LogOut className="me-2 h-4 w-4" />{" "}
-                  {locale === "ar" ? "تسجيل الخروج" : "Sign out"}
+                  {tr(locale, "header.signOut", "Sign out")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -345,7 +374,7 @@ export default function TopNav() {
               >
                 <UserIcon className="h-4 w-4" />
                 <span className="ms-2 hidden text-xs sm:inline">
-                  {locale === "ar" ? "تسجيل الدخول" : "Login"}
+                  {tr(locale, "header.login", "Login")}
                 </span>
               </Button>
             </Link>
@@ -368,18 +397,21 @@ export default function TopNav() {
               aria-label={locale === "ar" ? "القائمة" : "Menu"}
             >
               <SheetHeader>
-                <SheetTitle>{locale === "ar" ? "القائمة" : "Menu"}</SheetTitle>
+                <SheetTitle>
+                  {locale === "ar" ? "القائمة" : "Menu"}
+                </SheetTitle>
               </SheetHeader>
 
               <div className="flex flex-col gap-1 mt-4">
                 <div className="px-3 pb-1 text-xs font-semibold text-muted-foreground">
-                  {locale === "ar" ? "التصفح" : "Browse"}
+                  {locale === "ar" ? "تصفح" : "Browse"}
                 </div>
 
                 {links
                   // hide provider-only links from the mobile sheet
                   .filter(
-                    (l) => !(l.href.startsWith("/dashboard") || l.href === "/create")
+                    (l) =>
+                      !l.href.startsWith("/dashboard") && l.href !== "/create",
                   )
                   .map((l) => (
                     <Link
@@ -387,7 +419,7 @@ export default function TopNav() {
                       href={l.href}
                       className={cx(
                         "rounded ps-3 pe-3 h-11 inline-flex items-center text-sm hover:bg-accent/10",
-                        isActive(l.href) && "bg-accent/10 font-medium"
+                        isActive(l.href) && "bg-accent/10 font-medium",
                       )}
                     >
                       {l.label}
@@ -400,16 +432,14 @@ export default function TopNav() {
                     onClick={changeLocale}
                     className="rounded ps-3 pe-3 h-11 inline-flex items-center text-sm hover:bg-accent/10 w-full text-left"
                   >
-                    {locale === "ar"
-                      ? "التبديل إلى الإنجليزية"
-                      : "Switch to Arabic"}
+                    {tr(locale, "header.switch", "Switch language")}
                   </button>
                   {!user && (
                     <Link
                       href="/login"
                       className="mt-1 rounded ps-3 pe-3 h-11 inline-flex items-center text-sm hover:bg-accent/10 w-full"
                     >
-                      {locale === "ar" ? "تسجيل الدخول" : "Login"}
+                      {tr(locale, "header.login", "Login")}
                     </Link>
                   )}
                 </div>
@@ -421,3 +451,4 @@ export default function TopNav() {
     </header>
   );
 }
+
