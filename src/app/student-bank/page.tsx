@@ -594,6 +594,9 @@ export default function StudentBankPage() {
     return true;
   });
 
+  const hasActiveSelection =
+    !!activeFieldId || !!activeTopicId || searchQuery.trim().length > 0;
+
   const previewUrl = previewItem ? drivePreviewUrl(previewItem) : undefined;
 
 	  function handleKindChange(kind: ResourceKind) {
