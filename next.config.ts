@@ -59,6 +59,8 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: !isCIOrProd,
+    // Limit linting to the main app only (owner-console is a separate app).
+    dirs: ['src'],
   },
 
   images: {
