@@ -96,8 +96,12 @@ const nextConfig: NextConfig = {
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      react: reactAlias,
-      'react-dom': reactDomAlias,
+      // Only force React aliases in dev. In prod builds, Next relies on
+      // conditional exports (e.g. `react-server`) and overriding can break
+      // server-side helpers that use `React.cache`.
+      ...(!isCIOrProd
+        ? { react: reactAlias, 'react-dom': reactDomAlias }
+        : {}),
       '@opentelemetry/exporter-jaeger': false,
       '@opentelemetry/exporter-zipkin': false,
     };
