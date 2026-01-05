@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   // Language is provided via header below
 
   try {
-    const UA = process.env.NOMINATIM_UA || 'KhidmatyConnect/1.0 (+https://example.local/contact)';
+    const UA = process.env.NOMINATIM_UA || 'Khidmaty/1.0 (+https://example.local)';
     const res = await fetch(url.toString(), {
       headers: {
         'Accept-Language': lang,

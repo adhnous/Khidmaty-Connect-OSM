@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ServiceCard } from "@/components/service-card";
+import SaleCard from "@/components/SaleCard";
 import { Play, Search, MapPin, Shield, Smartphone, GraduationCap, Droplet } from "lucide-react";
 import { getClientLocale } from "@/lib/i18n";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { listTopViewedServices, type Service } from "@/lib/services";
+import { listTopViewedSaleItems, type SaleItem } from "@/lib/sale-items";
 
 /* ---------------------------------------------------
    1) SIMPLE VIDEO HELPERS
@@ -80,6 +85,56 @@ function useLandingVideos() {
   return videos;
 }
 
+type TopBook = {
+  id: string;
+  title: string;
+  author?: string;
+  readCount: number;
+};
+
+type TopBloodDonation = {
+  id: string;
+  title: string;
+  city?: string;
+  bloodType?: string;
+  responseCount: number;
+};
+
+async function fetchTopBooks(): Promise<TopBook[]> {
+  try {
+    const res = await fetch("/api/books/top", { cache: "no-store" });
+    const json = await res.json().catch(() => ({}));
+    return Array.isArray(json?.items) ? (json.items as TopBook[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function fetchTopBloodDonation(): Promise<TopBloodDonation[]> {
+  try {
+    const res = await fetch("/api/blood-donors/top", { cache: "no-store" });
+    const json = await res.json().catch(() => ({}));
+    return Array.isArray(json?.items) ? (json.items as TopBloodDonation[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function TopGridSkeleton({ count = 10 }: { count?: number }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="rounded-2xl border bg-background/60 p-3 shadow-sm">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="mt-3 h-4 w-3/4" />
+          <Skeleton className="mt-2 h-4 w-1/2" />
+          <Skeleton className="mt-4 h-4 w-1/3" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ---------------------------------------------------
    3) HOME PAGE
 --------------------------------------------------- */
@@ -93,6 +148,87 @@ export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const safeIndex = activeIndex < videos.length ? activeIndex : 0;
 
+  const [topServices, setTopServices] = useState<Service[]>([]);
+  const [topServicesLoading, setTopServicesLoading] = useState(true);
+  const [topSales, setTopSales] = useState<SaleItem[]>([]);
+  const [topSalesLoading, setTopSalesLoading] = useState(true);
+  const [topBooks, setTopBooks] = useState<TopBook[]>([]);
+  const [topBooksLoading, setTopBooksLoading] = useState(true);
+  const [topBloodDonation, setTopBloodDonation] = useState<TopBloodDonation[]>([]);
+  const [topBloodDonationLoading, setTopBloodDonationLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setTopServicesLoading(true);
+        const rows = await listTopViewedServices(10);
+        if (!cancelled) setTopServices(rows);
+      } catch {
+        if (!cancelled) setTopServices([]);
+      } finally {
+        if (!cancelled) setTopServicesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setTopSalesLoading(true);
+        const rows = await listTopViewedSaleItems(10);
+        if (!cancelled) setTopSales(rows);
+      } catch {
+        if (!cancelled) setTopSales([]);
+      } finally {
+        if (!cancelled) setTopSalesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setTopBooksLoading(true);
+        const rows = await fetchTopBooks();
+        if (!cancelled) setTopBooks(rows.slice(0, 10));
+      } catch {
+        if (!cancelled) setTopBooks([]);
+      } finally {
+        if (!cancelled) setTopBooksLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setTopBloodDonationLoading(true);
+        const rows = await fetchTopBloodDonation();
+        if (!cancelled) setTopBloodDonation(rows.slice(0, 10));
+      } catch {
+        if (!cancelled) setTopBloodDonation([]);
+      } finally {
+        if (!cancelled) setTopBloodDonationLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const primaryVideo = buildEmbedUrl(
     videos[safeIndex] ?? videos[0] ?? FALLBACK_VIDEOS[0]
   );
@@ -101,7 +237,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <main className="flex-1">
+      <main className="flex-1" dir={isAr ? "rtl" : "ltr"}>
         {/* ------------------------------------------------------------
             HERO SECTION
         ------------------------------------------------------------ */}
@@ -128,11 +264,11 @@ export default function Home() {
                   : "Find services and items near you with confidence"}
               </h1>
 
-              <p className="max-w-xl text-sm text-muted-foreground md:text-base">
-                {isAr
-                  ? "خدمتي كونكت تجمع بين مقدّمي الخدمات والأشخاص الذين يبحثون عن بيع أو شراء في مكان واحد منظم، بعيداً عن فوضى منشورات السوشيال ميديا."
-                  : "Khidmaty Connect brings providers and seekers together in one organised place, away from the noise of social media posts."}
-              </p>
+                <p className="max-w-xl text-sm text-muted-foreground md:text-base">
+                  {isAr
+                  ? "خدمتي تجمع بين مقدّمي الخدمات والأشخاص الذين يبحثون عن بيع أو شراء في مكان واحد منظم، بعيداً عن فوضى منشورات وسائل التواصل الاجتماعي."
+                  : "Khidmaty brings providers and seekers together in one organised place, away from the noise of social media posts."}
+                </p>
 
               <div
                 className={`flex flex-wrap gap-3 ${
@@ -165,13 +301,13 @@ export default function Home() {
                 <div className="inline-flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   {isAr
-                    ? "إعلانات حقيقية ومعتدلة"
+                    ? "إعلانات حقيقية خاضعة للمراجعة"
                     : "Real, moderated listings"}
                 </div>
                 <div className="inline-flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   {isAr
-                    ? "بحث حسب المدينة والقسم والموقع"
+                    ? "ابحث حسب المدينة، التصنيف والموقع على الخريطة"
                     : "Search by city, category and map location"}
                 </div>
               </div>
@@ -185,7 +321,7 @@ export default function Home() {
                 {hasVideo ? (
                   <iframe
                     src={primaryVideo}
-                    title="Khidmaty Connect intro"
+                    title="Khidmaty intro"
                     className="h-full w-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -195,7 +331,7 @@ export default function Home() {
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <Play className="h-6 w-6" />
                     </div>
-                    <p>{isAr ? "لا يوجد فيديو" : "No video available"}</p>
+                    <p>{isAr ? "لا يوجد فيديو متاح" : "No video available"}</p>
                   </div>
                 )}
               </div>
@@ -219,7 +355,7 @@ export default function Home() {
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
                           <Play className="mr-1 h-4 w-4" />
-                          {isAr ? "مشاهدة" : "Play"}
+                          {isAr ? "تشغيل" : "Play"}
                         </div>
                       </button>
                     );
@@ -231,9 +367,363 @@ export default function Home() {
         </section>
 
         {/* ------------------------------------------------------------
-            STUDENT RESOURCE BANK TEASER
+            SECTION #2: MOST VIEWED SERVICES
         ------------------------------------------------------------ */}
-        <section className="border-b bg-gradient-to-r from-amber-50 via-amber-100/60 to-background">
+        <section className="border-b">
+          <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+            <div
+              className={`flex items-center justify-between ${
+                isAr ? "flex-row-reverse text-right" : "text-left"
+              }`}
+            >
+              <h2 className="flex items-baseline gap-2 text-xl font-bold md:text-2xl">
+                <span>{isAr ? "الخدمات الأكثر مشاهدة" : "Most Viewed Services"}</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {isAr ? "أفضل 10" : "Top 10"}
+                </span>
+              </h2>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/services">{isAr ? "عرض الكل" : "View all"}</Link>
+              </Button>
+            </div>
+
+            <div className="mt-6">
+              {topServicesLoading ? (
+                <TopGridSkeleton />
+              ) : topServices.length === 0 ? (
+                <div
+                  className={`rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground ${
+                    isAr ? "text-right" : "text-left"
+                  }`}
+                >
+                  لا توجد بيانات بعد
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {topServices.map((s: any, idx: number) => (
+                      <ServiceCard
+                        key={s?.id || idx}
+                        id={s?.id}
+                        title={String(s?.title || "")}
+                        category={String(s?.category || "general")}
+                        city={String(s?.city || "")}
+                        price={Number(s?.price || 0)}
+                        priceMode={s?.priceMode}
+                        imageUrl={
+                          Array.isArray(s?.images) && s.images[0]?.url
+                            ? s.images[0].url
+                            : "https://placehold.co/800x600.png?text=Service"
+                        }
+                        aiHint={`category:${String(s?.category || "")}; city:${String(
+                          s?.city || ""
+                        )}`}
+                        href={s?.id ? `/services/${s.id}` : undefined}
+                      />
+                    ))}
+                  </div>
+                  {topServices.length < 10 && (
+                    <p
+                      className={`mt-4 text-sm text-muted-foreground ${
+                        isAr ? "text-right" : "text-left"
+                      }`}
+                    >
+                      لا توجد بيانات بعد
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------
+            SECTION #3: MOST VIEWED SALES
+        ------------------------------------------------------------ */}
+        <section className="border-b">
+          <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+            <div
+              className={`flex items-center justify-between ${
+                isAr ? "flex-row-reverse text-right" : "text-left"
+              }`}
+            >
+              <h2 className="flex items-baseline gap-2 text-xl font-bold md:text-2xl">
+                <span>{isAr ? "الأكثر مشاهدة في البيع" : "Most Viewed Sales"}</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {isAr ? "أفضل 10" : "Top 10"}
+                </span>
+              </h2>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/sales">{isAr ? "عرض الكل" : "View all"}</Link>
+              </Button>
+            </div>
+
+            <div className="mt-6">
+              {topSalesLoading ? (
+                <TopGridSkeleton />
+              ) : topSales.length === 0 ? (
+                <div
+                  className={`rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground ${
+                    isAr ? "text-right" : "text-left"
+                  }`}
+                >
+                  لا توجد بيانات بعد
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {topSales.map((item: any, idx: number) => (
+                      <SaleCard key={item?.id || idx} item={item} />
+                    ))}
+                  </div>
+                  {topSales.length < 10 && (
+                    <p
+                      className={`mt-4 text-sm text-muted-foreground ${
+                        isAr ? "text-right" : "text-left"
+                      }`}
+                    >
+                      لا توجد بيانات بعد
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------
+            SECTION #4: MOST READ BOOKS
+        ------------------------------------------------------------ */}
+        <section className="border-b">
+          <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+            <div className={isAr ? "text-right" : "text-left"}>
+              <h2 className="flex items-baseline gap-2 text-xl font-bold md:text-2xl">
+                <span>{isAr ? "الكتب الأكثر قراءة" : "Most Read Books"}</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {isAr ? "أفضل 10" : "Top 10"}
+                </span>
+              </h2>
+            </div>
+
+            <div
+              className={`mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between ${
+                isAr ? "md:flex-row-reverse" : ""
+              }`}
+            >
+              <div
+                className={`flex flex-wrap gap-2 text-[11px] md:text-xs ${
+                  isAr ? "justify-end" : "justify-start"
+                }`}
+              >
+                <Link
+                  href="/student-bank"
+                  className="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
+                >
+                  {isAr ? "بنك موارد الطلبة" : "Student resource bank"}
+                </Link>
+                <Link
+                  href="/student-bank"
+                  className="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
+                >
+                  {isAr ? "دعم أكاديمي وبحثي" : "Academic & research support"}
+                </Link>
+                <Link
+                  href="/student-bank"
+                  className="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
+                >
+                  {isAr ? "سيرة ذاتية وتوظيف" : "CV & job applications"}
+                </Link>
+                <Link
+                  href="/student-bank"
+                  className="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
+                >
+                  {isAr ? "ترجمة وتدقيق لغوي" : "Translation & proofreading"}
+                </Link>
+              </div>
+
+              <Button
+                size="sm"
+                className="bg-amber-500 text-white hover:bg-amber-600"
+                asChild
+              >
+                <Link href="/student-bank">
+                  {isAr ? "استكشف ركن الطلبة" : "Explore Student Resource Bank"}
+                </Link>
+              </Button>
+            </div>
+
+            <div className="mt-6">
+              {topBooksLoading ? (
+                <TopGridSkeleton />
+              ) : topBooks.length === 0 ? (
+                <div
+                  className={`rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground ${
+                    isAr ? "text-right" : "text-left"
+                  }`}
+                >
+                  لا توجد بيانات بعد
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {topBooks.map((b, idx) => (
+                      <Link
+                        key={b?.id || idx}
+                        href="/student-bank"
+                        className="block"
+                      >
+                        <div className="group rounded-2xl border bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
+                          <div className="text-sm font-semibold line-clamp-2">
+                            {b.title}
+                          </div>
+                          {b.author && (
+                            <div className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                              {b.author}
+                            </div>
+                          )}
+                          <div className="mt-3 text-xs text-muted-foreground">
+                            {isAr ? "القراءات" : "Reads"}:{" "}
+                            {Number(b.readCount || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  {topBooks.length < 10 && (
+                    <p
+                      className={`mt-4 text-sm text-muted-foreground ${
+                        isAr ? "text-right" : "text-left"
+                      }`}
+                    >
+                      لا توجد بيانات بعد
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------
+            SECTION #5: MOST RESPONDED BLOOD DONATION
+        ------------------------------------------------------------ */}
+        <section className="border-b">
+          <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+            <div className={isAr ? "text-right" : "text-left"}>
+              <h2 className="flex items-baseline gap-2 text-xl font-bold md:text-2xl">
+                <span>
+                  {isAr
+                    ? "الأكثر تفاعلاً للتبرع بالدم"
+                    : "Most Responded Blood Donation"}
+                </span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {isAr ? "أفضل 10" : "Top 10"}
+                </span>
+              </h2>
+            </div>
+
+            <div
+              className={`mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between ${
+                isAr ? "md:flex-row-reverse" : ""
+              }`}
+            >
+              <div
+                className={`flex flex-wrap gap-2 text-[11px] md:text-xs ${
+                  isAr ? "justify-end" : "justify-start"
+                }`}
+              >
+                <Link
+                  href="/blood-donors"
+                  className="rounded-full bg-rose-100 px-3 py-1 text-rose-900"
+                >
+                  {isAr ? "متبرعي الدم" : "Blood donors"}
+                </Link>
+                <Link
+                  href="/blood-donors"
+                  className="rounded-full bg-rose-100 px-3 py-1 text-rose-900"
+                >
+                  {isAr ? "الأنواع النادرة" : "Rare blood types"}
+                </Link>
+                <Link
+                  href="/blood-donors"
+                  className="rounded-full bg-rose-100 px-3 py-1 text-rose-900"
+                >
+                  {isAr ? "جهات اتصال موثوقة" : "Trusted contact details"}
+                </Link>
+              </div>
+
+              <Button
+                size="sm"
+                className="bg-rose-500 text-white hover:bg-rose-600"
+                asChild
+              >
+                <Link href="/blood-donors">
+                  {isAr ? "استكشف خدمة متبرعي الدم" : "Explore blood donors"}
+                </Link>
+              </Button>
+            </div>
+
+            <div className="mt-6">
+              {topBloodDonationLoading ? (
+                <TopGridSkeleton />
+              ) : topBloodDonation.length === 0 ? (
+                <div
+                  className={`rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground ${
+                    isAr ? "text-right" : "text-left"
+                  }`}
+                >
+                  لا توجد بيانات بعد
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {topBloodDonation.map((d, idx) => (
+                      <Link
+                        key={d?.id || idx}
+                        href="/blood-donors"
+                        className="block"
+                      >
+                        <div className="group rounded-2xl border bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
+                          <div className="text-sm font-semibold line-clamp-2">
+                            {d.title}
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {[
+                              d.city ? String(d.city) : null,
+                              d.bloodType ? String(d.bloodType) : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" • ")}
+                          </div>
+                          <div className="mt-3 text-xs text-muted-foreground">
+                            {isAr ? "عدد التفاعلات" : "Responses"}:{" "}
+                            {Number(d.responseCount || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  {topBloodDonation.length < 10 && (
+                    <p
+                      className={`mt-4 text-sm text-muted-foreground ${
+                        isAr ? "text-right" : "text-left"
+                      }`}
+                    >
+                      لا توجد بيانات بعد
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {false && (
+          <>
+            {/* ------------------------------------------------------------
+                STUDENT RESOURCE BANK TEASER
+            ------------------------------------------------------------ */}
+            <section className="border-b bg-gradient-to-r from-amber-50 via-amber-100/60 to-background">
           <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
             <div
               className={`relative overflow-hidden rounded-2xl border border-amber-200/70 bg-card/90 shadow-[0_18px_40px_rgba(15,23,42,0.16)] backdrop-blur-sm ${
@@ -434,6 +924,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+          </>
+        )}
 
         {/* ------------------------------------------------------------
             HOW IT WORKS
@@ -446,8 +938,8 @@ export default function Home() {
           >
             <h2 className="text-xl font-bold md:text-2xl">
               {isAr
-                ? "كيف تعمل خدمتي كونكت؟"
-                : "How does Khidmaty Connect work?"}
+                ? "كيف تعمل خدمتي؟"
+                : "How does Khidmaty work?"}
             </h2>
             <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
               {isAr
@@ -476,11 +968,11 @@ export default function Home() {
                 <MapPin className="h-5 w-5" />
               </div>
               <h3 className="mb-1 text-sm font-semibold md:text-base">
-                {isAr ? "فلترة بالموقع" : "Smart location filtering"}
+                {isAr ? "فلترة ذكية بالموقع" : "Smart location filtering"}
               </h3>
               <p className="text-xs text-muted-foreground md:text-sm">
                 {isAr
-                  ? "ابحث حسب المدينة، القسم والموقع."
+                  ? "ابحث حسب المدينة، التصنيف والموقع على الخريطة."
                   : "Search by city, category, and map location."}
               </p>
             </div>

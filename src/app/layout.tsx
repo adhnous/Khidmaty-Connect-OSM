@@ -12,6 +12,7 @@ import AppGate from '@/components/app-gate';
 import MainShell from '@/components/main-shell';
 import BottomNavGate from '@/components/layout/bottom-nav-gate';
 import PwaInstall from '@/components/pwa-install';
+import ThemeInit from '@/components/theme-init';
 import { Footer } from '@/components/layout/footer';
 import { PT_Sans, Tajawal, Cairo } from 'next/font/google';
 
@@ -39,18 +40,19 @@ const tajawal = Tajawal({
 });
 
 export const metadata: Metadata = {
-  title: 'خدمتي كونكت',
-  description: 'وسيلتك للتواصل مع المهنيين المحترفين في ليبيا',
+  title: 'Khidmaty',
+  description: 'Local services marketplace for Libya.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Always use Arabic as the default language
-  const locale = 'ar';
-  const dir = 'rtl';
+  const cookieStore = await cookies();
+  const cookieLocale = (cookieStore.get('locale')?.value || 'ar').toLowerCase();
+  const locale = cookieLocale.startsWith('en') ? 'en' : 'ar';
+  const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   return (
     <html lang={locale} dir={dir} className={cairo.variable}>
@@ -65,7 +67,10 @@ export default function RootLayout({
       </head>
 
       <body className={`${cairo.variable} ${ptSans.variable} ${tajawal.variable} font-body antialiased bg-background text-foreground`}>
-        <a href="#content" className="skip-link">{dir === 'rtl' ? 'تخطي إلى المحتوى' : 'Skip to content'}</a>
+        <ThemeInit />
+        <a href="#content" className="skip-link">
+          {dir === 'rtl' ? 'تخطي إلى المحتوى' : 'Skip to content'}
+        </a>
         <AuthProvider>
           <AdStrip />
           <TopNav />

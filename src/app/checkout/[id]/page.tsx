@@ -48,7 +48,7 @@ export default function CheckoutPage() {
       amount: 'Amount',
       status: 'Status',
       statusLabels: { pending: 'Pending', success: 'Paid', failed: 'Failed', cancelled: 'Cancelled' } as Record<string, string>,
-      scanHelp: 'Scan with your wallet app',
+      scanHelp: 'Payment code for your wallet app',
       openWallet: 'Open in Wallet app',
       copyCode: 'Copy payment code',
       refresh: "I've paid, refresh",
@@ -158,11 +158,11 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-ink text-snow">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <main className="flex-1">
         <section className="py-16">
           <div className="container">
-            <Card className="mx-auto max-w-2xl bg-background text-foreground border-white/10">
+            <Card className="mx-auto max-w-2xl bg-background text-foreground border-border">
               <CardHeader>
                 <CardTitle>{txt.title}</CardTitle>
                 <CardDescription>
@@ -190,7 +190,7 @@ export default function CheckoutPage() {
                     </div>
 
                     <div>
-                      <details className="group rounded-lg border border-white/10 bg-muted/10 open:bg-muted/10">
+                      <details className="group rounded-lg border border-border bg-muted/10 open:bg-muted/10">
                         <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium flex items-center justify-between">
                           <span>{txt.paymentDetails}</span>
                           <span className="transition-transform group-open:rotate-90">›</span>
@@ -218,13 +218,24 @@ export default function CheckoutPage() {
                     {tx?.status === 'pending' && (
                       <div className="space-y-4">
                         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
-                          <img
-                            alt="Payment QR"
-                            width={224}
-                            height={224}
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=224x224&data=${encodeURIComponent(qrPayload)}`}
-                            className="rounded-xl border w-56 h-56 sm:w-60 sm:h-60"
-                          />
+                          <div
+                            aria-label="Payment code"
+                            className="rounded-xl border w-56 h-56 sm:w-60 sm:h-60 flex items-center justify-center bg-muted/10 text-muted-foreground"
+                          >
+                            <div className="text-center px-3">
+                              <div className="text-xs uppercase tracking-wide">QR</div>
+                              <div className="mt-2 text-xs">
+                                {/*
+                                {locale === "ar"
+                                  ? "U,O O¦U^OªO_ QR U?USO_ O1U,U% O¦O3O_OrOU, U.O"U,O§U,Oc"
+                                  : "QR disabled to avoid sharing your payment code with a third party."}
+                                */}
+                                {locale === "ar"
+                                  ? "تم تعطيل رمز QR لتجنب مشاركة رمز الدفع مع طرف ثالث."
+                                  : "QR disabled to avoid sharing your payment code with a third party."}
+                              </div>
+                            </div>
+                          </div>
                           <div className="w-full sm:max-w-sm">
                             <div className="text-sm text-muted-foreground mb-2">{txt.scanHelp}</div>
                             <div className="text-xs break-all bg-muted/20 border rounded-lg p-2">

@@ -60,6 +60,7 @@ export async function POST(req: Request) {
       providerId: uid,
       providerName: (body.providerName && typeof body.providerName === 'string') ? body.providerName : null,
       providerEmail: (body.providerEmail && typeof body.providerEmail === 'string') ? body.providerEmail : null,
+      viewCount: 0,
       status: 'pending',
       createdAt: new Date(),
     };

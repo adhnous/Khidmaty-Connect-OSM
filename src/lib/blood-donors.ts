@@ -17,6 +17,7 @@ export type BloodDonor = {
   city?: string;
   phone?: string;
   notes?: string;
+  responseCount?: number;
   rare?: boolean;
   availability?: 'available' | 'maybe' | 'unavailable';
   uploaderId?: string;
@@ -72,6 +73,7 @@ export async function listBloodDonors(
         city: data.city,
         phone: data.phone,
         notes: data.notes,
+        responseCount: Number(data.responseCount ?? 0),
         rare: !!data.rare,
         availability: data.availability,
         uploaderId: data.uploaderId,
@@ -98,6 +100,7 @@ export async function createBloodDonor(
     city: input.city ? String(input.city) : undefined,
     phone: input.phone ? String(input.phone) : undefined,
     notes: input.notes ? String(input.notes) : undefined,
+    responseCount: 0,
     rare: !!input.rare,
     availability: input.availability || 'available',
     uploaderId: input.uploaderId || undefined,
@@ -114,4 +117,3 @@ export async function createBloodDonor(
   const ref = await col.add(clean);
   return ref.id;
 }
-

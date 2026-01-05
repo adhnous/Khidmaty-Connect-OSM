@@ -20,6 +20,42 @@ export const dict = {
       switch: 'Switch language',
     },
 
+    pages: {
+      about: { title: 'About' },
+      terms: { title: 'Terms of Service' },
+      privacy: { title: 'Privacy Policy' },
+      pricing: {
+        nav: 'Pricing',
+        title: 'Pricing',
+        subtitle: 'Choose the plan that fits your needs.',
+        perMonth: 'per month',
+        choosePlan: 'Choose plan',
+        plans: {
+          basic: { name: 'Basic' },
+          pro: { name: 'Pro' },
+          enterprise: { name: 'Enterprise' },
+        },
+        features: {
+          basic: {
+            l1: 'Publish your listings',
+            l2: 'Standard support',
+          },
+          pro: {
+            l1: 'Everything in Basic',
+            l2: 'More listings and tools',
+            l3: 'Advanced settings',
+            l4: 'Priority support',
+          },
+          enterprise: {
+            l1: 'Everything in Pro',
+            l2: 'Custom requirements',
+            l3: 'Team support',
+            l4: 'Dedicated support',
+          },
+        },
+      },
+    },
+
     login: {
       welcome: 'Welcome',
       subtitle: 'Sign in or create an account to continue',
@@ -326,6 +362,41 @@ export const dict = {
       signOut: 'تسجيل الخروج',
       login: 'تسجيل الدخول / إنشاء حساب',
       switch: 'تغيير اللغة',
+    },
+    pages: {
+      about: { title: 'من نحن' },
+      terms: { title: 'شروط الخدمة' },
+      privacy: { title: 'سياسة الخصوصية' },
+      pricing: {
+        nav: 'الأسعار',
+        title: 'خطط الأسعار',
+        subtitle: 'اختر الخطة المناسبة لك.',
+        perMonth: 'شهرياً',
+        choosePlan: 'اختر الخطة',
+        plans: {
+          basic: { name: 'أساسي' },
+          pro: { name: 'احترافي' },
+          enterprise: { name: 'مؤسسي' },
+        },
+        features: {
+          basic: {
+            l1: 'نشر الإعلانات والخدمات',
+            l2: 'دعم أساسي',
+          },
+          pro: {
+            l1: 'كل مزايا الخطة الأساسية',
+            l2: 'مزايا وأدوات إضافية',
+            l3: 'إعدادات متقدمة',
+            l4: 'دعم أولوية',
+          },
+          enterprise: {
+            l1: 'كل مزايا الخطة الاحترافية',
+            l2: 'متطلبات وحدود مخصصة',
+            l3: 'دعم فريق/حسابات متعددة',
+            l4: 'دعم مخصص',
+          },
+        },
+      },
     },
     footer:{
       about: 'من نحن',
@@ -806,7 +877,7 @@ function get(obj: any, path: string): any {
   }
 }
 
-export function tr(locale: Locale, key: string): string {
+export function tr(locale: Locale, key: string, fallbackText?: string): string {
   try {
     // 1) Try requested locale
     const primary = get((dict as any)[locale], key);
@@ -822,10 +893,12 @@ export function tr(locale: Locale, key: string): string {
       // eslint-disable-next-line no-console
       console.warn(`[i18n] Missing translation for key: "${key}" in locale: "${locale}"`);
     }
+    if (typeof fallbackText === 'string' && fallbackText.length > 0) return fallbackText;
     return key;
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(`[i18n] Error getting translation for key: "${key}"`, error);
+    if (typeof fallbackText === 'string' && fallbackText.length > 0) return fallbackText;
     return key;
   }
 }

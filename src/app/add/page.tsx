@@ -11,7 +11,7 @@ export default function AddListingChooserPage() {
   const isAr = locale === "ar";
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-amber-50 via-background to-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-1">
         <div className="mx-auto max-w-3xl px-4 py-10">
           <h1

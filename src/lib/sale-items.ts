@@ -40,6 +40,7 @@ export type SaleItem = SaleItemForm & {
   providerId: string;
   providerName?: string | null;
   providerEmail?: string | null;
+  viewCount?: number;
   createdAt?: any;
   updatedAt?: any;
 };
@@ -70,6 +71,7 @@ export async function createSaleItem(
 ): Promise<string> {
   const payload = deepStripUndefined({
     ...data,
+    viewCount: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -136,6 +138,25 @@ export async function listSaleItems(filters: SaleListFilters = {}) {
   if (sort === 'priceHigh') rows = [...rows].sort((a, b) => (Number(b?.price ?? 0) - Number(a?.price ?? 0)));
 
   return rows as SaleItem[];
+}
+
+export async function listTopViewedSaleItems(take = 10): Promise<SaleItem[]> {
+  const colRef = collection(db, COL);
+  try {
+    const qy = query(
+      colRef,
+      where('status', '==', 'approved'),
+      orderBy('viewCount', 'desc'),
+      limit(take),
+    );
+    const snap = await getDocs(qy);
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as SaleItem[];
+  } catch {
+    const rows = await listSaleItems({ status: 'approved', take: Math.max(80, take), sort: 'newest' });
+    return [...rows]
+      .sort((a: any, b: any) => (Number(b?.viewCount ?? 0) - Number(a?.viewCount ?? 0)))
+      .slice(0, take);
+  }
 }
 
 export async function listProviderSaleItems(providerId: string, opts: { status?: 'pending' | 'approved' | 'sold' | 'hidden' } = {}) {

@@ -79,6 +79,8 @@ export type SubService = {
     priority?: number;       // 0..N, higher floats to top client-side
     // Simple share metric (owner-incremented client-side)
     shareCount?: number;     // total times owner pressed Share
+    // Simple view metric (incremented server-side when available)
+    viewCount?: number;      // total views
     // Whether seekers can send in-app requests to this service
     acceptRequests?: boolean;
     createdAt?: unknown;
@@ -106,6 +108,7 @@ export async function createServiceDirect(data: Omit<Service, 'id' | 'createdAt'
     subservices: Array.isArray((data as any).subservices) ? (data as any).subservices : [],
     providerName: (data as any).providerName ?? null,
     providerEmail: (data as any).providerEmail ?? null,
+    viewCount: 0,
     status: 'pending',
     createdAt: serverTimestamp(),
   };
@@ -152,6 +155,30 @@ export async function listServices(count = 12): Promise<Service[]> {
   const q = query(colRef, where('status', '==', 'approved'), orderBy('createdAt', 'desc'), limit(count));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Service) }));
+}
+
+export async function listTopViewedServices(count = 10): Promise<Service[]> {
+  const colRef = collection(db, 'services');
+  try {
+    const qy = query(
+      colRef,
+      where('status', '==', 'approved'),
+      orderBy('viewCount', 'desc'),
+      limit(count),
+    );
+    const snap = await getDocs(qy);
+    const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Service) }));
+    return rows;
+  } catch {
+    // Fallback: avoid composite index requirements by sorting client-side.
+    const take = Math.max(50, count);
+    const qy = query(colRef, where('status', '==', 'approved'), limit(take));
+    const snap = await getDocs(qy);
+    const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Service) }));
+    return rows
+      .sort((a: any, b: any) => (Number(b?.viewCount ?? 0) - Number(a?.viewCount ?? 0)))
+      .slice(0, count);
+  }
 }
 
 export async function listServicesByProvider(

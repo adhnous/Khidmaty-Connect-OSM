@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { Footer } from '@/components/layout/footer';
 import { tr } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Terms of Service — Khidmaty Connect',
-  description: 'The terms and conditions for using Khidmaty Connect.',
+  title: 'Terms of Service - Khidmaty',
+  description: 'The terms and conditions for using Khidmaty.',
 };
 
 export default async function TermsPage() {
@@ -19,8 +18,8 @@ export default async function TermsPage() {
         <h1 className="mb-4 text-3xl font-bold">{tr(locale, 'pages.terms.title')}</h1>
         <p className="mb-8 text-muted-foreground">
           {locale === 'ar'
-            ? 'باستخدامك لمنصّة خدمتي كونكت، فأنت توافق على شروط الخدمة التالية. يرجى قراءة هذه الشروط بعناية.'
-            : 'By using Khidmaty Connect, you agree to the following Terms of Service. Please read them carefully.'}
+            ? 'باستخدامك لمنصّة خدمتي، فأنت توافق على شروط الخدمة التالية. يرجى قراءة هذه الشروط بعناية.'
+            : 'By using Khidmaty, you agree to the following Terms of Service. Please read them carefully.'}
         </p>
         <section className="space-y-4 text-sm leading-7 text-muted-foreground">
           <div>

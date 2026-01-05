@@ -4,8 +4,8 @@ import { tr } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'About Khidmaty Connect',
-  description: 'Learn about Khidmaty Connect — a local services marketplace for Libya connecting seekers with providers.',
+  title: 'About Khidmaty',
+  description: 'Learn about Khidmaty - a local services marketplace for Libya connecting seekers with providers.',
 };
 
 export default async function AboutPage() {
@@ -19,8 +19,8 @@ export default async function AboutPage() {
         <h1 className="text-3xl font-bold tracking-tight">{tr(locale, 'pages.about.title')}</h1>
         <p className="text-muted-foreground">
           {locale === 'ar'
-            ? 'خدمتي كونكت سوق محلي للخدمات في ليبيا. نساعد طالبي الخدمة على العثور على مقدّمين موثوقين، ونساعد المقدّمين على تنمية أعمالهم عبر الإنترنت.'
-            : 'Khidmaty Connect is a local services marketplace for Libya. We help seekers find trusted providers and help providers grow their business online.'}
+            ? 'خدمتي سوق محلي للخدمات في ليبيا. نساعد طالبي الخدمة على العثور على مقدّمين موثوقين، ونساعد المقدّمين على تنمية أعمالهم عبر الإنترنت.'
+            : 'Khidmaty is a local services marketplace for Libya. We help seekers find trusted providers and help providers grow their business online.'}
         </p>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="rounded-lg border p-6">

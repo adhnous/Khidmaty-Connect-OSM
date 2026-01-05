@@ -1,6 +1,6 @@
 /* design-system (component utilities) */
   .ds-container { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8; }
-  .ds-page { @apply min-h-[100svh] bg-gradient-to-br from-secondary to-muted/40 py-8; }
+  .ds-page { @apply min-h-[100svh] bg-background py-8; }
 
   .ds-card { @apply bg-card text-card-foreground border border-border rounded-xl shadow-sm; }
   .ds-card-section { @apply p-6 md:p-8; }

@@ -9,7 +9,7 @@ export default function SalesHero() {
   const isAr = locale === "ar";
 
   return (
-    <section className="bg-gradient-to-b from-[#2a1200] to-transparent pb-6 pt-10">
+    <section className="border-b bg-gradient-to-b from-background via-background to-muted/40 pb-6 pt-10">
       <div className="mx-auto max-w-6xl px-4 text-center">
         <h1 className="mb-2 font-headline text-3xl text-foreground md:text-4xl lg:text-5xl">
           {isAr

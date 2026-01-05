@@ -123,7 +123,7 @@ export default function ServicesBrowsePage() {
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-1">
         {/* Hero search + categories */}
-        <section className="bg-gradient-to-b from-[#c96a00] via-[#c96a00] to-background pb-8 pt-4 md:pb-10 md:pt-6">
+        <section className="border-b bg-gradient-to-b from-background via-background to-muted/40 pb-8 pt-4 md:pb-10 md:pt-6">
           <div className="mx-auto max-w-6xl px-4">
             <div className="rounded-2xl bg-background shadow-xl">
               <div className="border-b px-4 pb-4 pt-4 md:px-6 md:pt-6">

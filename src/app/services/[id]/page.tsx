@@ -185,8 +185,8 @@ export default function ServiceDetailPage() {
       if (typeof navigator !== 'undefined' && (navigator as any).share) {
         try {
           await (navigator as any).share({
-            title: service.title || 'Khidmaty Connect',
-            text: service.title || 'Discover local services on Khidmaty Connect',
+            title: service.title || 'Khidmaty',
+            text: service.title || 'Discover local services on Khidmaty',
             url,
           });
           shared = true;

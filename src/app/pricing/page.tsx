@@ -53,12 +53,12 @@ export default function PricingPage() {
   }, [user?.uid, userProfile?.role]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-ink text-snow">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <main className="flex-1">
         {!allowed && !loading && (
           <section className="py-16">
             <div className="container">
-              <Card className="mx-auto max-w-2xl bg-background text-foreground border-white/10">
+              <Card className="mx-auto max-w-2xl bg-background text-foreground border-border">
                 <CardHeader>
                   <CardTitle>Pricing is not available</CardTitle>
                   <CardDescription>Check back later, or contact support.</CardDescription>
@@ -74,7 +74,7 @@ export default function PricingPage() {
               <h1 className="mb-2 text-4xl font-extrabold font-headline">
                 {tr(locale, "pages.pricing.title")}
               </h1>
-              <p className="text-snow/80">{tr(locale, "pages.pricing.subtitle")}</p>
+              <p className="text-muted-foreground">{tr(locale, "pages.pricing.subtitle")}</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -83,7 +83,7 @@ export default function PricingPage() {
                 const per = tr(locale, p.perKey || "pages.pricing.perMonth");
                 const isCurrent = (userProfile?.plan ?? 'free') === p.id;
                 return (
-                  <Card key={p.id} className={`border-white/10 bg-background text-foreground ${p.recommended ? "ring-2 ring-copper" : ""}`}>
+                  <Card key={p.id} className={`border-border bg-background text-foreground ${p.recommended ? "ring-2 ring-copper" : ""}`}>
                     <CardHeader>
                       <CardTitle className="flex items-baseline justify-between">
                         <span>{name}</span>

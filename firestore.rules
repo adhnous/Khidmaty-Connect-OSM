@@ -110,13 +110,64 @@ service cloud.firestore {
       }
     }
 
-    // Users can create their own profile, and can only read/write their own data afterwards.
+    // Users can create their own profile. Prevent privilege escalation by blocking
+    // client writes to authz-sensitive fields like role/plan/status/pricingGate.
     match /users/{userId} {
-      allow create: if request.auth != null && request.auth.uid == userId;
-      // Allow reading user profiles for signed-in users (restores prior behavior)
+      function isSelf() { return request.auth != null && request.auth.uid == userId; }
+
+      function authEmail() { return request.auth != null ? request.auth.token.email : null; }
+      function emailMatchesAuth(data) {
+        return (authEmail() is string && data.email == authEmail())
+          || (!(authEmail() is string) && (data.email == null || data.email == ''));
+      }
+      function emailOkOnUpdate() {
+        return request.resource.data.email == resource.data.email
+          || emailMatchesAuth(request.resource.data);
+      }
+
+      // Only allow self-assigning seeker/provider via the client (never admin/owner).
+      function roleOk(data) { return data.role in ['seeker', 'provider']; }
+
+      function immutableFieldsUnchanged() {
+        return request.resource.data.uid == resource.data.uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.plan == resource.data.plan
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.pricingGate == resource.data.pricingGate;
+      }
+
+      function allowedUpdateKeys() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'photoURL',
+          'phone',
+          'whatsapp',
+          'city',
+          'settings',
+          'fcmTokens',
+          'fcmTokenUpdatedAt',
+          'email'
+        ]);
+      }
+
+      // Client-created profiles must start "free"/"active" and cannot pre-set pricingGate.
+      allow create: if isSelf()
+        && request.resource.data.uid == userId
+        && roleOk(request.resource.data)
+        && (request.resource.data.plan == null || request.resource.data.plan == 'free')
+        && (request.resource.data.status == null || request.resource.data.status in ['active', 'pending'])
+        && request.resource.data.pricingGate == null
+        && emailMatchesAuth(request.resource.data);
+
+      // Keep existing behavior: signed-in users can read profiles (used in chat/requests UI).
       allow read: if request.auth != null;
-      // Only allow users to update/delete their own profiles
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
+
+      allow update: if isSelf()
+        && allowedUpdateKeys()
+        && immutableFieldsUnchanged()
+        && emailOkOnUpdate();
+
+      allow delete: if isSelf();
     }
 
     // Sale items: first-class collection for Sales & Trade

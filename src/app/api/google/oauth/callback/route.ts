@@ -5,6 +5,11 @@ import { NextResponse } from 'next/server';
 // then remove or protect it.
 
 export async function GET(req: Request) {
+  // Hard-disable in production, and require an explicit dev flag to reduce exposure.
+  if (process.env.NODE_ENV === 'production' || process.env.ENABLE_GOOGLE_OAUTH_HELPER !== '1') {
+    return new Response('Not Found', { status: 404 });
+  }
+
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
@@ -58,4 +63,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

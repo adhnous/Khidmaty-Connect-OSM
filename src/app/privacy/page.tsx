@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { Footer } from '@/components/layout/footer';
 import { tr } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Khidmaty Connect',
-  description: 'How Khidmaty Connect collects, uses, and protects your personal information.',
+  title: 'Privacy Policy - Khidmaty',
+  description: 'How Khidmaty collects, uses, and protects your personal information.',
 };
 
 export default async function PrivacyPage() {
@@ -40,3 +39,4 @@ export default async function PrivacyPage() {
     </div>
   );
 }
+

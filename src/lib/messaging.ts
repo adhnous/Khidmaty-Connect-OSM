@@ -6,8 +6,15 @@ import { doc, setDoc, serverTimestamp, updateDoc, deleteField } from 'firebase/f
 export async function getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration | null> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
   try {
-    // Wait for the registration created in SwRegister
-    const reg = await navigator.serviceWorker.ready;
+    // Prefer an existing registration if available (doesn't hang in dev)
+    const existing = await navigator.serviceWorker.getRegistration();
+    if (existing) return existing;
+
+    // Wait for the registration created in SwRegister, but with a timeout.
+    const reg = await Promise.race<ServiceWorkerRegistration | null>([
+      navigator.serviceWorker.ready.then((r) => r ?? null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+    ]);
     return reg ?? null;
   } catch {
     return null;

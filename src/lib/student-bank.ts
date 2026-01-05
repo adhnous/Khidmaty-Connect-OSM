@@ -13,6 +13,8 @@ export type StudentResource = {
   language?: 'ar' | 'en' | 'both';
   status?: 'pending' | 'approved' | 'rejected';
   subjectTags?: string[];
+  readCount?: number;
+  viewCount?: number;
   // In future: Drive integration
   driveFileId?: string;
   driveLink?: string;
@@ -194,6 +196,8 @@ export async function listStudentResources(
         subjectTags: Array.isArray(data.subjectTags)
           ? (data.subjectTags as string[])
           : [],
+        readCount: Number(data.readCount ?? data.viewCount ?? 0),
+        viewCount: Number(data.viewCount ?? 0),
       driveFileId: data.driveFileId,
       driveLink: data.driveLink,
         driveFolderId: data.driveFolderId,
@@ -232,6 +236,7 @@ export async function createStudentResource(
     type: input.type || 'other',
     language: input.language || 'en',
     status: input.status || 'pending',
+    readCount: 0,
     subjectTags: Array.isArray(input.subjectTags)
       ? input.subjectTags
       : undefined,

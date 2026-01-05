@@ -204,7 +204,7 @@ export default function LoginPage() {
   const isSigningUp = loading && activeTab === 'signup';
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-secondary p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="absolute top-8 left-8">
         <Logo />
       </div>
