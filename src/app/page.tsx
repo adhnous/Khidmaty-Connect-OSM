@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ServiceCard } from "@/components/service-card";
@@ -13,22 +13,37 @@ import { doc, getDoc } from "firebase/firestore";
 import { listTopViewedServices, type Service } from "@/lib/services";
 import { listTopViewedSaleItems, type SaleItem } from "@/lib/sale-items";
 
+declare global {
+  interface Window {
+    YT?: any;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
 /* ---------------------------------------------------
    1) SIMPLE VIDEO HELPERS
 --------------------------------------------------- */
 
 const FALLBACK_VIDEOS = ["https://www.youtube.com/embed/3WpTyA3OkYw"];
 
+function extractYouTubeId(raw: string): string | null {
+  const v = String(raw || "").trim();
+  if (!v) return null;
+
+  return (
+    v.match(/youtu\.be\/([\w-]+)/i)?.[1] ||
+    v.match(/[?&]v=([\w-]+)/i)?.[1] ||
+    v.match(/\/embed\/([\w-]+)/i)?.[1] ||
+    v.match(/\/shorts\/([\w-]+)/i)?.[1] ||
+    null
+  );
+}
+
 function buildEmbedUrl(raw: string): string {
   const v = String(raw || "").trim();
   if (!v) return "";
 
-  const id =
-    v.match(/youtu\.be\/([\w-]+)/i)?.[1] ||
-    v.match(/[?&]v=([\w-]+)/i)?.[1] ||
-    v.match(/\/embed\/([\w-]+)/i)?.[1] ||
-    v.match(/\/shorts\/([\w-]+)/i)?.[1];
-
+  const id = extractYouTubeId(v);
   if (id) {
     return `https://www.youtube.com/embed/${id}`;
   }
@@ -37,12 +52,166 @@ function buildEmbedUrl(raw: string): string {
 
 function youtubeThumbFromUrl(raw: string): string {
   try {
-    const v = buildEmbedUrl(raw);
-    const m = v.match(/\/embed\/([\w-]+)/i);
-    const id = m?.[1];
+    const id = extractYouTubeId(raw);
     if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   } catch {}
   return "https://placehold.co/320x180?text=Video";
+}
+
+function buildAutoplayEmbedUrl(raw: string): string {
+  const base = buildEmbedUrl(raw);
+  try {
+    const u = new URL(base);
+    u.searchParams.set("autoplay", "1");
+    u.searchParams.set("mute", "1");
+    u.searchParams.set("playsinline", "1");
+    u.searchParams.set("rel", "0");
+    return u.toString();
+  } catch {
+    return base;
+  }
+}
+
+let ytApiPromise: Promise<any> | null = null;
+function loadYouTubeIFrameAPI(): Promise<any> {
+  if (typeof window === "undefined") return Promise.reject(new Error("No window"));
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (ytApiPromise) return ytApiPromise;
+
+  ytApiPromise = new Promise((resolve, reject) => {
+    const existing = document.getElementById("youtube-iframe-api");
+    if (existing) {
+      const start = Date.now();
+      const poll = () => {
+        if (window.YT?.Player) resolve(window.YT);
+        else if (Date.now() - start > 10_000) reject(new Error("YouTube API load timeout"));
+        else setTimeout(poll, 50);
+      };
+      poll();
+      return;
+    }
+
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      try {
+        prev?.();
+      } finally {
+        resolve(window.YT);
+      }
+    };
+
+    const s = document.createElement("script");
+    s.id = "youtube-iframe-api";
+    s.src = "https://www.youtube.com/iframe_api";
+    s.async = true;
+    s.onerror = () => reject(new Error("Failed to load YouTube API"));
+    document.head.appendChild(s);
+  });
+
+  return ytApiPromise;
+}
+
+function nextPlayableIndex(ids: Array<string | null>, from: number): number {
+  if (ids.length === 0) return 0;
+  for (let offset = 1; offset <= ids.length; offset++) {
+    const idx = (from + offset) % ids.length;
+    if (ids[idx]) return idx;
+  }
+  return from;
+}
+
+function HeroVideoPlayer({
+  videoUrls,
+  activeIndex,
+  onChange,
+}: {
+  videoUrls: string[];
+  activeIndex: number;
+  onChange: (idx: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const playerRef = useRef<any>(null);
+
+  const videoIds = useMemo(
+    () => videoUrls.map((u) => extractYouTubeId(u)),
+    [videoUrls]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const el = containerRef.current;
+    const id = videoIds[activeIndex] ?? null;
+    if (!el || !id) return;
+
+    loadYouTubeIFrameAPI()
+      .then((YT) => {
+        if (cancelled) return;
+        if (!containerRef.current) return;
+        try {
+          playerRef.current?.destroy?.();
+        } catch {}
+
+        playerRef.current = new YT.Player(containerRef.current, {
+          width: "100%",
+          height: "100%",
+          videoId: id,
+          playerVars: {
+            autoplay: 1,
+            playsinline: 1,
+            rel: 0,
+            modestbranding: 1,
+            origin: window.location.origin,
+          },
+          events: {
+            onReady: (ev: any) => {
+              try {
+                ev?.target?.mute?.();
+                ev?.target?.playVideo?.();
+              } catch {}
+            },
+            onStateChange: (ev: any) => {
+              if (ev?.data !== 0) return; // 0 = ended
+              const next = nextPlayableIndex(videoIds, activeIndex);
+              if (next === activeIndex) {
+                try {
+                  ev?.target?.seekTo?.(0, true);
+                  ev?.target?.playVideo?.();
+                } catch {}
+                return;
+              }
+              onChange(next);
+            },
+          },
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      try {
+        playerRef.current?.destroy?.();
+      } catch {}
+      playerRef.current = null;
+    };
+  }, [activeIndex, onChange, videoIds]);
+
+  const activeUrl =
+    videoUrls[activeIndex] ?? videoUrls[0] ?? FALLBACK_VIDEOS[0] ?? "";
+  const activeId = videoIds[activeIndex] ?? null;
+
+  if (!activeId) {
+    return (
+      <iframe
+        src={buildAutoplayEmbedUrl(activeUrl)}
+        title="Khidmaty intro"
+        className="h-full w-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  }
+
+  return <div ref={containerRef} className="h-full w-full" />;
 }
 
 /* ---------------------------------------------------
@@ -146,6 +315,9 @@ export default function Home() {
 
   // WHICH VIDEO IS ACTIVE
   const [activeIndex, setActiveIndex] = useState(0);
+  useEffect(() => {
+    setActiveIndex((prev) => (prev < videos.length ? prev : 0));
+  }, [videos.length]);
   const safeIndex = activeIndex < videos.length ? activeIndex : 0;
 
   const [topServices, setTopServices] = useState<Service[]>([]);
@@ -229,11 +401,7 @@ export default function Home() {
     };
   }, []);
 
-  const primaryVideo = buildEmbedUrl(
-    videos[safeIndex] ?? videos[0] ?? FALLBACK_VIDEOS[0]
-  );
-
-  const hasVideo = !!primaryVideo;
+  const hasVideo = videos.length > 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -319,12 +487,10 @@ export default function Home() {
             <div className="flex-1">
               <div className="relative aspect-video overflow-hidden rounded-2xl border bg-black/80 shadow-xl">
                 {hasVideo ? (
-                  <iframe
-                    src={primaryVideo}
-                    title="Khidmaty intro"
-                    className="h-full w-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
+                  <HeroVideoPlayer
+                    videoUrls={videos}
+                    activeIndex={safeIndex}
+                    onChange={setActiveIndex}
                   />
                 ) : (
                   <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
