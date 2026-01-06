@@ -99,12 +99,17 @@ const nextConfig: NextConfig = {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
 <<<<<<< HEAD
+<<<<<<< HEAD
       // Only force React aliases in dev. In prod builds, Next relies on
       // conditional exports (e.g. `react-server`) and overriding can break
       // server-side helpers that use `React.cache`.
       ...(!isCIOrProd
         ? { react: reactAlias, 'react-dom': reactDomAlias }
         : {}),
+=======
+      react: reactAlias,
+      'react-dom': reactDomAlias,
+>>>>>>> 5fe260e (fix(logo))
 =======
       react: reactAlias,
       'react-dom': reactDomAlias,
