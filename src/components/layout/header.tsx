@@ -24,20 +24,21 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 export function Header() {
-  // Hide the black header bar on product routes
-  const p =
-    (typeof window !== 'undefined'
-      ? window.location.pathname
-      : typeof window === 'undefined'
-      ? ''
-      : '') || '';
-  if (p.startsWith('/dashboard') || p.startsWith('/create') || p.startsWith('/owner')) {
+  const pathname = usePathname() || '';
+  if (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/create') ||
+    pathname.startsWith('/owner')
+  ) {
     return null;
   }
 
+  return <HeaderInner pathname={pathname} />;
+}
+
+function HeaderInner({ pathname }: { pathname: string }) {
   const { user, userProfile } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [showPricing, setShowPricing] = useState(false);

@@ -145,12 +145,8 @@ async function apiAutoCategorizeService(args: { description: string }) {
 }
 
 export function ServiceForm() {
-  const locale = getClientLocale();
-  const { toast } = useToast();
-  const router = useRouter();
   const { user, userProfile, loading } = useAuth();
 
-  // Only providers can access the service creation form
   if (loading) return null;
   if (userProfile?.role !== 'provider') {
     return (
@@ -159,6 +155,14 @@ export function ServiceForm() {
       </div>
     );
   }
+
+  return <ServiceFormInner user={user} userProfile={userProfile} />;
+}
+
+function ServiceFormInner({ user, userProfile }: { user: any; userProfile: any }) {
+  const locale = getClientLocale();
+  const { toast } = useToast();
+  const router = useRouter();
 
   const [isImprovingTitle, startImprovingTitleTransition] = useTransition();
   const [isCategorizing, startCategorizingTransition] = useTransition();

@@ -22,8 +22,6 @@ export default function PromotedSaleStrip({ take = 8 }: { take?: number }) {
     })();
   }, [take]);
 
-  if (loading || items.length === 0) return null;
-
   const sequences = useMemo(() => {
     const MIN_ITEMS = 6;
     const repeats = Math.ceil(MIN_ITEMS / Math.max(items.length, 1));
@@ -31,6 +29,8 @@ export default function PromotedSaleStrip({ take = 8 }: { take?: number }) {
     for (let i = 0; i < repeats; i++) seq.push(...items);
     return seq;
   }, [items]);
+
+  if (loading || sequences.length === 0) return null;
 
   const shouldBounce = sequences.length <= 4;
 

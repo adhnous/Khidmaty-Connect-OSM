@@ -135,7 +135,6 @@ export default function EditSaleItemPage() {
       try { window.location.href = '/login'; } catch {}
     }
   }, [loading, user, userProfile?.role]);
-  if (!id || loading || !user || userProfile?.role !== 'provider') return null;
 
   const wiz = useMemo(() => ({
     title: locale === 'ar' ? 'تعديل إعلان' : 'Edit Sale Item',
@@ -182,6 +181,8 @@ export default function EditSaleItemPage() {
       toast({ variant: 'destructive', title: e?.message || 'Failed' });
     }
   }
+
+  if (!id || loading || !user || userProfile?.role !== 'provider') return null;
 
   return (
     <div className="mx-auto max-w-3xl pt-16 md:pt-20">

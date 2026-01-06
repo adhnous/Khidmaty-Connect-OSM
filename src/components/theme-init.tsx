@@ -42,13 +42,10 @@ export default function ThemeInit() {
       return () => mq.removeEventListener("change", onChange);
     } catch {
       // Safari fallback
-      // eslint-disable-next-line deprecation/deprecation
       mq.addListener(onChange);
-      // eslint-disable-next-line deprecation/deprecation
       return () => mq.removeListener(onChange);
     }
   }, []);
 
   return null;
 }
-

@@ -190,7 +190,6 @@ export default function CreateServiceWizardPage() {
     if (!user) { router.replace('/login'); return; }
     if (userProfile?.role !== 'provider') { router.replace('/'); }
   }, [loading, user, userProfile?.role, router]);
-  if (loading || !user || userProfile?.role !== 'provider') return null;
 
   const { toast } = useToast();
 
@@ -505,6 +504,8 @@ export default function CreateServiceWizardPage() {
       ))}
     </div>
   );
+
+  if (loading || !user || userProfile?.role !== 'provider') return null;
 
   return (
 <div className="mx-auto max-w-3xl pt-16 md:pt-20">

@@ -137,8 +137,6 @@ export default function CreateSaleItemPage() {
     }
   }, [loading, user, userProfile?.role]);
 
-  if (loading || !user || userProfile?.role !== "provider") return null;
-
   // ------------------ Form setup ------------------
   const form = useForm<SaleItemForm>({
     resolver: zodResolver(saleItemSchema),
@@ -385,6 +383,8 @@ export default function CreateSaleItemPage() {
       });
     }
   }
+
+  if (loading || !user || userProfile?.role !== "provider") return null;
 
   // ------------------ UI ------------------
   return (
