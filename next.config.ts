@@ -98,28 +98,12 @@ const nextConfig: NextConfig = {
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 7bd20a9 (chore: upgrade Next.js to 15.5.6)
       // Only force React aliases in dev. In prod builds, Next relies on
       // conditional exports (e.g. `react-server`) and overriding can break
       // server-side helpers that use `React.cache`.
       ...(!isCIOrProd
         ? { react: reactAlias, 'react-dom': reactDomAlias }
         : {}),
-<<<<<<< HEAD
-=======
-      react: reactAlias,
-      'react-dom': reactDomAlias,
->>>>>>> 5fe260e (fix(logo))
-=======
-      react: reactAlias,
-      'react-dom': reactDomAlias,
->>>>>>> 5fe260e (fix(logo))
-=======
->>>>>>> 7bd20a9 (chore: upgrade Next.js to 15.5.6)
       '@opentelemetry/exporter-jaeger': false,
       '@opentelemetry/exporter-zipkin': false,
     };
