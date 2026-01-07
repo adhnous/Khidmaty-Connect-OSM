@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdmin } from '@/lib/firebase-admin';
+import { buildServiceCreateDoc } from '@/lib/service-normalize';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,38 +33,9 @@ export async function POST(req: Request) {
     // Only providers can use this endpoint (admins should use the owner-console)
     if (role !== 'provider') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
-    // Build payload (strict allowlist)
-    const payload: any = {
-      title: typeof body.title === 'string' ? body.title : '',
-      description: typeof body.description === 'string' ? body.description : '',
-      price: Number.isFinite(body.price) ? Number(body.price) : 0,
-      priceMode: (['firm','negotiable','call','hidden'] as const).includes(String(body.priceMode || '').toLowerCase() as any)
-        ? String(body.priceMode).toLowerCase()
-        : 'firm',
-      showPriceInContact: typeof body.showPriceInContact === 'boolean' ? !!body.showPriceInContact : false,
-      category: typeof body.category === 'string' ? body.category : '',
-      city: typeof body.city === 'string' ? body.city : 'Tripoli',
-      area: typeof body.area === 'string' ? body.area : '',
-      availabilityNote: typeof body.availabilityNote === 'string' ? body.availabilityNote : '',
-      lat: Number.isFinite(body.lat) ? Number(body.lat) : undefined,
-      lng: Number.isFinite(body.lng) ? Number(body.lng) : undefined,
-      mapUrl: (typeof body.mapUrl === 'string' && body.mapUrl) ? body.mapUrl : undefined,
-      images: Array.isArray(body.images) ? body.images.filter((i: any) => i && typeof i.url === 'string') : [],
-      contactPhone: typeof body.contactPhone === 'string' ? body.contactPhone : undefined,
-      contactWhatsapp: typeof body.contactWhatsapp === 'string' ? body.contactWhatsapp : undefined,
-      acceptRequests: typeof body.acceptRequests === 'boolean' ? body.acceptRequests : true,
-      videoUrl: typeof body.videoUrl === 'string' ? body.videoUrl : undefined,
-      videoUrls: Array.isArray(body.videoUrls) ? body.videoUrls.filter((v: any) => typeof v === 'string' && v) : undefined,
-      facebookUrl: typeof body.facebookUrl === 'string' ? body.facebookUrl : undefined,
-      telegramUrl: typeof body.telegramUrl === 'string' ? body.telegramUrl : undefined,
-      subservices: Array.isArray(body.subservices) ? body.subservices : [],
-      providerId: uid,
-      providerName: (body.providerName && typeof body.providerName === 'string') ? body.providerName : null,
-      providerEmail: (body.providerEmail && typeof body.providerEmail === 'string') ? body.providerEmail : null,
-      viewCount: 0,
-      status: 'pending',
-      createdAt: new Date(),
-    };
+    const providerName = (body.providerName && typeof body.providerName === 'string') ? body.providerName : null;
+    const providerEmail = (body.providerEmail && typeof body.providerEmail === 'string') ? body.providerEmail : null;
+    const payload = buildServiceCreateDoc(body, { providerId: uid, providerName, providerEmail, createdAt: new Date() });
 
     if (!payload.title) return NextResponse.json({ error: 'title_required' }, { status: 400 });
 

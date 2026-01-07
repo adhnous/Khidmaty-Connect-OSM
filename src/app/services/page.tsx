@@ -1,28 +1,20 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ServiceCard } from '@/components/service-card';
 import { listServicesFiltered, type Service } from '@/lib/services';
 import { libyanCities } from '@/lib/cities';
 import { getClientLocale, tr } from '@/lib/i18n';
-import { GraduationCap } from "lucide-react";
-
-import {
-  CategoryCards,
-  type CategoryCardId,
-} from '@/components/category-cards';
+import { CategoryCards, type CategoryCardId } from '@/components/category-cards';
 import CityPicker from '@/components/city-picker';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const ALL_CITIES = 'ALL_CITIES';
 
 export default function ServicesBrowsePage() {
   const locale = getClientLocale();
   const isAr = locale === 'ar';
-  const router = useRouter();
 
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,9 +23,7 @@ export default function ServicesBrowsePage() {
   const [showCategoryPopup, setShowCategoryPopup] = useState(false);
   const [city, setCity] = useState<string>(ALL_CITIES);
   const [q, setQ] = useState('');
-  const [activeCategory, setActiveCategory] = useState<CategoryCardId | null>(
-    null,
-  );
+  const [activeCategory, setActiveCategory] = useState<CategoryCardId | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
 
   async function fetchServices() {
@@ -68,13 +58,7 @@ export default function ServicesBrowsePage() {
       setServices(rows);
     } catch (e: any) {
       setServices([]);
-      setError(
-        typeof e?.message === 'string'
-          ? e.message
-          : isAr
-          ? '+�+�+� +�+++� +�+�+�+�+� +�+�+�+�+� +�+�+�+�+�+�+�.'
-          : 'Failed to load services.',
-      );
+      setError(typeof e?.message === 'string' ? e.message : (isAr ? 'فشل تحميل الخدمات.' : 'Failed to load services.'));
     } finally {
       setLoading(false);
     }
@@ -86,11 +70,8 @@ export default function ServicesBrowsePage() {
       return;
     }
     setActiveCategory(id);
+    setQ(id);
 
-    const defLabel = id;
-    setQ(defLabel);
-
-    // On mobile, scroll results into view after choosing a category
     try {
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
         const el = resultsRef.current;
@@ -110,7 +91,6 @@ export default function ServicesBrowsePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city]);
 
-  // Debounced search by text/category
   useEffect(() => {
     const t = setTimeout(() => {
       void fetchServices();
@@ -122,36 +102,28 @@ export default function ServicesBrowsePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-1">
-        {/* Hero search + categories */}
         <section className="border-b bg-gradient-to-b from-background via-background to-muted/40 pb-8 pt-4 md:pb-10 md:pt-6">
           <div className="mx-auto max-w-6xl px-4">
             <div className="rounded-2xl bg-background shadow-xl">
               <div className="border-b px-4 pb-4 pt-4 md:px-6 md:pt-6">
                 <div
-                  className={`flex flex-col gap-3 md:flex-row md:items-center ${
-                    isAr ? 'md:flex-row-reverse' : ''
-                  }`}
+                  className={`flex flex-col gap-3 md:flex-row md:items-center ${isAr ? 'md:flex-row-reverse' : ''}`}
                 >
-                  {/* search input */}
                   <div className="flex-1">
                     <Input
                       type="search"
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
                       onFocus={() => setShowCategoryPopup(true)}
-                    placeholder={
-  (tr(locale, 'home.searchPlaceholder') as string) ||
-  (isAr
-    ? 'ما الإعلان الذي تبحث عنه؟'
-    : 'What are you looking for?')
-}
-
+                      placeholder={
+                        (tr(locale, 'home.searchPlaceholder') as string) ||
+                        (isAr ? 'ماذا تبحث؟' : 'What are you looking for?')
+                      }
                       className="h-11"
                       dir={isAr ? 'rtl' : 'ltr'}
                     />
                   </div>
 
-                  {/* city select */}
                   <div className="w-full md:w-56">
                     <CityPicker
                       locale={isAr ? 'ar' : 'en'}
@@ -159,22 +131,17 @@ export default function ServicesBrowsePage() {
                       onChange={(val) => setCity(val)}
                       options={libyanCities}
                       placeholder={
-                        (tr(locale, 'home.cityPlaceholder') as string) ||
-  (isAr ? 'ابحث حسب المدينة' : 'Search city')                      }
+                        (tr(locale, 'home.cityPlaceholder') as string) || (isAr ? 'المدينة' : 'City')
+                      }
                       className="h-11"
                       allOption={{
                         value: ALL_CITIES,
-  label: isAr ? 'كل المدن' : 'All cities',
+                        label: isAr ? 'كل المدن' : 'All cities',
                       }}
                     />
                   </div>
 
-                  {/* buttons */}
-                  <div
-                    className={`flex gap-2 ${
-                      isAr ? 'justify-start md:justify-start' : ''
-                    }`}
-                  >
+                  <div className={`flex gap-2 ${isAr ? 'justify-start md:justify-start' : ''}`}>
                     <Button
                       variant="outline"
                       className="h-11 px-4"
@@ -184,36 +151,26 @@ export default function ServicesBrowsePage() {
                         setActiveCategory(null);
                       }}
                     >
-{isAr ? 'إعادة تعيين عوامل التصفية' : 'Reset filters'}
+                      {isAr ? 'إعادة ضبط الفلاتر' : 'Reset filters'}
                     </Button>
-                    <Button
-                      className="h-11 bg-power text-white hover:bg-powerDark"
-                      onClick={() => void fetchServices()}
-                    >
-{tr(locale, 'home.search') || (isAr ? 'بحث' : 'Search')}
+                    <Button className="h-11 bg-power text-white hover:bg-powerDark" onClick={() => void fetchServices()}>
+                      {tr(locale, 'home.search') || (isAr ? 'بحث' : 'Search')}
                     </Button>
                   </div>
                 </div>
 
-                {/* popup category panel triggered by search focus */}
                 {showCategoryPopup && (
                   <div className="mt-3 rounded-2xl border bg-card p-3 shadow-lg">
                     <div
-                      className={`mb-2 flex items-center justify-between text-xs font-semibold ${
-                        isAr ? 'flex-row-reverse' : ''
-                      }`}
+                      className={`mb-2 flex items-center justify-between text-xs font-semibold ${isAr ? 'flex-row-reverse' : ''}`}
                     >
-                      <span>
-<span>
-  {isAr ? 'اختر نوع الخدمة' : 'Choose service type'}
-</span>
-                      </span>
+                      <span>{isAr ? 'اختر نوع الخدمة' : 'Choose service type'}</span>
                       <button
                         type="button"
                         onClick={() => setShowCategoryPopup(false)}
                         className="px-2 text-muted-foreground"
                       >
-{isAr ? 'إغلاق' : 'Close'}
+                        {isAr ? 'إغلاق' : 'Close'}
                       </button>
                     </div>
                     <CategoryCards
@@ -234,96 +191,9 @@ export default function ServicesBrowsePage() {
           </div>
         </section>
 
-        {/* Results */}
-        <section
-          ref={resultsRef}
-          className="mx-auto max-w-6xl px-4 pb-10 pt-6 md:pt-8"
-        >
-          {/* Pinned card: For students & learning */}
-          <Card className="mb-6 border border-border/70 bg-gradient-to-l from-background via-card to-background shadow-[0_18px_40px_rgba(15,23,42,0.16)] relative overflow-hidden">
-          
-          
-          <CardHeader
-  className={`flex items-center gap-4 ${
-    isAr ? 'flex-row-reverse text-right' : 'text-left'
-  }`}
->
-  {/* Text side */}
-  <div className="flex-1">
-    <CardTitle className="text-lg md:text-xl">
-      {isAr ? 'للطلاب والتعلّم' : 'For students & learning'}
-    </CardTitle>
-    <p className="mt-1 text-xs text-muted-foreground md:text-sm">
-      {isAr
-        ? 'وصول سريع لخدمات مثل بنك موارد الطلبة، الدعم الأكاديمي، ومراجعة السيرة الذاتية.'
-        : 'Quick access to services like student resources, academic support, and CV review.'}
-    </p>
-  </div>
-
-  {/* Icon side */}
-  <div className="hidden md:flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary shadow-md">
-    <GraduationCap className="h-8 w-8" />
-  </div>
-</CardHeader>
-
-            
-            
-            
-             <CardContent
-              className={`space-y-2 ${isAr ? 'text-right' : 'text-left'}`}
-            >
-              <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground md:text-sm">
-                <li>
- 
-  {isAr
-    ? 'بنك موارد الطلبة: امتحانات سابقة، واجبات، ملاحظات، تقارير نموذجية وكتب علمية. مسؤولية حقوق النشر تقع بالكامل على من يرفع المحتوى.'
-    : 'Student Resource Bank: past exams, assignments, notes, sample reports, and scientific books. Uploaders are solely responsible for any copyright issues.'}
-</li>
-
-<li>
-  {isAr
-    ? 'خدمات أكاديمية وبحثية: مساعدة في المقترحات، هيكلة المراجع والتحرير الأكاديمي، وتوجيه الدراسة.'
-    : 'Academic & Research Support: help with proposals, literature review structure, editing and study coaching.'}
-</li>
-<li>
-  {isAr
-    ? 'ركن السيرة الذاتية والتوظيف: مراجعة CV، رسائل التغطية، وحسابات لينكدإن وطلبات المنح أو القبول الجامعي.'
-    : 'CV & Job Application Corner: CV review, cover letter feedback, LinkedIn help and scholarship/college applications.'}
-</li>
-<li>
-  {isAr
-    ? 'خدمات الترجمة واللغة: ترجمة أكاديمية عربية ⇄ إنجليزية وتصحيح لغوي للنحو والوضوح.'
-    : 'Language & Translation Help: AR ⇄ EN academic translation and proofreading for grammar and clarity.'}
-</li>
-
-              </ul>
-              <div
-                className={`pt-2 ${
-                  isAr ? 'flex justify-start' : 'flex justify-end'
-                }`}
-              >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    router.push('/student-bank');
-                    setQ(
-                      'طالب امتحان واجبات ملخص مشروع تخرج سيرة ذاتية ترجمة اكاديمية',
-                    );
-                  }}
-                >
-                  {isAr ? 'عرض خدمات الطلاب' : 'Show student services'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div
-            className={`mb-4 flex items-center $\{ isAr ? 'justify-end text-right' : 'justify-between' \}`}
-          >
-            <h2 className="text-xl font-bold md:text-2xl">
-  {isAr ? 'خدمات شائعة' : 'Popular services'}
-            </h2>
+        <section ref={resultsRef} className="mx-auto max-w-6xl px-4 pb-10 pt-6 md:pt-8">
+          <div className={`mb-4 flex items-center ${isAr ? 'justify-end text-right' : 'justify-between'}`}>
+            <h2 className="text-xl font-bold md:text-2xl">{isAr ? 'خدمات شائعة' : 'Popular services'}</h2>
           </div>
 
           {error && (
@@ -335,15 +205,12 @@ export default function ServicesBrowsePage() {
           {loading ? (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-64 animate-pulse rounded-xl border bg-muted"
-                />
+                <div key={i} className="h-64 animate-pulse rounded-xl border bg-muted" />
               ))}
             </div>
           ) : services.length === 0 ? (
             <div className="rounded-md border p-4 text-sm text-muted-foreground">
-{isAr ? 'لا توجد خدمات بعد.' : 'No services yet.'}
+              {isAr ? 'لا توجد خدمات بعد.' : 'No services yet.'}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
@@ -357,8 +224,7 @@ export default function ServicesBrowsePage() {
                   price={s.price}
                   priceMode={s.priceMode}
                   imageUrl={
-                    Array.isArray((s as any).images) &&
-                    (s as any).images[0]?.url
+                    Array.isArray((s as any).images) && (s as any).images[0]?.url
                       ? (s as any).images[0].url
                       : 'https://placehold.co/800x600.png?text=Service'
                   }
@@ -373,3 +239,4 @@ export default function ServicesBrowsePage() {
     </div>
   );
 }
+

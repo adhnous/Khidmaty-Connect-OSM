@@ -23,13 +23,14 @@ export async function GET(req: Request) {
           ? new Date(data.createdAt._seconds * 1000).toISOString()
           : null;
         const driveLink = data.driveLink || data.fileUrl || null;
+        const pdfKey = data.pdfKey || null;
         return {
           id: d.id,
           title: data.title || '',
           type: data.type || 'other',
           language: data.language || null,
           status: data.status || null,
-          hasFile: !!(driveLink || data.driveFileId),
+          hasFile: !!(pdfKey || driveLink || data.driveFileId),
           createdAt: createdAtISO,
         } as const;
       })
@@ -44,4 +45,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

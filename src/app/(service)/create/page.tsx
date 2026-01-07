@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { libyanCities, cityLabel, cityCenter } from "@/lib/cities";
 import { createService, uploadServiceImages, updateService, getServiceById } from "@/lib/services";
+import type { Service } from "@/lib/service-types";
 import { getServiceDraft, saveServiceDraft, deleteServiceDraft } from "@/lib/service-drafts";
 import { tileUrl, tileAttribution, markerHtml } from "@/lib/map";
 import { reverseGeocodeNominatim, getLangFromDocument } from "@/lib/geocode";
@@ -458,17 +459,31 @@ export default function CreateServiceWizardPage() {
 
     const values = form.getValues();
     const payload = {
-      ...values,
+      title: values.title,
+      description: values.description,
+      price: values.price,
+      priceMode: values.priceMode,
+      showPriceInContact: values.showPriceInContact,
+      acceptRequests: values.acceptRequests,
+      category: values.category,
+      city: values.city,
+      area: values.area ?? '',
+      availabilityNote: values.availabilityNote,
+      mapUrl: values.mapUrl,
+      contactPhone: values.contactPhone,
+      contactWhatsapp: values.contactWhatsapp,
+      videoUrl: values.youtubeUrl || values.videoUrl,
+      videoUrls: Array.isArray(values.videoUrls) ? values.videoUrls.filter(Boolean) : undefined,
+      facebookUrl: values.facebookUrl,
+      telegramUrl: values.telegramUrl,
+      images: (imgs || []).map((it) => ({ url: it.url })),
+      subservices: values.subservices ?? [],
+      lat: values.location?.lat,
+      lng: values.location?.lng,
       providerId: uid,
       providerName: user?.displayName ?? null,
       providerEmail: user?.email ?? null,
-      images: (imgs || []).map((it) => ({ url: it.url })),
-      lat: values.location?.lat,
-      lng: values.location?.lng,
-      videoUrl: values.youtubeUrl || values.videoUrl,
-      videoUrls: Array.isArray(values.videoUrls) ? values.videoUrls.filter(Boolean) : undefined,
-      status: "pending" as const,
-    } as any;
+    } satisfies Omit<Service, 'id' | 'createdAt'>;
 
     try {
       const id = await createService(payload);

@@ -15,7 +15,10 @@ export type StudentResource = {
   subjectTags?: string[];
   readCount?: number;
   viewCount?: number;
-  // In future: Drive integration
+  // New: private PDF storage key (MinIO/S3)
+  pdfKey?: string;
+  pdfBucket?: string;
+  // Legacy Drive integration
   driveFileId?: string;
   driveLink?: string;
   driveFolderId?: string;
@@ -193,11 +196,14 @@ export async function listStudentResources(
         type: (data.type as StudentResource['type']) || 'other',
         language: data.language,
         status: (data.status as StudentResource['status']) || undefined,
+        hiddenFromOwner: Boolean(data.hiddenFromOwner || false) || undefined,
         subjectTags: Array.isArray(data.subjectTags)
           ? (data.subjectTags as string[])
           : [],
         readCount: Number(data.readCount ?? data.viewCount ?? 0),
         viewCount: Number(data.viewCount ?? 0),
+        pdfKey: data.pdfKey,
+        pdfBucket: data.pdfBucket,
       driveFileId: data.driveFileId,
       driveLink: data.driveLink,
         driveFolderId: data.driveFolderId,
@@ -207,7 +213,8 @@ export async function listStudentResources(
     });
 
     // Only include approved resources (or legacy ones without a status).
-    rows = rows.filter((r) => !r.status || r.status === 'approved');
+    // Also exclude "hiddenFromOwner" items (used for test uploads / internal-only resources).
+    rows = rows.filter((r) => (!r.status || r.status === 'approved') && !r.hiddenFromOwner);
 
     if (!rows.length) {
       rows = MOCK_STUDENT_RESOURCES;
@@ -242,6 +249,8 @@ export async function createStudentResource(
       : undefined,
     driveFileId: input.driveFileId || undefined,
     driveLink: input.driveLink || undefined,
+    pdfKey: input.pdfKey || undefined,
+    pdfBucket: input.pdfBucket || undefined,
     driveFolderId: folderIdForType(input.type || 'other'),
     uploaderId: input.uploaderId || undefined,
     hiddenFromOwner: input.hiddenFromOwner || undefined,

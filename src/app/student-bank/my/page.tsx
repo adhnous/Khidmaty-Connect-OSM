@@ -185,7 +185,7 @@ export default function MyStudentResourcesPage() {
                       <span>
                         {isAr
                           ? 'الملف مخزّن في Google Drive'
-                          : 'File stored in Google Drive'}
+                          : 'File attached'}
                       </span>
                     )}
                   </div>

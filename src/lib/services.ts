@@ -14,6 +14,10 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import type { Service, ServiceImage } from './service-types';
+import { buildServiceCreateDoc, buildServiceUpdatePatch } from './service-normalize';
+
+export type { Service, ServiceImage, SubService, ServicePriceMode, ServiceStatus } from './service-types';
 
 function deepStripUndefined<T = any>(input: T): T {
   if (Array.isArray(input)) {
@@ -32,60 +36,6 @@ function deepStripUndefined<T = any>(input: T): T {
   return input;
 }
 
-export type ServiceImage = {
-  url: string;
-  hint?: string;
-  publicId?: string; // Cloudinary public_id if available
-};
-
-export type SubService = {
-  id: string;
-  title: string;
-  price: number;
-  unit?: string;
-  description?: string;
-};
-
-  export type Service = {
-    id?: string;
-    title: string;
-    description: string;
-    price: number;
-    priceMode?: 'firm' | 'negotiable' | 'call' | 'hidden';
-    category: string;
-    city: string;
-    area: string;
-    availabilityNote?: string;
-    images: ServiceImage[];
-    contactPhone?: string;
-    contactWhatsapp?: string;
-    videoUrl?: string;
-    // New: multiple YouTube links (preferred) and social links
-    videoUrls?: string[];
-    facebookUrl?: string;
-    telegramUrl?: string;
-    // Optional map URL to external maps (Google Maps/OSM)
-    mapUrl?: string;
-    providerId: string;
-    providerName?: string | null;
-    providerEmail?: string | null;
-    subservices?: SubService[];
-    status?: 'pending' | 'approved' | 'rejected';
-    // Optional geolocation for map; when absent, UI falls back to city centroid
-    lat?: number;
-    lng?: number;
-    // Boosting / promotion flags
-    featured?: boolean;      // manually featured
-    priority?: number;       // 0..N, higher floats to top client-side
-    // Simple share metric (owner-incremented client-side)
-    shareCount?: number;     // total times owner pressed Share
-    // Simple view metric (incremented server-side when available)
-    viewCount?: number;      // total views
-    // Whether seekers can send in-app requests to this service
-    acceptRequests?: boolean;
-    createdAt?: unknown;
-  };
-
 export async function uploadServiceImages(
   providerId: string,
   files: File[]
@@ -102,17 +52,16 @@ export async function uploadServiceImages(
 
 // Internal fallback used when API is not available
 export async function createServiceDirect(data: Omit<Service, 'id' | 'createdAt'>) {
+  const providerId = String((data as any)?.providerId || '');
+  if (!providerId) throw new Error('provider_required');
   const colRef = collection(db, 'services');
-  const payload = {
-    ...data,
-    subservices: Array.isArray((data as any).subservices) ? (data as any).subservices : [],
-    providerName: (data as any).providerName ?? null,
-    providerEmail: (data as any).providerEmail ?? null,
-    viewCount: 0,
-    status: 'pending',
+  const payload = buildServiceCreateDoc(data, {
+    providerId,
+    providerName: (data as any)?.providerName ?? null,
+    providerEmail: (data as any)?.providerEmail ?? null,
     createdAt: serverTimestamp(),
-  };
-  const clean = deepStripUndefined(payload);
+  });
+  const clean = deepStripUndefined(payload as any);
   const docRef = await addDoc(colRef, clean);
   return docRef.id;
 }
@@ -204,29 +153,8 @@ export async function updateService(
   data: Partial<Omit<Service, 'id' | 'createdAt' | 'providerId'>>
 ) {
   const docRef = doc(db, 'services', id);
-  // Normalize nested fields to avoid undefined values anywhere in the payload
-  const normalized: any = { ...(data as any) };
-  if (Array.isArray(normalized.images)) {
-    normalized.images = normalized.images.map((img: any) => ({
-      url: String(img?.url || ''),
-      ...(img?.hint ? { hint: img.hint } : {}),
-      ...(img?.publicId ? { publicId: img.publicId } : {}),
-    }));
-  }
-  if (Array.isArray(normalized.subservices)) {
-    normalized.subservices = normalized.subservices.map((s: any) => ({
-      id: String(s?.id || ''),
-      title: String(s?.title || ''),
-      price: Number(s?.price ?? 0),
-      ...(s?.unit ? { unit: s.unit } : {}),
-      ...(s?.description ? { description: s.description } : {}),
-    }));
-  }
-  if (Array.isArray(normalized.videoUrls)) {
-    normalized.videoUrls = normalized.videoUrls.filter((u: any) => typeof u === 'string' && u.trim() !== '');
-  }
-
-  const stripped = deepStripUndefined(normalized);
+  const patch = buildServiceUpdatePatch(data);
+  const stripped = deepStripUndefined(patch as any);
   await updateDoc(docRef, stripped as any);
 }
 
@@ -260,18 +188,19 @@ export type ListFilters = {
 export async function listServicesFiltered(filters: ListFilters = {}): Promise<Service[]> {
   const { category, city, maxPrice, limit: take = 24 } = filters;
   const colRef = collection(db, 'services');
+  const fetchLimit = typeof maxPrice === 'number' ? Math.min(200, Math.max(take * 3, 80)) : take;
 
   // Build primary query with as many constraints as possible
-  let q: any;
   try {
     const wheres: any[] = [];
     wheres.push(where('status', '==', 'approved'));
     if (category) wheres.push(where('category', '==', category));
     if (city && city.toLowerCase() !== 'all cities') wheres.push(where('city', '==', city));
-    if (typeof maxPrice === 'number') wheres.push(where('price', '<=', maxPrice));
-    q = query(colRef, ...wheres, orderBy('createdAt', 'desc'), limit(take));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Service) }));
+    const qy = query(colRef, ...wheres, orderBy('createdAt', 'desc'), limit(fetchLimit));
+    const snap = await getDocs(qy);
+    let rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Service) }));
+    if (typeof maxPrice === 'number') rows = rows.filter((s) => Number((s as any)?.price ?? 0) <= maxPrice);
+    return rows.slice(0, take);
   } catch (err) {
     // Fallback 1: drop orderBy
     try {
@@ -279,25 +208,27 @@ export async function listServicesFiltered(filters: ListFilters = {}): Promise<S
       wheres.push(where('status', '==', 'approved'));
       if (category) wheres.push(where('category', '==', category));
       if (city && city.toLowerCase() !== 'all cities') wheres.push(where('city', '==', city));
-      if (typeof maxPrice === 'number') wheres.push(where('price', '<=', maxPrice));
-      q = query(colRef, ...wheres, limit(take));
-      const snap = await getDocs(q);
-      const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Service) }));
+      const qy = query(colRef, ...wheres, limit(fetchLimit));
+      const snap = await getDocs(qy);
+      let rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Service) }));
+      if (typeof maxPrice === 'number') rows = rows.filter((s) => Number((s as any)?.price ?? 0) <= maxPrice);
       // Sort newest first client-side
-      return rows.sort((a, b) => {
+      rows = rows.sort((a, b) => {
         const av = (a as any).createdAt?.toMillis?.() ?? 0;
         const bv = (b as any).createdAt?.toMillis?.() ?? 0;
         return bv - av;
       });
+      return rows.slice(0, take);
     } catch (err2) {
       // Fallback 2: fetch recent and filter client-side
-      const base = await listServices(take);
-      return base.filter((s) => {
+      const base = await listServices(fetchLimit);
+      const rows = base.filter((s) => {
         if (category && s.category !== category) return false;
         if (city && city.toLowerCase() !== 'all cities' && s.city !== city) return false;
         if (typeof maxPrice === 'number' && (s.price ?? 0) > maxPrice) return false;
         return true;
       });
+      return rows.slice(0, take);
     }
   }
 }

@@ -462,6 +462,9 @@ export default function StudentBankPage() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewItem, setPreviewItem] = useState<StudentResource | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const fieldsRef = useRef<HTMLDivElement | null>(null);
@@ -469,6 +472,41 @@ export default function StudentBankPage() {
 
   const [highlightFields, setHighlightFields] = useState(false);
   const [highlightTopics, setHighlightTopics] = useState(false);
+
+  async function openPreview(r: StudentResource) {
+    setPreviewItem(r);
+    setPreviewUrl(null);
+    setPreviewError(null);
+    setPreviewLoading(true);
+    try {
+      const pdfKey = String(r.pdfKey || '').trim();
+      if (pdfKey) {
+        // Use same-origin proxy for inline preview (avoids iframe/CORS/X-Frame-Options issues).
+        setPreviewUrl(`/api/student-bank/file?key=${encodeURIComponent(pdfKey)}`);
+        return;
+      }
+
+      const legacy = drivePreviewUrl(r);
+      if (!legacy) throw new Error('no_file');
+      setPreviewUrl(legacy);
+    } catch (e: any) {
+      setPreviewUrl(null);
+      setPreviewError(
+        isAr
+          ? 'تعذر فتح الملف حالياً. حاول مرة أخرى لاحقاً.'
+          : 'Could not open the file right now. Please try again later.',
+      );
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function closePreview() {
+    setPreviewItem(null);
+    setPreviewUrl(null);
+    setPreviewError(null);
+    setPreviewLoading(false);
+  }
 
   // Load simple settings (whether uploads are enabled)
   useEffect(() => {
@@ -597,7 +635,7 @@ export default function StudentBankPage() {
   const hasActiveSelection =
     !!activeFieldId || !!activeTopicId || searchQuery.trim().length > 0;
 
-  const previewUrl = previewItem ? drivePreviewUrl(previewItem) : undefined;
+  // previewUrl is resolved on demand (pdfKey via signed URL, legacy driveLink via viewer URL)
 
 	  function handleKindChange(kind: ResourceKind) {
 	    setActiveKind(kind);
@@ -1002,14 +1040,14 @@ export default function StudentBankPage() {
                         size="sm"
                         variant="outline"
                         className={`rounded-full border text-xs font-semibold md:text-sm ${
-                          r.driveLink || r.driveFileId
+                          r.pdfKey || r.driveLink || r.driveFileId
                             ? 'border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-900 hover:from-amber-200 hover:to-amber-300'
                             : 'border-slate-200 bg-muted/40 text-muted-foreground'
                         }`}
-                        disabled={!r.driveLink && !r.driveFileId}
+                        disabled={!r.pdfKey && !r.driveLink && !r.driveFileId}
                         onClick={() => {
-                          if (r.driveLink || r.driveFileId) {
-                            setPreviewItem(r);
+                          if (r.pdfKey || r.driveLink || r.driveFileId) {
+                            void openPreview(r);
                           }
                         }}
                       >
@@ -1024,7 +1062,7 @@ export default function StudentBankPage() {
         </section>
 
         {/* INLINE FILE PREVIEW */}
-        {previewItem && previewUrl && (
+        {previewItem && (
           <section
             className="mx-auto mt-4 max-w-5xl px-4 pb-8"
             ref={previewRef}
@@ -1042,31 +1080,60 @@ export default function StudentBankPage() {
                         size="sm"
                         variant="ghost"
                         className="text-xs font-semibold md:text-sm"
-                        onClick={() => setPreviewItem(null)}
+                        onClick={closePreview}
                       >
                   {isAr ? 'إغلاق المعاينة' : 'Close preview'}
                 </Button>
               </div>
+              {previewError && (
+                <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700 md:text-sm">
+                  {previewError}
+                </div>
+              )}
               <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg border bg-muted">
-                <iframe
-                  src={previewUrl}
-                  className="h-full w-full"
-                  loading="lazy"
-                  sandbox="allow-same-origin allow-scripts"
-                />
+                {previewLoading || !previewUrl ? (
+                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground md:text-sm">
+                    {isAr ? 'جاري التحميل...' : 'Loading...'}
+                  </div>
+                ) : (
+                  <iframe
+                    src={previewUrl}
+                    className="h-full w-full"
+                    loading="lazy"
+                    // Note: sandboxed iframes can block the browser's PDF viewer.
+                    // We only sandbox legacy/external previews (e.g. Drive), not our same-origin proxy.
+                    sandbox={
+                      previewUrl?.startsWith('/api/student-bank/file?')
+                        ? undefined
+                        : 'allow-same-origin allow-scripts'
+                    }
+                  />
+                )}
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background/95 to-transparent" />
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground md:text-xs">
                 {isAr
                   ? 'يتم عرض الملف باستخدام عارض Google Drive داخل التطبيق.'
-                  : 'The file is shown using the Google Drive viewer inside the app.'}
+                  : 'The file is shown using a secure temporary link.'}
               </p>
+              {previewUrl && (
+                <div className={`mt-2 flex ${isAr ? 'flex-row-reverse' : ''}`}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full text-xs font-semibold md:text-sm"
+                    onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
+                  >
+                    {isAr ? 'فتح في تبويب جديد' : 'Open in new tab'}
+                  </Button>
+                </div>
+              )}
             </div>
           </section>
         )}
 
         {/* CONTRIBUTE FORM (upload kept as before) */}
-        {uploadsEnabled && (
+        {settingsLoaded && uploadsEnabled && (
         <section className="mx-auto max-w-5xl px-4 pb-12">
           <div
             className={`mb-4 flex flex-col gap-2 ${
@@ -1195,8 +1262,9 @@ export default function StudentBankPage() {
                 });
 
                 const json = await res.json().catch(() => ({} as any));
+                const serverCode = (json as any)?.code || (json as any)?.error;
 
-                if (res.status === 413 || (json as any)?.error === 'file_too_large') {
+                if (res.status === 413 || serverCode === 'file_too_large' || serverCode === 'payload_too_large') {
                   setSubmitMessage(
                     isAr
                       ? 'هذا الملف أكبر من الحد المسموح به في الخادم. من فضلك ارفعه إلى حسابك في Google Drive ثم الصق رابط المشاركة في الحقل المخصص، وأعد الإرسال.'
@@ -1208,8 +1276,26 @@ export default function StudentBankPage() {
                 }
 
                 if (!res.ok) {
-                  const code = (json as any)?.error as string | undefined;
-                  if (code === 'invalid_drive_link') {
+                  const code = serverCode as string | undefined;
+                  if (code === 'uploads_disabled') {
+                    setSubmitMessage(isAr ? 'Uploads are disabled right now.' : 'Uploads are disabled right now.');
+                  } else if (code === 'invalid_pdf' || code === 'unsupported_file_type') {
+                    setSubmitMessage(isAr ? 'Please upload a valid PDF file.' : 'Please upload a valid PDF file.');
+                  } else if (code === 'storage_not_configured') {
+                    setSubmitMessage(
+                      isAr
+                        ? 'Storage is not configured. Please use a Google Drive link as a fallback.'
+                        : 'Storage is not configured. Please use a Google Drive link as a fallback.',
+                    );
+                    setShowManualLinkField(true);
+                  } else if (code === 'storage_upload_failed') {
+                    setSubmitMessage(
+                      isAr
+                        ? 'Upload failed. Please use a Google Drive link or try again later.'
+                        : 'Upload failed. Please use a Google Drive link or try again later.',
+                    );
+                    setShowManualLinkField(true);
+                  } else if (code === 'invalid_drive_link') {
                     setSubmitMessage(
                       isAr
                         ? 'رابط Google Drive غير صالح. تأكد أنه يبدأ بـ https://drive.google.com أو https://docs.google.com وأنه رابط مشاركة.'
@@ -1434,11 +1520,12 @@ export default function StudentBankPage() {
                   ? 'الملف (اختياري، يتم حفظه في المجلد المناسب)'
                   : 'File (optional, saved to the matching folder)'}
               </label>
-              <Input
-                ref={fileInputRef}
-                type="file"
-                className="h-8 cursor-pointer text-xs md:h-9 md:text-sm"
-              />
+	              <Input
+	                ref={fileInputRef}
+	                type="file"
+	                accept="application/pdf,.pdf"
+	                className="h-8 cursor-pointer text-xs md:h-9 md:text-sm"
+	              />
             </div>
 
             {(showManualLinkField || manualDriveLink) && (
@@ -1490,6 +1577,20 @@ export default function StudentBankPage() {
             )}
           </form>
         </section>
+        )}
+
+        {settingsLoaded && !uploadsEnabled && (
+          <section className="mx-auto max-w-5xl px-4 pb-12">
+            <div
+              className={`rounded-2xl border bg-muted/30 p-4 text-sm ${
+                isAr ? 'text-right' : 'text-left'
+              }`}
+            >
+              {isAr
+                ? 'رفع ملفات بنك الطلاب متوقف حاليًا من لوحة المالك. حاول مرة أخرى لاحقًا.'
+                : 'Student Bank uploads are currently disabled by the owner. Please try again later.'}
+            </div>
+          </section>
         )}
       </main>
     </div>

@@ -334,6 +334,18 @@ export default function Home() {
     (async () => {
       try {
         setTopServicesLoading(true);
+        try {
+          const res = await fetch('/api/services/top?days=7&take=10', { method: 'GET' });
+          const json = await res.json().catch(() => ({} as any));
+          const rows = Array.isArray((json as any)?.services) ? (json as any).services : null;
+          if (rows && rows.length) {
+            if (!cancelled) setTopServices(rows);
+            return;
+          }
+        } catch {
+          // fallback below
+        }
+
         const rows = await listTopViewedServices(10);
         if (!cancelled) setTopServices(rows);
       } catch {
