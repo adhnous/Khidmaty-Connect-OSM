@@ -440,13 +440,13 @@ export default function Home() {
 
               <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
                 {isAr
-                  ? "اعثر على الخدمات والبيع بسهولة واطمئنان"
+                  ? "اعرض خدماتك للعملاء بسهولة واطمئنان"
                   : "Find services and items near you with confidence"}
               </h1>
 
                 <p className="max-w-xl text-sm text-muted-foreground md:text-base">
                   {isAr
-                  ? "خدمتي تجمع بين مقدّمي الخدمات والأشخاص الذين يبحثون عن بيع أو شراء في مكان واحد منظم، بعيداً عن فوضى منشورات وسائل التواصل الاجتماعي."
+                  ? "خِدمتي منصة تجمع مقدّمي الخدمات بالعملاء في مكان منظم. سجّل كمقدّم خدمة وأضف خدماتك لتظهر للباحثين القريبين بدل أن تضيع بين منشورات وسائل التواصل."
                   : "Khidmaty brings providers and seekers together in one organised place, away from the noise of social media posts."}
                 </p>
 
@@ -456,8 +456,8 @@ export default function Home() {
                 }`}
               >
                 <Button size="lg" className="gap-2 px-6 text-base" asChild>
-                  <Link href="/services">
-                    {isAr ? "تصفح الخدمات" : "Browse services"}
+                  <Link href="/login">
+                    {isAr ? "سجّل كمقدّم خدمة" : "Become a provider"}
                   </Link>
                 </Button>
 
@@ -467,12 +467,13 @@ export default function Home() {
                   className="gap-2 px-6 text-base bg-black text-white hover:bg-black/90"
                   asChild
                 >
-                  <Link href="/sales">
-                    {isAr ? "تصفح البيع والتجارة" : "Browse sales & trade"}
+                  <Link href="/create">
+                    {isAr ? "أضف خدمتك الآن" : "Add your service now"}
                   </Link>
                 </Button>
               </div>
 
+              {/*
               <div
                 className={`mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground ${
                   isAr ? "justify-end" : "justify-start"
@@ -491,6 +492,7 @@ export default function Home() {
                     : "Search by city, category and map location"}
                 </div>
               </div>
+              */}
             </div>
 
             {/* ------------------------------------------------------------
