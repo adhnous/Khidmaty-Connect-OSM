@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ServiceCard } from "@/components/service-card";
 import SaleCard from "@/components/SaleCard";
-import { Play, Search, MapPin, Shield, Smartphone, GraduationCap, Droplet } from "lucide-react";
+import { Play, Search, MapPin, Shield, Smartphone, GraduationCap, Droplet, Send, Braces } from "lucide-react";
 import { getClientLocale } from "@/lib/i18n";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -894,6 +894,85 @@ export default function Home() {
                   )}
                 </>
               )}
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------
+            SECTION #6: STUDENT PRACTICE (API + PYTHON)
+        ------------------------------------------------------------ */}
+        <section className="border-b bg-gradient-to-b from-background to-muted/20">
+          <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+            <div
+              className={`mb-6 flex flex-col gap-2 ${
+                isAr ? "items-end text-right" : "items-start text-left"
+              }`}
+            >
+              <h2 className="text-xl font-bold md:text-2xl">
+                {isAr ? "تمارين الطلاب" : "Student Practice"}
+              </h2>
+              <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
+                {isAr
+                  ? "تدرّب على واجهات API وبايثون مباشرة داخل المتصفح."
+                  : "Practice APIs and Python directly in your browser."}
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border bg-card p-5 shadow-sm">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Send className="h-5 w-5" />
+                </div>
+                <h3 className="mb-1 text-base font-semibold">
+                  {isAr ? "تدريب API (Mini Postman)" : "API Practice (Mini Postman)"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {isAr
+                    ? "ابنِ طلبات HTTP (GET/POST/Headers/Token) وشاهد الاستجابة مع حفظ السجل."
+                    : "Build HTTP requests (methods, headers, auth) and inspect responses with history."}
+                </p>
+                <div
+                  className={`mt-4 flex flex-wrap gap-2 ${
+                    isAr ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <Button asChild className="bg-copper text-ink hover:bg-copperDark">
+                    <Link href="/practice/postman">
+                      {isAr ? "اذهب لتدريب API" : "Open API Practice"}
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/practice/hadith">
+                      {isAr ? "مثال API (الحديث)" : "API Example (Hadith)"}
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-5 shadow-sm">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Braces className="h-5 w-5" />
+                </div>
+                <h3 className="mb-1 text-base font-semibold">
+                  {isAr ? "مختبر بايثون" : "Python Sandbox"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {isAr
+                    ? "جرّب بايثون في المتصفح عبر JupyterLite بدون تثبيت."
+                    : "Run Python in the browser with JupyterLite — no install required."}
+                </p>
+                <div
+                  className={`mt-4 flex flex-wrap gap-2 ${
+                    isAr ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <Button asChild className="bg-power text-snow hover:opacity-90">
+                    <Link href="/python-sandbox">
+                      {isAr ? "اذهب لمختبر بايثون" : "Open Python Sandbox"}
+                    </Link>
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
