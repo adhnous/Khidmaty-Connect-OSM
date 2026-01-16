@@ -136,7 +136,11 @@ export default function SeedServiceWizardPage() {
   };
 
   if (loading || (typeof loading === 'boolean' && loading)) return null;
-  if (userProfile?.role !== 'provider') {
+  const canAccess =
+    userProfile?.role === 'provider' ||
+    userProfile?.role === 'admin' ||
+    userProfile?.role === 'owner';
+  if (!canAccess) {
     return (
       <div className="mx-auto max-w-2xl">
         <Card>

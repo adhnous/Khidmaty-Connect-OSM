@@ -94,7 +94,11 @@ export default function QuickCreateServicePage() {
   }, [selectedFiles]);
 
   if (loading) return null;
-  if (userProfile?.role !== 'provider') {
+  const canAccess =
+    userProfile?.role === 'provider' ||
+    userProfile?.role === 'admin' ||
+    userProfile?.role === 'owner';
+  if (!canAccess) {
     return (
       <div className="mx-auto max-w-2xl">
         <Card>

@@ -7,6 +7,8 @@ import {
   reload,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInAnonymously as firebaseSignInAnonymously,
   type User,
 } from 'firebase/auth';
@@ -24,6 +26,16 @@ export const signInWithGoogle = () => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   return signInWithPopup(auth, provider);
+};
+
+export const signInWithGoogleRedirect = () => {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  return signInWithRedirect(auth, provider);
+};
+
+export const getGoogleRedirectResult = () => {
+  return getRedirectResult(auth);
 };
 
 export const signInAnonymously = () => {

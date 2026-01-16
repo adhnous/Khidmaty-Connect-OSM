@@ -43,7 +43,7 @@ export interface UserProfile {
 export async function createUserProfile(
   uid: string,
   email: string,
-  role: UserRole = 'seeker'
+  role: UserRole = 'provider'
 ): Promise<void> {
   try {
     const userRef = doc(db, 'users', uid);
@@ -86,7 +86,7 @@ export async function updateUserProfile(uid: string, data: Partial<UserProfile>)
         createdAt: serverTimestamp(),
         plan: data.plan || 'free',
         status: data.status || 'active',
-        role: data.role || 'seeker'
+        role: data.role || 'provider'
       }, { merge: true });
     }
   } catch (error) {

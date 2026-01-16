@@ -30,8 +30,10 @@ export async function POST(req: Request) {
     const { uid, role, db } = authz;
     const body = await req.json().catch(() => ({}));
 
-    // Only providers can use this endpoint (admins should use the owner-console)
-    if (role !== 'provider') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    // Providers can use this endpoint. Admin/owner are also allowed for management/testing.
+    if (role !== 'provider' && role !== 'admin' && role !== 'owner') {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
 
     const providerName = (body.providerName && typeof body.providerName === 'string') ? body.providerName : null;
     const providerEmail = (body.providerEmail && typeof body.providerEmail === 'string') ? body.providerEmail : null;

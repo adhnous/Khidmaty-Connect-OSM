@@ -17,6 +17,10 @@ export default function DashboardLayout({
   const router = useRouter();
   const locale = getClientLocale();
   const [showPricingBanner, setShowPricingBanner] = useState(false);
+  const canAccessDashboard =
+    userProfile?.role === 'provider' ||
+    userProfile?.role === 'admin' ||
+    userProfile?.role === 'owner';
 
   useEffect(() => {
     if (loading) return;
@@ -31,10 +35,10 @@ export default function DashboardLayout({
       return;
     }
     // Signed in but not a provider (or missing profile) -> send home (seekers cannot access provider dashboard)
-    if (user && (userProfile?.role !== 'provider')) {
+    if (user && !canAccessDashboard) {
       router.push('/');
     }
-  }, [user, userProfile, loading, router]);
+  }, [user, canAccessDashboard, loading, router]);
 
   // Pricing enforcement: if force_show and plan is free, redirect to /pricing.
   // Otherwise, show a banner CTA when pricing is visible for this provider but plan is still free.
@@ -72,7 +76,7 @@ export default function DashboardLayout({
     return null; // Or a loading spinner
   }
   // If seeker (or missing profile) somehow lands here before redirect finishes, render a friendly message instead of provider UI
-  if (userProfile?.role !== 'provider') {
+  if (!canAccessDashboard) {
     return (
       <main className="mx-auto max-w-6xl p-4 sm:p-6">
         <h1 className="mb-2 text-2xl font-bold">For Providers Only</h1>
@@ -98,5 +102,4 @@ export default function DashboardLayout({
     </main>
   );
 }
-
 

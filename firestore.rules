@@ -168,6 +168,15 @@ service cloud.firestore {
         && emailOkOnUpdate();
 
       allow delete: if isSelf();
+
+      // Mini Postman practice tool (per-user subcollections)
+      match /postman_saved/{docId} {
+        allow read, create, update, delete: if isSelf();
+      }
+
+      match /postman_history/{docId} {
+        allow read, create, update, delete: if isSelf();
+      }
     }
 
     // Sale items: first-class collection for Sales & Trade
