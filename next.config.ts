@@ -5,8 +5,17 @@ const isCIOrProd =
   process.env.CI === 'true' || process.env.NODE_ENV === 'production';
 
 const projectRoot = process.cwd();
-const reactAlias = join(projectRoot, 'node_modules', 'react');
-const reactDomAlias = join(projectRoot, 'node_modules', 'react-dom');
+
+// Turbopack currently cannot handle Windows absolute-path aliases like `C:\...`.
+// Use relative aliases on Windows to avoid "windows imports are not implemented yet".
+const reactAlias =
+  process.platform === 'win32'
+    ? './node_modules/react'
+    : join(projectRoot, 'node_modules', 'react');
+const reactDomAlias =
+  process.platform === 'win32'
+    ? './node_modules/react-dom'
+    : join(projectRoot, 'node_modules', 'react-dom');
 
 // CSP: keep dev permissive for tooling, tighten in CI/prod.
 const cspScriptSrc = isCIOrProd

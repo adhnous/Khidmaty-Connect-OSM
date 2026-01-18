@@ -22,6 +22,8 @@ export default function VerifyPage() {
   const { user, userProfile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const role = userProfile?.role;
+  const isProviderLike = role === "provider" || role === "admin" || role === "owner";
   const [sending, setSending] = useState(false);
   const [checking, setChecking] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -52,13 +54,13 @@ export default function VerifyPage() {
         await reloadCurrentUser();
         if (isCurrentUserVerified()) {
           toast({ title: tr(locale, "verify.verifiedTitle"), description: tr(locale, "verify.verifiedDesc") });
-          if (userProfile?.role === "provider") router.replace("/dashboard");
+          if (isProviderLike) router.replace("/dashboard");
           else router.replace("/");
         }
       } catch {}
     }, 5000);
     return () => clearInterval(id);
-  }, [router, userProfile?.role]);
+  }, [router, isProviderLike, locale]);
 
   const onUseDifferentEmail = async () => {
     try {
@@ -81,7 +83,7 @@ export default function VerifyPage() {
           title: tr(locale, "verify.verifiedTitle"),
           description: tr(locale, "verify.verifiedDesc"),
         });
-        if (userProfile?.role === "provider") router.replace("/dashboard");
+        if (isProviderLike) router.replace("/dashboard");
         else router.replace("/");
         return;
       }

@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { getClientLocale, tr } from '@/lib/i18n';
 import { useAuth } from '@/hooks/use-auth';
 import { getFeatures } from '@/lib/settings';
+import { updateUserProfile } from '@/lib/user';
 
 export default function DashboardLayout({
   children,
@@ -17,6 +18,8 @@ export default function DashboardLayout({
   const router = useRouter();
   const locale = getClientLocale();
   const [showPricingBanner, setShowPricingBanner] = useState(false);
+  const [profileBootstrapStarted, setProfileBootstrapStarted] = useState(false);
+  const [profileBootstrapError, setProfileBootstrapError] = useState<string | null>(null);
   const canAccessDashboard =
     userProfile?.role === 'provider' ||
     userProfile?.role === 'admin' ||
@@ -34,11 +37,35 @@ export default function DashboardLayout({
       router.push('/verify');
       return;
     }
+
+    // First-time sign-in: profile may not exist yet. Attempt a bootstrap and wait.
+    if (user && !userProfile && !profileBootstrapStarted) {
+      setProfileBootstrapStarted(true);
+      (async () => {
+        try {
+          await updateUserProfile(
+            user.uid,
+            {
+              role: 'provider',
+              displayName: user.displayName || undefined,
+              photoURL: user.photoURL || undefined,
+            },
+            { authEmail: user.email || null }
+          );
+        } catch (e: any) {
+          setProfileBootstrapError(
+            e?.message ||
+              'Could not create your profile. Please try again or contact support.'
+          );
+        }
+      })();
+      return;
+    }
     // Signed in but not a provider (or missing profile) -> send home (seekers cannot access provider dashboard)
-    if (user && !canAccessDashboard) {
+    if (user && userProfile && !canAccessDashboard) {
       router.push('/');
     }
-  }, [user, canAccessDashboard, loading, router]);
+  }, [user, userProfile, canAccessDashboard, loading, router, profileBootstrapStarted]);
 
   // Pricing enforcement: if force_show and plan is free, redirect to /pricing.
   // Otherwise, show a banner CTA when pricing is visible for this provider but plan is still free.
@@ -75,6 +102,34 @@ export default function DashboardLayout({
   if (loading || !user) {
     return null; // Or a loading spinner
   }
+
+  // While profile is being created, show a friendly placeholder instead of redirecting.
+  if (!userProfile) {
+    return (
+      <main className="mx-auto max-w-2xl p-4 sm:p-6">
+        <h1 className="mb-2 text-2xl font-bold">Setting up your account…</h1>
+        <p className="text-muted-foreground">
+          Creating your provider profile. This usually takes a moment.
+        </p>
+        {profileBootstrapError && (
+          <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-800">
+            {profileBootstrapError}
+          </div>
+        )}
+        <div className="mt-6 flex gap-3">
+          <button
+            className="ds-btn ds-btn-primary"
+            onClick={() => router.replace('/login')}
+          >
+            Back to login
+          </button>
+          <button className="ds-btn ds-btn-ghost" onClick={() => router.refresh()}>
+            Retry
+          </button>
+        </div>
+      </main>
+    );
+  }
   // If seeker (or missing profile) somehow lands here before redirect finishes, render a friendly message instead of provider UI
   if (!canAccessDashboard) {
     return (
@@ -102,4 +157,3 @@ export default function DashboardLayout({
     </main>
   );
 }
-

@@ -67,22 +67,29 @@ export default function TopNav() {
       const field = `participants.${user.uid}` as any;
       const ref = collection(db, "conversations");
       const q = query(ref, where(field, "==", true));
-      const unsub = onSnapshot(q, (snap) => {
-        let count = 0;
-        snap.forEach((d) => {
-          const data: any = d.data();
-          const lma =
-            data?.lastMessageAt?.toMillis?.() ??
-            (data?.lastMessageAt ? Date.parse(data.lastMessageAt) : 0);
-          const lra =
-            data?.participantsMeta?.[user.uid]?.lastReadAt?.toMillis?.() ??
-            (data?.participantsMeta?.[user.uid]?.lastReadAt
-              ? Date.parse(data.participantsMeta[user.uid].lastReadAt)
-              : 0);
-          if (lma && (!lra || lma > lra)) count++;
-        });
-        setUnread(count);
-      });
+      const unsub = onSnapshot(
+        q,
+        (snap) => {
+          let count = 0;
+          snap.forEach((d) => {
+            const data: any = d.data();
+            const lma =
+              data?.lastMessageAt?.toMillis?.() ??
+              (data?.lastMessageAt ? Date.parse(data.lastMessageAt) : 0);
+            const lra =
+              data?.participantsMeta?.[user.uid]?.lastReadAt?.toMillis?.() ??
+              (data?.participantsMeta?.[user.uid]?.lastReadAt
+                ? Date.parse(data.participantsMeta[user.uid].lastReadAt)
+                : 0);
+            if (lma && (!lra || lma > lra)) count++;
+          });
+          setUnread(count);
+        },
+        (error) => {
+          console.warn("[TopNav] unread snapshot error:", error);
+          setUnread(0);
+        }
+      );
       return () => {
         try {
           unsub();
@@ -115,10 +122,16 @@ export default function TopNav() {
   useEffect(() => {
     try {
       const ref = doc(db, "settings", "features");
-      const unsub = onSnapshot(ref, (snap) => {
-        const data: any = snap.data() || {};
-        setShowCityViews(data?.showCityViews !== false);
-      });
+      const unsub = onSnapshot(
+        ref,
+        (snap) => {
+          const data: any = snap.data() || {};
+          setShowCityViews(data?.showCityViews !== false);
+        },
+        (error) => {
+          console.warn("[TopNav] features snapshot error:", error);
+        }
+      );
       return () => {
         try {
           unsub();
@@ -451,4 +464,3 @@ export default function TopNav() {
     </header>
   );
 }
-

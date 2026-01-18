@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Copy, Play } from 'lucide-react';
+import { Copy, ExternalLink, Play } from 'lucide-react';
 
 import { getClientLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -78,11 +78,21 @@ const PYTHON_EXAMPLES: PythonExample[] = [
   },
 ];
 
+const DEFAULT_PYTHON_REPL_URL =
+  'https://lab-c70mcety8-fateh-adhnouss-projects.vercel.app/lab/index.html';
+
+function getPythonReplUrl() {
+  const raw = (process.env.NEXT_PUBLIC_PYTHON_REPL_URL || '').trim();
+  const cleaned = raw.replace(/^['"]|['"]$/g, '');
+  return cleaned || DEFAULT_PYTHON_REPL_URL;
+}
+
 export default function PythonSandboxPage() {
   const locale = getClientLocale();
   const isAr = locale === 'ar';
   const router = useRouter();
   const { toast } = useToast();
+  const replSrc = getPythonReplUrl();
 
   const [selectedExampleId, setSelectedExampleId] = useState<string>(
     PYTHON_EXAMPLES[0]?.id || 'hello'
@@ -177,6 +187,18 @@ export default function PythonSandboxPage() {
                 Practice Python in your browser.
               </p>
             </div>
+            <div className="flex w-fit flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-fit border-ink/20 bg-snow/40 text-ink hover:bg-snow/50"
+                asChild
+              >
+                <a href={replSrc} target="_blank" rel="noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  {isAr ? 'Open' : 'Open in new tab'}
+                </a>
+              </Button>
             <Button
               type="button"
               variant="outline"
@@ -195,6 +217,7 @@ export default function PythonSandboxPage() {
             >
               {isAr ? 'رجوع' : 'Back'}
             </Button>
+            </div>
           </div>
 
           <div className="mt-3 text-xs text-ink/70">
@@ -310,7 +333,7 @@ export default function PythonSandboxPage() {
         />
         <iframe
           title="JupyterLite Python REPL"
-          src="https://jupyterlite.github.io/demo/repl/index.html?kernel=python&toolbar=1"
+          src={replSrc}
           sandbox="allow-scripts allow-same-origin"
           referrerPolicy="no-referrer"
           className="h-[80vh] min-h-[75vh] w-full"
