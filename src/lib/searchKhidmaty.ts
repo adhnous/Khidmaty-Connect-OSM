@@ -125,6 +125,31 @@ function normalizeCategory(input: string | undefined): string | undefined {
   return exact ?? raw;
 }
 
+const ARABIC_DIACRITICS_RE = /[\u0610-\u061A\u064B-\u065F]/g;
+
+function normalizeSearchString(input: unknown): string {
+  const raw = String(input || "");
+  if (!raw) return "";
+  return raw
+    .normalize("NFKC")
+    .replace(ARABIC_DIACRITICS_RE, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/[ؤئ]/g, "و")
+    .replace(/[ة]/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[ء]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function buildTokens(normalized: string): string[] {
+  return normalized
+    .split(/\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 1);
+}
+
 function toMillis(v: any): number {
   if (v == null) return 0;
   if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -167,45 +192,39 @@ function getItemCategoryFromTags(s: any): string | null {
 
 // Keep these filters aligned with the existing Khidmaty UI (services + sales pages).
 function filterServicesByQuery(rows: any[], q: string): any[] {
-  const needle = q.trim().toLowerCase();
+  const needle = normalizeSearchString(q);
   if (!needle) return rows;
 
   return rows.filter((s: any) => {
-    const title = String(s?.title || '').toLowerCase();
-    const desc = String(s?.description || '').toLowerCase();
-    const cat = String(s?.category || '').toLowerCase();
-    const cityText = String(s?.city || '').toLowerCase();
-    const areaText = String(s?.area || '').toLowerCase();
-    return (
-      title.includes(needle) ||
-      desc.includes(needle) ||
-      cat.includes(needle) ||
-      cityText.includes(needle) ||
-      areaText.includes(needle)
-    );
+    const fields = [
+      normalizeSearchString(s?.title),
+      normalizeSearchString(s?.description),
+      normalizeSearchString(s?.category),
+      normalizeSearchString(s?.city),
+      normalizeSearchString(s?.area),
+    ].filter(Boolean);
+    return fields.some((field) => field.includes(needle));
   });
 }
 
 function filterItemsByQuery(rows: any[], q: string): any[] {
-  const needle = q.trim().toLowerCase();
+  const needle = normalizeSearchString(q);
   if (!needle) return rows;
 
-  const tokens = needle
-    .split(/\s+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 1);
+  const tokens = buildTokens(needle);
 
   return rows.filter((r: any) => {
-    const t = String(r?.title || '').toLowerCase();
-    const d = String(r?.description || '').toLowerCase();
-    const tf = String(r?.trade?.tradeFor || '').toLowerCase();
-    const c = String(r?.city || '').toLowerCase();
+    const fields = [
+      normalizeSearchString(r?.title),
+      normalizeSearchString(r?.description),
+      normalizeSearchString(r?.trade?.tradeFor),
+      normalizeSearchString(r?.city),
+    ];
+    const inText = tokens.some((tok) => fields.some((field) => field.includes(tok)));
+
     const tags: string[] = Array.isArray(r?.tags) ? (r.tags as string[]) : [];
-
-    const inText = tokens.some((tok) => t.includes(tok) || d.includes(tok) || tf.includes(tok) || c.includes(tok));
-
     const inTags = tags.some((x) => {
-      const v = String(x || '').toLowerCase();
+      const v = normalizeSearchString(x);
       return tokens.some((tok) => v.includes(tok));
     });
 
@@ -214,14 +233,16 @@ function filterItemsByQuery(rows: any[], q: string): any[] {
 }
 
 function filterProvidersByQuery(rows: any[], q: string): any[] {
-  const needle = q.trim().toLowerCase();
+  const needle = normalizeSearchString(q);
   if (!needle) return rows;
 
   return rows.filter((p: any) => {
-    const name = String(p?.displayName || '').toLowerCase();
-    const email = String(p?.email || '').toLowerCase();
-    const cityText = String(p?.city || '').toLowerCase();
-    return name.includes(needle) || email.includes(needle) || cityText.includes(needle);
+    const fields = [
+      normalizeSearchString(p?.displayName),
+      normalizeSearchString(p?.email),
+      normalizeSearchString(p?.city),
+    ].filter(Boolean);
+    return fields.some((field) => field.includes(needle));
   });
 }
 
