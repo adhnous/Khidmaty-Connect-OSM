@@ -122,7 +122,13 @@ function normalizeCategory(input: string | undefined): string | undefined {
 
   const needle = raw.toLowerCase();
   const exact = categories.find((c) => c.toLowerCase() === needle);
-  return exact ?? raw;
+  if (exact) return exact;
+
+  // Allow Arabic/common aliases to map into the canonical category values used in Firestore.
+  const alias = resolveCategoryAlias(raw);
+  if (alias) return alias;
+
+  return raw;
 }
 
 const ARABIC_DIACRITICS_RE = /[\u0610-\u061A\u064B-\u065F]/g;

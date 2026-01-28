@@ -1,0 +1,23 @@
+# EAS Build upload ignore rules.
+# This repo contains both web + mobile; we upload the whole repo, but we must
+# exclude large/dev-only folders while keeping `khidmaty-mobile/` included.
+
+.git
+**/.git/**
+
+**/node_modules/**
+**/.expo/**
+**/.expo-shared/**
+
+**/.next/**
+**/dist/**
+**/build/**
+**/coverage/**
+
+**/*.log
+**/*.zip
+
+.env
+.env.*
+!.env.example
+

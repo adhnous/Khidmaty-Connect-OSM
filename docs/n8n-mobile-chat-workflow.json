@@ -1,0 +1,107 @@
+{
+  "name": "Khidmaty Mobile Chat Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "khidmaty-chat",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "responseCode": 200,
+        "options": {}
+      },
+      "id": "webhook_1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const body = $json.body ?? $json;\n\nconst q = String(body.q || \"\").trim();\nif (!q) throw new Error(\"Missing q\");\n\nconst typeRaw = String(body.type || \"all\").trim();\nconst type = [\"all\", \"services\", \"items\", \"providers\"].includes(typeRaw) ? typeRaw : \"all\";\n\nconst city = String(body.city || \"\").trim();\nconst category = String(body.category || \"\").trim();\n\nconst page = Math.max(1, Math.trunc(Number(body.page || 1)));\nconst limit = Math.max(1, Math.min(50, Math.trunc(Number(body.limit || 10))));\n\nconst baseRaw = String($env.KHIDMATY_BASE_URL || \"https://www.khidmaty.ly\").trim();\nconst base = baseRaw.replace(/\\/+$/, \"\");\n\nconst sp = new URLSearchParams();\nsp.set(\"q\", q);\nsp.set(\"type\", type);\nif (city) sp.set(\"city\", city);\nif (category) sp.set(\"category\", category);\nsp.set(\"page\", String(page));\nsp.set(\"limit\", String(limit));\n\nconst url = `${base}/api/search?${sp.toString()}`;\n\nreturn [{ q, type, city, category, page, limit, url }];"
+      },
+      "id": "build_1",
+      "name": "Build Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json.url}}",
+        "method": "GET",
+        "responseFormat": "json",
+        "options": {}
+      },
+      "id": "http_1",
+      "name": "Call /api/search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        820,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const req = $items(\"Build Request\")[0]?.json || {};\nconst res = $json || {};\n\nconst q = String(res.query || req.q || \"\").trim();\nconst page = Number(res.page || req.page || 1) || 1;\nconst limit = Number(res.limit || req.limit || 10) || 10;\nconst total = Number(res.total || 0) || 0;\nconst results = Array.isArray(res.results) ? res.results : [];\n\nconst filters = [];\nif (req.type && req.type !== \"all\") filters.push(`type: ${req.type}`);\nif (req.city) filters.push(`city: ${req.city}`);\nif (req.category) filters.push(`category: ${req.category}`);\nconst filterStr = filters.length ? ` (${filters.join(\", \")})` : \"\";\n\nlet assistantText = \"\";\nif (total > 0) {\n  assistantText = `Found ${total} result${total === 1 ? \"\" : \"s\"} for \\\"${q}\\\"${filterStr}.`;\n} else {\n  assistantText = `No results for \\\"${q}\\\"${filterStr}. Try another word.`;\n}\n\n// Only suggest when there are no results (keeps UI clean).\nconst suggestions = total > 0 ? [] : [\"plumber\", \"electrician\", \"cleaning\", \"mechanic\", \"painter\", \"carpenter\"];\n\nreturn [{ query: q, page, limit, total, results, assistantText, suggestions }];"
+      },
+      "id": "format_1",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Request": {
+      "main": [
+        [
+          {
+            "node": "Call /api/search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call /api/search": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
