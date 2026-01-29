@@ -169,13 +169,18 @@ function toDirectoryRow(el: OverpassElement) {
   const notesParts: string[] = [];
   if (phone) notesParts.push(`هاتف: ${phone}`);
   if (website) notesParts.push(`موقع: ${website}`);
-  if (typeof lat === "number" && typeof lon === "number") notesParts.push(`الموقع: ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
+  if (typeof lat === "number" && typeof lon === "number") {
+    notesParts.push(`خط العرض: ${lat.toFixed(6)}`);
+    notesParts.push(`خط الطول: ${lon.toFixed(6)}`);
+  }
   notesParts.push(`OSM: https://www.openstreetmap.org/${el.type}/${el.id}`);
 
   const addressFull = addr ? `ليبيا، طرابلس، ${addr}` : "ليبيا، طرابلس";
 
   return {
     id: `OSM-${el.type}-${el.id}`,
+    lat,
+    lon,
     "الفئة": "الخدمات الطبية",
     "الاسم": title,
     "النوع": typeLabel,
@@ -234,4 +239,3 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true, count: rows.length, bytes });
 }
-
