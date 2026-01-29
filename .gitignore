@@ -59,9 +59,13 @@ khidmaty.zip
 next-env.d.zip
 *.zip
 
-# expo mobile app (local test app only)
-khidmaty-mobile/
+# expo mobile app (track source; ignore build artifacts + secrets)
 khidmaty-mobile/node_modules/
+khidmaty-mobile/dist/
+khidmaty-mobile/.expo/
+khidmaty-mobile/.env
+khidmaty-mobile/.env.*
+khidmaty-mobile/App.zip
 
 # extra assets that should stay local
 public/Khidmaty Telegram Wizard (Text Prompts).json

@@ -1,0 +1,8 @@
+# Reduce upload size/requests when deploying via Vercel CLI on the free tier.
+node_modules
+.next
+khidmaty-mobile
+test-results
+.tmp
+coverage
+*.zip
