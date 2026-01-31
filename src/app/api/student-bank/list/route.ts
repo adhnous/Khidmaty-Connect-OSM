@@ -1,6 +1,26 @@
 import { NextResponse } from 'next/server';
 import { listStudentResources } from '@/lib/student-bank';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const CORS_HEADERS: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-App-Check',
+};
+
+function withCors<T extends Response>(res: T): T {
+  for (const [k, v] of Object.entries(CORS_HEADERS)) {
+    res.headers.set(k, v);
+  }
+  return res;
+}
+
+export async function OPTIONS() {
+  return withCors(new NextResponse(null, { status: 204 }));
+}
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
@@ -27,13 +47,14 @@ export async function GET(req: Request) {
       language,
     });
 
-    return NextResponse.json({ items });
+    return withCors(NextResponse.json({ items }));
   } catch (err: any) {
     console.error('student-bank list error', err);
-    return NextResponse.json(
-      { error: 'failed_to_list_student_resources' },
-      { status: 500 },
+    return withCors(
+      NextResponse.json(
+        { error: 'failed_to_list_student_resources' },
+        { status: 500 },
+      ),
     );
   }
 }
-
