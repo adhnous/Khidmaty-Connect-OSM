@@ -3,6 +3,7 @@ import 'server-only';
 import { getApps, initializeApp, cert, type ServiceAccount } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue, Timestamp, type DocumentReference } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 
 const SOS_APP_NAME = 'khidmaty-sos-admin';
 
@@ -41,10 +42,10 @@ export function getSosAdmin() {
   return {
     auth: getAuth(app),
     db: getFirestore(app),
+    messaging: getMessaging(app),
     FieldValue,
     Timestamp,
   };
 }
 
 export type { DocumentReference };
-
