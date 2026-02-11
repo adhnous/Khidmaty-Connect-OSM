@@ -126,7 +126,7 @@ export async function POST(req: Request) {
     const eventId = cleanString(body?.eventId);
     if (!eventId) return badRequest('eventId is required.');
 
-    // Rate limit: max 3 sends per 30 minutes per sender.
+    // Rate limit: max 10 sends per 30 minutes per sender.
     const now = Timestamp.now();
     const rateRef = db.collection('sos_rate').doc(uid);
     try {
@@ -141,7 +141,7 @@ export async function POST(req: Request) {
         const nextWindowStart = withinWindow ? windowStart : now;
         const nextCount = withinWindow ? count + 1 : 1;
 
-        if (withinWindow && count >= 3) throw new Error('rate_limited');
+        if (withinWindow && count >= 10) throw new Error('rate_limited');
 
         tx.set(rateRef, { windowStart: nextWindowStart, count: nextCount }, { merge: true });
       });
