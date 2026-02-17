@@ -156,6 +156,33 @@ function buildTokens(normalized: string): string[] {
     .filter((s) => s.length > 1);
 }
 
+function buildQueryNeedles(q: string): string[] {
+  const base = normalizeSearchString(q);
+  if (!base) return [];
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (v: string) => {
+    const s = String(v || '').trim();
+    if (!s) return;
+    if (seen.has(s)) return;
+    seen.add(s);
+    out.push(s);
+  };
+
+  push(base);
+
+  const arabicLike = base.replace(/\u0629/g, '\u0647');
+  if (arabicLike === '\u0633\u064A\u0627\u062D\u0647') {
+    push('\u0633\u064A\u0627\u062D\u064A\u0629');
+    push('\u0633\u064A\u0627\u062D\u064A\u0647');
+    push('\u0633\u064A\u0627\u062D\u064A');
+    push('\u062C\u0648\u0644\u0629 \u0633\u064A\u0627\u062D\u064A\u0629');
+  }
+
+  return out;
+}
+
 function toMillis(v: any): number {
   if (v == null) return 0;
   if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -198,8 +225,8 @@ function getItemCategoryFromTags(s: any): string | null {
 
 // Keep these filters aligned with the existing Khidmaty UI (services + sales pages).
 function filterServicesByQuery(rows: any[], q: string): any[] {
-  const needle = normalizeSearchString(q);
-  if (!needle) return rows;
+  const needles = buildQueryNeedles(q);
+  if (needles.length === 0) return rows;
 
   return rows.filter((s: any) => {
     const fields = [
@@ -209,15 +236,14 @@ function filterServicesByQuery(rows: any[], q: string): any[] {
       normalizeSearchString(s?.city),
       normalizeSearchString(s?.area),
     ].filter(Boolean);
-    return fields.some((field) => field.includes(needle));
+    return fields.some((field) => needles.some((needle) => field.includes(needle)));
   });
 }
 
 function filterItemsByQuery(rows: any[], q: string): any[] {
-  const needle = normalizeSearchString(q);
-  if (!needle) return rows;
-
-  const tokens = buildTokens(needle);
+  const needles = buildQueryNeedles(q);
+  if (needles.length === 0) return rows;
+  const tokens = Array.from(new Set(needles.flatMap((needle) => buildTokens(needle))));
 
   return rows.filter((r: any) => {
     const fields = [
@@ -239,8 +265,8 @@ function filterItemsByQuery(rows: any[], q: string): any[] {
 }
 
 function filterProvidersByQuery(rows: any[], q: string): any[] {
-  const needle = normalizeSearchString(q);
-  if (!needle) return rows;
+  const needles = buildQueryNeedles(q);
+  if (needles.length === 0) return rows;
 
   return rows.filter((p: any) => {
     const fields = [
@@ -248,7 +274,7 @@ function filterProvidersByQuery(rows: any[], q: string): any[] {
       normalizeSearchString(p?.email),
       normalizeSearchString(p?.city),
     ].filter(Boolean);
-    return fields.some((field) => field.includes(needle));
+    return fields.some((field) => needles.some((needle) => field.includes(needle)));
   });
 }
 
